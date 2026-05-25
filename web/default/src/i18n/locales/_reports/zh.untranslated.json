@@ -1,0 +1,14 @@
+{
+  "Accept payments via FreeKassa — a popular Russian payment aggregator. Configure your merchant credentials to enable RUB top-ups.": "Accept payments via FreeKassa — a popular Russian payment aggregator. Configure your merchant credentials to enable RUB top-ups.",
+  "Failed to save FreeKassa settings": "Failed to save FreeKassa settings",
+  "FreeKassa": "FreeKassa",
+  "FreeKassa Dashboard": "FreeKassa Dashboard",
+  "FreeKassa settings saved": "FreeKassa settings saved",
+  "How much currency the user pays per $1 of quota. E.g. 90 means ₽90 = $1 quota.": "How much currency the user pays per $1 of quota. E.g. 90 means ₽90 = $1 quota.",
+  "Minimum Top-up Amount (in quota dollars)": "Minimum Top-up Amount (in quota dollars)",
+  "Save FreeKassa settings": "Save FreeKassa settings",
+  "Secret Word 1 (for payment URL signing)": "Secret Word 1 (for payment URL signing)",
+  "Secret Word 2 (for notification verification)": "Secret Word 2 (for notification verification)",
+  "Set this URL in your FreeKassa merchant dashboard under «Технические настройки».": "Set this URL in your FreeKassa merchant dashboard under «Технические настройки».",
+  "Unit Price (currency per $1 quota)": "Unit Price (currency per $1 quota)"
+}

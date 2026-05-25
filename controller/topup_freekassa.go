@@ -1,0 +1,263 @@
+package controller
+
+import (
+        "crypto/md5"
+        "fmt"
+        "net/http"
+        "net/url"
+        "strconv"
+        "strings"
+        "time"
+
+        "github.com/QuantumNous/new-api/common"
+        "github.com/QuantumNous/new-api/logger"
+        "github.com/QuantumNous/new-api/model"
+        "github.com/QuantumNous/new-api/setting"
+        "github.com/QuantumNous/new-api/setting/operation_setting"
+
+        "github.com/gin-gonic/gin"
+        "github.com/shopspring/decimal"
+)
+
+const freeKassaPayURL = "https://pay.freekassa.net/"
+
+type FreeKassaPayRequest struct {
+        Amount        int64  `json:"amount"`
+        PaymentMethod string `json:"payment_method"`
+}
+
+func getFreeKassaMinTopup() int64 {
+        minTopup := setting.FreeKassaMinTopUp
+        if operation_setting.GetQuotaDisplayType() == operation_setting.QuotaDisplayTypeTokens {
+                minTopup = minTopup * int(common.QuotaPerUnit)
+        }
+        return int64(minTopup)
+}
+
+func getFreeKassaPayMoney(amount int64, group string) float64 {
+        dAmount := decimal.NewFromInt(amount)
+        if operation_setting.GetQuotaDisplayType() == operation_setting.QuotaDisplayTypeTokens {
+                dQuotaPerUnit := decimal.NewFromFloat(common.QuotaPerUnit)
+                dAmount = dAmount.Div(dQuotaPerUnit)
+        }
+
+        topupGroupRatio := common.GetTopupGroupRatio(group)
+        if topupGroupRatio == 0 {
+                topupGroupRatio = 1
+        }
+
+        discount := 1.0
+        if ds, ok := operation_setting.GetPaymentSetting().AmountDiscount[int(amount)]; ok {
+                if ds > 0 {
+                        discount = ds
+                }
+        }
+
+        payMoney := dAmount.
+                Mul(decimal.NewFromFloat(setting.FreeKassaUnitPrice)).
+                Mul(decimal.NewFromFloat(topupGroupRatio)).
+                Mul(decimal.NewFromFloat(discount))
+
+        return payMoney.InexactFloat64()
+}
+
+func freeKassaSign1(merchantId, amount, secretWord1, currency, orderId string) string {
+        raw := fmt.Sprintf("%s:%s:%s:%s:%s", merchantId, amount, secretWord1, currency, orderId)
+        return fmt.Sprintf("%x", md5.Sum([]byte(raw)))
+}
+
+func freeKassaSign2(merchantId, amount, secretWord2, orderId string) string {
+        raw := fmt.Sprintf("%s:%s:%s:%s", merchantId, amount, secretWord2, orderId)
+        return fmt.Sprintf("%x", md5.Sum([]byte(raw)))
+}
+
+func RequestFreeKassaAmount(c *gin.Context) {
+        var req FreeKassaPayRequest
+        if err := c.ShouldBindJSON(&req); err != nil {
+                c.JSON(http.StatusOK, gin.H{"message": "error", "data": "参数错误"})
+                return
+        }
+        if req.Amount < getFreeKassaMinTopup() {
+                c.JSON(http.StatusOK, gin.H{"message": "error", "data": fmt.Sprintf("充值数量不能小于 %d", getFreeKassaMinTopup())})
+                return
+        }
+        id := c.GetInt("id")
+        group, err := model.GetUserGroup(id, true)
+        if err != nil {
+                c.JSON(http.StatusOK, gin.H{"message": "error", "data": "获取用户分组失败"})
+                return
+        }
+        payMoney := getFreeKassaPayMoney(req.Amount, group)
+        if payMoney <= 0.01 {
+                c.JSON(http.StatusOK, gin.H{"message": "error", "data": "充值金额过低"})
+                return
+        }
+        c.JSON(http.StatusOK, gin.H{"message": "success", "data": strconv.FormatFloat(payMoney, 'f', 2, 64)})
+}
+
+func RequestFreeKassaPay(c *gin.Context) {
+        if !isFreeKassaTopUpEnabled() {
+                c.JSON(http.StatusOK, gin.H{"message": "error", "data": "当前管理员未配置 FreeKassa 支付信息"})
+                return
+        }
+
+        var req FreeKassaPayRequest
+        if err := c.ShouldBindJSON(&req); err != nil {
+                c.JSON(http.StatusOK, gin.H{"message": "error", "data": "参数错误"})
+                return
+        }
+        if req.Amount < getFreeKassaMinTopup() {
+                c.JSON(http.StatusOK, gin.H{"message": "error", "data": fmt.Sprintf("充值数量不能小于 %d", getFreeKassaMinTopup())})
+                return
+        }
+
+        id := c.GetInt("id")
+        group, err := model.GetUserGroup(id, true)
+        if err != nil {
+                c.JSON(http.StatusOK, gin.H{"message": "error", "data": "获取用户分组失败"})
+                return
+        }
+
+        payMoney := getFreeKassaPayMoney(req.Amount, group)
+        if payMoney < 0.01 {
+                c.JSON(http.StatusOK, gin.H{"message": "error", "data": "充值金额过低"})
+                return
+        }
+
+        tradeNo := fmt.Sprintf("USR%dNO%s%d", id, common.GetRandomString(6), time.Now().Unix())
+
+        amount := req.Amount
+        if operation_setting.GetQuotaDisplayType() == operation_setting.QuotaDisplayTypeTokens {
+                dAmount := decimal.NewFromInt(req.Amount)
+                dQuotaPerUnit := decimal.NewFromFloat(common.QuotaPerUnit)
+                amount = dAmount.Div(dQuotaPerUnit).IntPart()
+        }
+
+        topUp := &model.TopUp{
+                UserId:          id,
+                Amount:          amount,
+                Money:           payMoney,
+                TradeNo:         tradeNo,
+                PaymentMethod:   model.PaymentMethodFreeKassa,
+                PaymentProvider: model.PaymentProviderFreeKassa,
+                CreateTime:      time.Now().Unix(),
+                Status:          common.TopUpStatusPending,
+        }
+        if err := topUp.Insert(); err != nil {
+                logger.LogError(c.Request.Context(), fmt.Sprintf("FreeKassa 创建充值订单失败 user_id=%d trade_no=%s amount=%d error=%q", id, tradeNo, req.Amount, err.Error()))
+                c.JSON(http.StatusOK, gin.H{"message": "error", "data": "创建订单失败"})
+                return
+        }
+
+        currency := setting.FreeKassaCurrency
+        if currency == "" {
+                currency = "RUB"
+        }
+        amountStr := strconv.FormatFloat(payMoney, 'f', 2, 64)
+        sign := freeKassaSign1(setting.FreeKassaMerchantId, amountStr, setting.FreeKassaSecretWord1, currency, tradeNo)
+
+        params := url.Values{}
+        params.Set("m", setting.FreeKassaMerchantId)
+        params.Set("oa", amountStr)
+        params.Set("currency", currency)
+        params.Set("o", tradeNo)
+        params.Set("s", sign)
+        params.Set("lang", "ru")
+
+        if setting.FreeKassaReturnURL != "" {
+                successURL := strings.TrimRight(setting.FreeKassaReturnURL, "/") + "?status=success"
+                failureURL := strings.TrimRight(setting.FreeKassaReturnURL, "/") + "?status=failed"
+                params.Set("success_url", successURL)
+                params.Set("failure_url", failureURL)
+        }
+
+        payLink := freeKassaPayURL + "?" + params.Encode()
+
+        logger.LogInfo(c.Request.Context(), fmt.Sprintf("FreeKassa 充值订单创建成功 user_id=%d trade_no=%s amount=%d money=%.2f currency=%s", id, tradeNo, req.Amount, payMoney, currency))
+        c.JSON(http.StatusOK, gin.H{
+                "message": "success",
+                "data": gin.H{
+                        "pay_link": payLink,
+                },
+        })
+}
+
+func FreeKassaNotify(c *gin.Context) {
+        if !isFreeKassaWebhookEnabled() {
+                logger.LogWarn(c.Request.Context(), fmt.Sprintf("FreeKassa webhook 被拒绝 reason=webhook_disabled path=%q client_ip=%s", c.Request.RequestURI, c.ClientIP()))
+                _, _ = c.Writer.WriteString("NO")
+                return
+        }
+
+        if err := c.Request.ParseForm(); err != nil {
+                logger.LogError(c.Request.Context(), fmt.Sprintf("FreeKassa webhook 表单解析失败 path=%q client_ip=%s error=%q", c.Request.RequestURI, c.ClientIP(), err.Error()))
+                _, _ = c.Writer.WriteString("NO")
+                return
+        }
+
+        // c.Request.Form is populated from both query string (GET) and POST body
+        // after ParseForm(), so this works for both GET and POST callbacks.
+        merchantId := c.Request.Form.Get("MERCHANT_ID")
+        amountStr := c.Request.Form.Get("AMOUNT")
+        tradeNo := c.Request.Form.Get("MERCHANT_ORDER_ID")
+        sign := c.Request.Form.Get("SIGN")
+
+        logger.LogInfo(c.Request.Context(), fmt.Sprintf("FreeKassa webhook 收到请求 merchant_id=%s amount=%s trade_no=%s client_ip=%s", merchantId, amountStr, tradeNo, c.ClientIP()))
+
+        if merchantId == "" || amountStr == "" || tradeNo == "" || sign == "" {
+                logger.LogWarn(c.Request.Context(), fmt.Sprintf("FreeKassa webhook 参数缺失 path=%q client_ip=%s", c.Request.RequestURI, c.ClientIP()))
+                _, _ = c.Writer.WriteString("NO")
+                return
+        }
+
+        expectedSign := freeKassaSign2(merchantId, amountStr, setting.FreeKassaSecretWord2, tradeNo)
+        if !strings.EqualFold(sign, expectedSign) {
+                logger.LogWarn(c.Request.Context(), fmt.Sprintf("FreeKassa webhook 验签失败 trade_no=%s expected=%s got=%s client_ip=%s", tradeNo, expectedSign, sign, c.ClientIP()))
+                _, _ = c.Writer.WriteString("NO")
+                return
+        }
+
+        LockOrder(tradeNo)
+        defer UnlockOrder(tradeNo)
+
+        topUp := model.GetTopUpByTradeNo(tradeNo)
+        if topUp == nil {
+                logger.LogWarn(c.Request.Context(), fmt.Sprintf("FreeKassa webhook 订单不存在 trade_no=%s client_ip=%s", tradeNo, c.ClientIP()))
+                _, _ = c.Writer.WriteString("NO")
+                return
+        }
+
+        if topUp.PaymentProvider != model.PaymentProviderFreeKassa {
+                logger.LogWarn(c.Request.Context(), fmt.Sprintf("FreeKassa webhook 订单支付网关不匹配 trade_no=%s order_provider=%s client_ip=%s", tradeNo, topUp.PaymentProvider, c.ClientIP()))
+                _, _ = c.Writer.WriteString("NO")
+                return
+        }
+
+        if topUp.Status != common.TopUpStatusPending {
+                logger.LogInfo(c.Request.Context(), fmt.Sprintf("FreeKassa webhook 订单已处理，跳过 trade_no=%s status=%s client_ip=%s", tradeNo, topUp.Status, c.ClientIP()))
+                _, _ = c.Writer.WriteString("YES")
+                return
+        }
+
+        topUp.Status = common.TopUpStatusSuccess
+        if err := topUp.Update(); err != nil {
+                logger.LogError(c.Request.Context(), fmt.Sprintf("FreeKassa 更新充值订单失败 trade_no=%s user_id=%d error=%q", topUp.TradeNo, topUp.UserId, err.Error()))
+                _, _ = c.Writer.WriteString("NO")
+                return
+        }
+
+        dAmount := decimal.NewFromInt(topUp.Amount)
+        dQuotaPerUnit := decimal.NewFromFloat(common.QuotaPerUnit)
+        quotaToAdd := int(dAmount.Mul(dQuotaPerUnit).IntPart())
+
+        if err := model.IncreaseUserQuota(topUp.UserId, quotaToAdd, true); err != nil {
+                logger.LogError(c.Request.Context(), fmt.Sprintf("FreeKassa 更新用户额度失败 trade_no=%s user_id=%d quota_to_add=%d error=%q", topUp.TradeNo, topUp.UserId, quotaToAdd, err.Error()))
+                _, _ = c.Writer.WriteString("NO")
+                return
+        }
+
+        logger.LogInfo(c.Request.Context(), fmt.Sprintf("FreeKassa 充值成功 trade_no=%s user_id=%d quota_to_add=%d money=%.2f client_ip=%s", topUp.TradeNo, topUp.UserId, quotaToAdd, topUp.Money, c.ClientIP()))
+        model.RecordTopupLog(topUp.UserId, fmt.Sprintf("使用FreeKassa充值成功，充值额度: %d，支付金额：%.2f", quotaToAdd, topUp.Money), c.ClientIP(), topUp.PaymentMethod, model.PaymentProviderFreeKassa)
+
+        _, _ = c.Writer.WriteString("YES")
+}
