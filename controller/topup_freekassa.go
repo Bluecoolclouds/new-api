@@ -95,6 +95,13 @@ func RequestFreeKassaAmount(c *gin.Context) {
         c.JSON(http.StatusOK, gin.H{"message": "success", "data": strconv.FormatFloat(payMoney, 'f', 2, 64)})
 }
 
+func getFreeKassaUserEmail(user *model.User) string {
+        if user != nil && strings.TrimSpace(user.Email) != "" {
+                return user.Email
+        }
+        return ""
+}
+
 func RequestFreeKassaPay(c *gin.Context) {
         if !isFreeKassaTopUpEnabled() {
                 c.JSON(http.StatusOK, gin.H{"message": "error", "data": "当前管理员未配置 FreeKassa 支付信息"})
@@ -112,6 +119,12 @@ func RequestFreeKassaPay(c *gin.Context) {
         }
 
         id := c.GetInt("id")
+        user, err := model.GetUserById(id, false)
+        if err != nil || user == nil {
+                c.JSON(http.StatusOK, gin.H{"message": "error", "data": "用户不存在"})
+                return
+        }
+
         group, err := model.GetUserGroup(id, true)
         if err != nil {
                 c.JSON(http.StatusOK, gin.H{"message": "error", "data": "获取用户分组失败"})
@@ -163,6 +176,10 @@ func RequestFreeKassaPay(c *gin.Context) {
         params.Set("o", tradeNo)
         params.Set("s", sign)
         params.Set("lang", "ru")
+
+        if email := getFreeKassaUserEmail(user); email != "" {
+                params.Set("em", email)
+        }
 
         if setting.FreeKassaReturnURL != "" {
                 successURL := strings.TrimRight(setting.FreeKassaReturnURL, "/") + "?status=success"
