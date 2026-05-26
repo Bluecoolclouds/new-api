@@ -5,12 +5,12 @@ import { useStatus } from '@/hooks/use-status'
 import { useSystemConfig } from '@/hooks/use-system-config'
 import { Button } from '@/components/ui/button'
 import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
-} from '@/components/ui/sheet'
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog'
 import {
   useTopupInfo,
   usePayment,
@@ -234,8 +234,8 @@ export function RechargeDialog(props: { triggerClassName?: string }) {
   const [open, setOpen] = useState(false)
 
   return (
-    <Sheet open={open} onOpenChange={setOpen}>
-      <SheetTrigger
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger
         render={
           <Button size='sm' className={props.triggerClassName}>
             <Plus className='size-3.5' aria-hidden='true' />
@@ -243,14 +243,14 @@ export function RechargeDialog(props: { triggerClassName?: string }) {
           </Button>
         }
       />
-      <SheetContent className='flex flex-col overflow-y-auto sm:max-w-lg'>
-        <SheetHeader className='shrink-0'>
-          <SheetTitle>{t('Add Funds')}</SheetTitle>
-        </SheetHeader>
-        <div className='flex-1 overflow-y-auto py-2'>
+      <DialogContent className='flex max-h-[90vh] w-full max-w-lg flex-col overflow-hidden p-0'>
+        <DialogHeader className='shrink-0 border-b px-6 py-4'>
+          <DialogTitle>{t('Add Funds')}</DialogTitle>
+        </DialogHeader>
+        <div className='flex-1 overflow-y-auto px-6 py-4'>
           {open && <RechargeContent />}
         </div>
-      </SheetContent>
-    </Sheet>
+      </DialogContent>
+    </Dialog>
   )
 }
