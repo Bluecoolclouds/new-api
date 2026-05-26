@@ -181,6 +181,7 @@ const BILLING_SECTIONS = [
           FreeKassaUnitPrice: settings.FreeKassaUnitPrice ?? 90,
           FreeKassaMinTopUp: settings.FreeKassaMinTopUp ?? 1,
           FreeKassaReturnURL: settings.FreeKassaReturnURL ?? '',
+          FreeKassaPaymentSystemId: settings.FreeKassaPaymentSystemId ?? '44',
         }}
         complianceDefaults={{
           confirmed: settings['payment_setting.compliance_confirmed'] ?? false,

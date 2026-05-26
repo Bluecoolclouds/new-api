@@ -181,6 +181,10 @@ func RequestFreeKassaPay(c *gin.Context) {
                 params.Set("em", email)
         }
 
+        if setting.FreeKassaPaymentSystemId != "" {
+                params.Set("i", setting.FreeKassaPaymentSystemId)
+        }
+
         if setting.FreeKassaReturnURL != "" {
                 successURL := strings.TrimRight(setting.FreeKassaReturnURL, "/") + "?status=success"
                 failureURL := strings.TrimRight(setting.FreeKassaReturnURL, "/") + "?status=failed"

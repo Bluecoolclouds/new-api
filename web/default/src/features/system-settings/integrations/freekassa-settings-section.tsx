@@ -44,6 +44,7 @@ const freeKassaSchema = z.object({
   FreeKassaUnitPrice: z.coerce.number().min(0),
   FreeKassaMinTopUp: z.coerce.number().min(0),
   FreeKassaReturnURL: z.string(),
+  FreeKassaPaymentSystemId: z.string(),
 })
 
 export type FreeKassaSettingsValues = z.infer<typeof freeKassaSchema>
@@ -106,6 +107,9 @@ export function FreeKassaSettingsSection({ defaultValues }: Props) {
     }
     if (values.FreeKassaReturnURL !== initial.FreeKassaReturnURL) {
       updates.push({ key: 'FreeKassaReturnURL', value: values.FreeKassaReturnURL })
+    }
+    if (values.FreeKassaPaymentSystemId !== initial.FreeKassaPaymentSystemId) {
+      updates.push({ key: 'FreeKassaPaymentSystemId', value: values.FreeKassaPaymentSystemId })
     }
 
     if (updates.length === 0) {
@@ -317,6 +321,27 @@ export function FreeKassaSettingsSection({ defaultValues }: Props) {
                   {t(
                     'Users will be redirected here after payment. Set to your site\'s /wallet/freekassa/result page. FreeKassa will append ?status=success or ?status=failed.'
                   )}
+                </p>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name='FreeKassaPaymentSystemId'
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>{t('Payment System ID (parameter «i»)')}</FormLabel>
+                <FormControl>
+                  <Input
+                    placeholder='44'
+                    autoComplete='off'
+                    {...field}
+                  />
+                </FormControl>
+                <p className='text-muted-foreground text-xs'>
+                  {t('FreeKassa payment method ID passed as the «i» parameter. Default: 44.')}
                 </p>
                 <FormMessage />
               </FormItem>
