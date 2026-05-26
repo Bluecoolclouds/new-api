@@ -1,138 +1,107 @@
 import { useState } from "react";
-import { ArrowRight, Gift, Loader2, Receipt, WalletCards } from "lucide-react";
+import { ArrowRight, Receipt, WalletCards } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-
-// ── helpers ──────────────────────────────────────────────────────────────────
 
 function cn(...classes: (string | undefined | false)[]) {
   return classes.filter(Boolean).join(" ");
 }
 
 const QUOTA_PER_DOLLAR = 500_000;
-const EXCHANGE_RATE = 90; // rub per usd (for display)
+const USD_TO_RUB = 90;
 
-function formatRub(n: number) {
-  return n.toLocaleString("ru-RU", { maximumFractionDigits: 0 });
+const DISCOUNT_RATE = 0.88;
+const BONUS_PCT = Math.round((1 / DISCOUNT_RATE - 1) * 100);
+
+const PRESETS_RUB = [100, 300, 500, 1000, 3000, 5000, 10000, 30000];
+const PRESETS_USD = [1, 5, 10, 25, 50, 100, 250, 500];
+const MIN_RUB = 100;
+const MIN_USD = 1;
+const MAX_RUB = 50000;
+const MAX_USD = 500;
+
+function fmt(n: number, currency: "rub" | "usd") {
+  if (currency === "rub") return n.toLocaleString("ru-RU", { maximumFractionDigits: 0 });
+  return n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
-function formatCredits(q: number) {
+
+function fmtCredits(q: number) {
   if (q >= 1_000_000) return `${(q / 1_000_000).toFixed(2)} M`;
   if (q >= 1_000) return `${(q / 1_000).toFixed(1)} K`;
   return q.toString();
 }
 
-// ── payment method data ───────────────────────────────────────────────────────
-
-type Method = {
-  type: string;
-  name: string;
-  subtitle: string;
-  icon: string;
-  minTopup?: number;
-};
-
-const METHODS: Method[] = [
-  { type: "freekassa", name: "FreeKassa", subtitle: "Карты / СБП", icon: "💳", minTopup: 100 },
-  { type: "waffo", name: "Waffo Pay", subtitle: "Электронные кошельки", icon: "⚡", minTopup: 50 },
-  { type: "stripe", name: "Stripe", subtitle: "Card / Bank", icon: "🏦", minTopup: 1 },
-];
-
-const PRESETS = [100, 300, 500, 1000, 3000, 5000, 10000, 30000];
-
-// ── MethodCard ────────────────────────────────────────────────────────────────
-
-function MethodCard({
-  method,
-  selected,
-  disabled,
-  onClick,
-}: {
-  method: Method;
-  selected: boolean;
-  disabled: boolean;
-  onClick: () => void;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      disabled={disabled}
-      className={cn(
-        "flex flex-col items-center gap-1.5 rounded-xl border px-3 py-3 text-center transition-all duration-150 min-w-[76px] flex-shrink-0",
-        "hover:border-foreground/40 hover:bg-accent/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
-        selected
-          ? "border-foreground bg-foreground/5 ring-1 ring-foreground/20"
-          : "border-border bg-background",
-        disabled && "cursor-not-allowed opacity-40"
-      )}
-    >
-      <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-muted/60">
-        <span className="text-2xl leading-none">{method.icon}</span>
-      </div>
-      <div className="flex flex-col items-center gap-0.5">
-        <span className="text-xs font-semibold leading-tight">{method.name}</span>
-        <span className="text-muted-foreground text-[10px] leading-tight">{method.subtitle}</span>
-      </div>
-    </button>
-  );
-}
-
-// ── SummaryRow ────────────────────────────────────────────────────────────────
-
-function SummaryRow({
-  label,
-  value,
-  highlight,
-}: {
-  label: string;
-  value: string;
-  highlight?: boolean;
-}) {
+function SummaryRow({ label, value, highlight }: { label: string; value: string; highlight?: boolean }) {
   return (
     <div className="flex items-center justify-between gap-2">
       <span className="text-sm text-muted-foreground">{label}</span>
-      <span className={cn("text-sm font-medium", highlight && "text-green-600 dark:text-green-400")}>
-        {value}
-      </span>
+      <span className={cn("text-sm font-medium tabular-nums", highlight && "text-emerald-600 dark:text-emerald-400")}>{value}</span>
     </div>
   );
 }
 
-// ── Main Component ────────────────────────────────────────────────────────────
+function SBPLogo() {
+  return (
+    <img
+      src="/__mockup/images/sbp-logo.svg"
+      alt="СБП"
+      className="h-6 w-6 object-contain"
+    />
+  );
+}
 
 export function RechargeForm() {
+  const [currency, setCurrency] = useState<"rub" | "usd">("rub");
   const [amount, setAmount] = useState(500);
   const [inputVal, setInputVal] = useState("500");
-  const [selectedMethod, setSelectedMethod] = useState<Method | null>(null);
 
-  const minTopup = selectedMethod?.minTopup ?? 50;
-  const maxTopup = 50000;
+  const symbol = currency === "rub" ? "₽" : "$";
+  const min = currency === "rub" ? MIN_RUB : MIN_USD;
+  const max = currency === "rub" ? MAX_RUB : MAX_USD;
+  const presets = currency === "rub" ? PRESETS_RUB : PRESETS_USD;
 
-  // Simulate a discount for Waffo (as an example)
-  const discountRate = selectedMethod?.type === "waffo" ? 0.85 : 1.0;
-  const paymentAmount = discountRate < 1 ? Math.round(amount * discountRate) : amount;
-  const bonusPct = discountRate < 1 ? Math.round((1 / discountRate - 1) * 100) : 0;
-  const equivalentAmount = discountRate < 1 ? amount : null;
+  const switchCurrency = (c: "rub" | "usd") => {
+    setCurrency(c);
+    const converted = c === "usd"
+      ? Math.max(MIN_USD, Math.round((amount / USD_TO_RUB) * 100) / 100)
+      : Math.max(MIN_RUB, Math.round(amount * USD_TO_RUB));
+    const v = c === "usd" ? converted.toFixed(2) : String(converted);
+    setAmount(Number(v));
+    setInputVal(String(converted));
+  };
 
-  const totalCredits = Math.round((amount / EXCHANGE_RATE) * QUOTA_PER_DOLLAR);
-  const ratePerMillion = totalCredits > 0 && paymentAmount > 0
-    ? paymentAmount / (totalCredits / 1_000_000)
-    : null;
-
-  const canProceed = !!selectedMethod && amount >= minTopup;
-
-  const handleAmountInput = (val: string) => {
+  const handleInput = (val: string) => {
     setInputVal(val);
-    const n = parseInt(val) || 0;
+    const n = parseFloat(val) || 0;
     if (n >= 0) setAmount(n);
   };
 
   const handleSlider = (val: number) => {
     setAmount(val);
-    setInputVal(val.toString());
+    setInputVal(currency === "usd" ? val.toFixed(2) : String(val));
   };
+
+  const handlePreset = (p: number) => {
+    setAmount(p);
+    setInputVal(currency === "usd" ? p.toFixed(2) : String(p));
+  };
+
+  const amountRub = currency === "rub" ? amount : amount * USD_TO_RUB;
+  const amountUsd = currency === "usd" ? amount : amount / USD_TO_RUB;
+
+  const paymentAmount = Math.round(amountRub * DISCOUNT_RATE);
+  const paymentAmountUsd = amountUsd * DISCOUNT_RATE;
+  const withoutDiscount = amountRub;
+  const withoutDiscountUsd = amountUsd;
+
+  const totalCredits = Math.round(amountUsd * QUOTA_PER_DOLLAR);
+  const ratePerMillion = totalCredits > 0 && paymentAmount > 0
+    ? paymentAmount / (totalCredits / 1_000_000)
+    : null;
+
+  const sliderVal = Math.min(Math.max(amount, min), max);
 
   return (
     <div className="min-h-screen bg-background flex items-start justify-center p-4 pt-8">
@@ -155,32 +124,56 @@ export function RechargeForm() {
         </CardHeader>
 
         <CardContent className="space-y-5 p-5">
-          {/* ── Payment Method Cards ──────────────────────────────────────── */}
+          {/* Payment Method — FreeKassa only */}
           <div className="space-y-2">
             <Label className="text-muted-foreground text-xs font-medium tracking-wider uppercase">
               Способ оплаты
             </Label>
-            <div className="flex flex-wrap gap-2">
-              {METHODS.map((m) => (
-                <MethodCard
-                  key={m.type}
-                  method={m}
-                  selected={selectedMethod?.type === m.type}
-                  disabled={false}
-                  onClick={() => setSelectedMethod(m)}
-                />
+            <div className="flex gap-2">
+              <button
+                type="button"
+                className="flex flex-col items-center gap-1.5 rounded-xl border px-3 py-3 text-center min-w-[80px] border-foreground bg-foreground/5 ring-1 ring-foreground/20 transition-all"
+              >
+                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-muted/60">
+                  <SBPLogo />
+                </div>
+                <div className="flex flex-col items-center gap-0.5">
+                  <span className="text-xs font-semibold leading-tight">FreeKassa</span>
+                  <span className="text-muted-foreground text-[10px] leading-tight">Карты / СБП</span>
+                </div>
+              </button>
+            </div>
+          </div>
+
+          {/* Currency selector */}
+          <div className="space-y-2">
+            <Label className="text-muted-foreground text-xs font-medium tracking-wider uppercase">
+              Валюта
+            </Label>
+            <div className="inline-flex rounded-lg border bg-muted/30 p-0.5 gap-0.5">
+              {(["rub", "usd"] as const).map((c) => (
+                <button
+                  key={c}
+                  type="button"
+                  onClick={() => switchCurrency(c)}
+                  className={cn(
+                    "rounded-md px-4 py-1.5 text-sm font-medium transition-all",
+                    currency === c
+                      ? "bg-background shadow-sm text-foreground"
+                      : "text-muted-foreground hover:text-foreground"
+                  )}
+                >
+                  {c === "rub" ? "₽ Рубли" : "$ Доллары"}
+                </button>
               ))}
             </div>
           </div>
 
-          {/* ── Amount + Summary ─────────────────────────────────────────── */}
+          {/* Amount + Summary */}
           <div className="grid gap-4 md:grid-cols-[minmax(0,1fr)_220px] md:items-start">
             {/* LEFT */}
             <div className="space-y-3">
-              <Label
-                htmlFor="topup-amount"
-                className="text-muted-foreground text-xs font-medium tracking-wider uppercase"
-              >
+              <Label htmlFor="topup-amount" className="text-muted-foreground text-xs font-medium tracking-wider uppercase">
                 Сумма пополнения
               </Label>
 
@@ -190,41 +183,41 @@ export function RechargeForm() {
                   id="topup-amount"
                   type="number"
                   value={inputVal}
-                  onChange={(e) => handleAmountInput(e.target.value)}
-                  min={minTopup}
-                  placeholder={`Минимум ${minTopup}`}
+                  onChange={(e) => handleInput(e.target.value)}
+                  min={min}
+                  placeholder={`Минимум ${min}`}
                   className="h-10 pr-8 text-base font-medium"
                 />
                 <span className="text-muted-foreground pointer-events-none absolute top-1/2 right-3 -translate-y-1/2 text-sm">
-                  ₽
+                  {symbol}
                 </span>
               </div>
 
-              {/* Slider */}
-              <div className="px-0.5">
+              {/* Compact slider */}
+              <div className="px-0.5 max-w-xs">
                 <input
                   type="range"
-                  min={minTopup}
-                  max={maxTopup}
-                  step={1}
-                  value={Math.min(Math.max(amount, minTopup), maxTopup)}
-                  onChange={(e) => handleSlider(parseInt(e.target.value))}
+                  min={min}
+                  max={max}
+                  step={currency === "usd" ? 1 : 10}
+                  value={sliderVal}
+                  onChange={(e) => handleSlider(Number(e.target.value))}
                   className="w-full cursor-pointer accent-foreground"
                   style={{ height: "4px" }}
                 />
-                <div className="text-muted-foreground mt-1 flex justify-between text-[10px]">
-                  <span>{minTopup}</span>
-                  <span>{maxTopup.toLocaleString()}</span>
+                <div className="text-muted-foreground mt-0.5 flex justify-between text-[10px]">
+                  <span>{min}{symbol}</span>
+                  <span>{max.toLocaleString()}{symbol}</span>
                 </div>
               </div>
 
               {/* Preset chips */}
               <div className="flex flex-wrap gap-1.5">
-                {PRESETS.map((p) => (
+                {presets.map((p) => (
                   <button
                     key={p}
                     type="button"
-                    onClick={() => { setAmount(p); setInputVal(p.toString()); }}
+                    onClick={() => handlePreset(p)}
                     className={cn(
                       "rounded-md border px-2.5 py-1 text-xs font-medium transition-colors",
                       amount === p
@@ -232,76 +225,67 @@ export function RechargeForm() {
                         : "border-border text-muted-foreground hover:border-foreground/40 hover:text-foreground"
                     )}
                   >
-                    {p.toLocaleString()}
+                    {currency === "rub" ? p.toLocaleString() : `$${p}`}
                   </button>
                 ))}
               </div>
             </div>
 
-            {/* RIGHT: Summary panel */}
+            {/* RIGHT: Summary */}
             <div className="rounded-xl border bg-muted/30 p-4 space-y-3">
+              {/* Total */}
               <div>
-                <p className="text-muted-foreground text-xs font-medium tracking-wider uppercase mb-1">
-                  Итого
-                </p>
-                <p className="text-2xl font-bold leading-none">
-                  {formatRub(paymentAmount)}
-                  <span className="text-base font-normal text-muted-foreground ml-1">₽</span>
+                <p className="text-muted-foreground text-xs font-medium tracking-wider uppercase mb-1">Итого</p>
+                <p className="text-2xl font-bold leading-none tabular-nums">
+                  {currency === "rub"
+                    ? fmt(paymentAmount, "rub")
+                    : fmt(paymentAmountUsd, "usd")}
+                  <span className="text-base font-normal text-muted-foreground ml-1">{symbol}</span>
                 </p>
               </div>
 
               <div className="border-t pt-2.5 space-y-2">
-                {bonusPct > 0 && (
-                  <SummaryRow label="Выгода" value={`+${bonusPct}%`} highlight />
-                )}
-                {equivalentAmount != null && (
-                  <SummaryRow
-                    label="Без скидки"
-                    value={`${formatRub(equivalentAmount)} ₽`}
-                  />
-                )}
+                {/* Выгода */}
+                <SummaryRow
+                  label="Выгода"
+                  value={`+${BONUS_PCT}%`}
+                  highlight
+                />
+
+                {/* Без скидки */}
+                <SummaryRow
+                  label="Без скидки"
+                  value={currency === "rub"
+                    ? `${fmt(withoutDiscount, "rub")} ₽`
+                    : `$${fmt(withoutDiscountUsd, "usd")}`}
+                />
+
+                {/* Курс */}
                 {ratePerMillion != null && ratePerMillion > 0 && (
                   <SummaryRow
                     label="Курс"
-                    value={`${formatRub(ratePerMillion)} ₽ / 1M`}
+                    value={`${fmt(ratePerMillion, "rub")} ₽ / 1M`}
                   />
                 )}
+
+                {/* Всего получите */}
                 {totalCredits > 0 && (
                   <SummaryRow
                     label="Всего получите"
-                    value={formatCredits(totalCredits)}
+                    value={fmtCredits(totalCredits)}
                   />
                 )}
               </div>
 
               <Button
                 className="w-full gap-2 mt-1"
-                disabled={!canProceed}
-                onClick={() => alert(`Оплата: ${paymentAmount} ₽ через ${selectedMethod?.name}`)}
+                onClick={() => alert(`Оплата: ${paymentAmount} ₽ через FreeKassa`)}
               >
                 <ArrowRight className="h-4 w-4" />
                 Перейти к оплате
               </Button>
-
-              {!selectedMethod && (
-                <p className="text-muted-foreground text-center text-[11px]">
-                  Выберите способ оплаты выше
-                </p>
-              )}
             </div>
           </div>
-
-          {/* Bonus banner */}
-          {bonusPct > 0 && (
-            <div className="flex items-center gap-2 rounded-lg border border-green-500/30 bg-green-500/5 px-3 py-2">
-              <Gift className="h-4 w-4 text-green-600 dark:text-green-400 shrink-0" />
-              <p className="text-xs text-green-700 dark:text-green-400">
-                Через Waffo Pay вы экономите{" "}
-                <strong>+{bonusPct}%</strong> — платите {formatRub(paymentAmount)} ₽ вместо{" "}
-                {formatRub(amount)} ₽
-              </p>
-            </div>
-          )}
         </CardContent>
       </Card>
     </div>
