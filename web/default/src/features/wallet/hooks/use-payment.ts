@@ -93,15 +93,9 @@ export function usePayment() {
 
         // Handle FreeKassa payment
         if (isFreeKassa) {
-          const fkMethod =
-            paymentType === 'freekassa_card'
-              ? 'freekassa_card'
-              : paymentType === 'freekassa_crypto'
-                ? 'freekassa_crypto'
-                : 'freekassa'
           const response = await requestFreeKassaPayment({
             amount,
-            payment_method: fkMethod,
+            payment_method: paymentType,
           })
           if (!isApiSuccess(response)) {
             toast.error(response.message || i18next.t('Payment request failed'))

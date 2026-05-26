@@ -44,6 +44,21 @@ import type {
 import { CreemProductsSection } from './creem-products-section'
 
 // ============================================================================
+// Crypto Coins List
+// ============================================================================
+
+const FREEKASSA_CRYPTO_COINS = [
+  { id: '24', name: 'Bitcoin',      symbol: 'BTC',  range: '0.0001–20' },
+  { id: '25', name: 'Litecoin',     symbol: 'LTC',  range: '0.01–1000' },
+  { id: '26', name: 'Ethereum',     symbol: 'ETH',  range: '0.0001–1000' },
+  { id: '14', name: 'USDT (ERC20)', symbol: 'USDT', range: '10–100000' },
+  { id: '15', name: 'USDT (TRC20)', symbol: 'USDT', range: '2.5–100000' },
+  { id: '45', name: 'TON',          symbol: 'TON',  range: '0.1–100000' },
+  { id: '17', name: 'BNB',          symbol: 'BNB',  range: '0.01–10000' },
+  { id: '39', name: 'Tron',         symbol: 'TRX',  range: '10–100000' },
+] as const
+
+// ============================================================================
 // Method Subtitle Helper
 // ============================================================================
 
@@ -363,6 +378,15 @@ export function RechargeFormCard({
   }, [allMethodCards.length])
 
   const handleMethodCardClick = (method: PaymentMethod, waffoIndex?: number) => {
+    // For crypto parent, auto-select first coin and expand sub-list
+    if (method.type === 'freekassa_crypto') {
+      const first = FREEKASSA_CRYPTO_COINS[0]
+      const subMethod: PaymentMethod = { type: `freekassa_crypto_${first.id}`, name: first.name }
+      setLocalSelectedMethod(subMethod)
+      if (onMethodChange) onMethodChange(subMethod)
+      return
+    }
+
     setLocalSelectedMethod(method)
 
     // For waffo sub-methods, trigger directly
@@ -375,6 +399,12 @@ export function RechargeFormCard({
     if (onMethodChange) {
       onMethodChange(method)
     }
+  }
+
+  const handleCryptoSubSelect = (coin: { readonly id: string; readonly name: string; readonly symbol: string; readonly range: string }) => {
+    const subMethod: PaymentMethod = { type: `freekassa_crypto_${coin.id}`, name: coin.name }
+    setLocalSelectedMethod(subMethod)
+    if (onMethodChange) onMethodChange(subMethod)
   }
 
   const handleProceedToPayment = () => {
@@ -579,7 +609,14 @@ export function RechargeFormCard({
                           (method.type.startsWith('waffo-') ? waffoMinTopup : 0) ||
                           0
                         const disabled = methodMin > topupAmount
-                        const isSelected = localSelectedMethod?.type === method.type
+                        const isCryptoParent = method.type === 'freekassa_crypto'
+                        const isSelected = isCryptoParent
+                          ? !!localSelectedMethod?.type.startsWith('freekassa_crypto')
+                          : localSelectedMethod?.type === method.type
+                        const cryptoExpanded = isCryptoParent && !!localSelectedMethod?.type.startsWith('freekassa_crypto')
+                        const selectedCryptoSubId = localSelectedMethod?.type.startsWith('freekassa_crypto_')
+                          ? localSelectedMethod.type.replace('freekassa_crypto_', '')
+                          : null
                         const isLoading =
                           paymentLoading === method.type ||
                           (waffoIndex !== undefined &&
@@ -589,56 +626,77 @@ export function RechargeFormCard({
                           t
                         )
                         return (
-                          <button
-                            key={method.type}
-                            type='button'
-                            disabled={disabled}
-                            onClick={() => !disabled && handleMethodCardClick(method, waffoIndex)}
-                            className={cn(
-                              'flex w-full items-center gap-3 rounded-xl border px-4 py-3 text-left transition-all',
-                              isSelected
-                                ? 'border-foreground bg-foreground/5 ring-1 ring-foreground/10'
-                                : 'border-border hover:border-foreground/30',
-                              disabled && 'cursor-not-allowed opacity-40'
-                            )}
-                          >
-                            <div className='bg-muted flex h-9 w-9 shrink-0 items-center justify-center rounded-lg'>
-                              {isLoading ? (
-                                <Loader2 className='h-4 w-4 animate-spin' />
-                              ) : method.type === 'freekassa' ? (
-                                <img
-                                  src='/images/sbp-logo.svg'
-                                  alt='СБП'
-                                  className='h-5 w-5 object-contain'
-                                />
-                              ) : method.type === 'freekassa_card' ? (
-                                <CreditCard className='h-5 w-5 text-blue-500' />
-                              ) : method.type === 'freekassa_crypto' ? (
-                                <Coins className='h-5 w-5 text-amber-500' />
-                              ) : (
-                                getPaymentIcon(
-                                  method.type.startsWith('waffo-') ? 'waffo' : method.type,
-                                  'h-5 w-5',
-                                  method.icon,
-                                  method.name
-                                )
+                          <div key={method.type} className='flex flex-col gap-1'>
+                            <button
+                              type='button'
+                              disabled={disabled}
+                              onClick={() => !disabled && handleMethodCardClick(method, waffoIndex)}
+                              className={cn(
+                                'flex w-full items-center gap-3 rounded-xl border px-4 py-3 text-left transition-all',
+                                isSelected
+                                  ? 'border-foreground bg-foreground/5 ring-1 ring-foreground/10'
+                                  : 'border-border hover:border-foreground/30',
+                                disabled && 'cursor-not-allowed opacity-40'
                               )}
-                            </div>
-                            <div className='min-w-0 flex-1'>
-                              <p className='text-sm font-semibold'>{method.name}</p>
-                              {subtitle && (
-                                <p className='text-muted-foreground text-xs'>{subtitle}</p>
+                            >
+                              <div className='bg-muted flex h-9 w-9 shrink-0 items-center justify-center rounded-lg'>
+                                {isLoading ? (
+                                  <Loader2 className='h-4 w-4 animate-spin' />
+                                ) : method.type === 'freekassa' ? (
+                                  <img
+                                    src='/images/sbp-logo.svg'
+                                    alt='СБП'
+                                    className='h-5 w-5 object-contain'
+                                  />
+                                ) : method.type === 'freekassa_card' ? (
+                                  <CreditCard className='h-5 w-5 text-blue-500' />
+                                ) : method.type === 'freekassa_crypto' ? (
+                                  <Coins className='h-5 w-5 text-amber-500' />
+                                ) : (
+                                  getPaymentIcon(
+                                    method.type.startsWith('waffo-') ? 'waffo' : method.type,
+                                    'h-5 w-5',
+                                    method.icon,
+                                    method.name
+                                  )
+                                )}
+                              </div>
+                              <div className='min-w-0 flex-1'>
+                                <p className='text-sm font-semibold'>{method.name}</p>
+                                {subtitle && (
+                                  <p className='text-muted-foreground text-xs'>{subtitle}</p>
+                                )}
+                              </div>
+                              {isSelected && (
+                                <Badge
+                                  variant='outline'
+                                  className='shrink-0 border-emerald-200 bg-emerald-500/10 text-[10px] text-emerald-700 dark:border-emerald-800 dark:text-emerald-400'
+                                >
+                                  {t('Selected')}
+                                </Badge>
                               )}
-                            </div>
-                            {isSelected && (
-                              <Badge
-                                variant='outline'
-                                className='shrink-0 border-emerald-200 bg-emerald-500/10 text-[10px] text-emerald-700 dark:border-emerald-800 dark:text-emerald-400'
-                              >
-                                {t('Selected')}
-                              </Badge>
+                            </button>
+                            {cryptoExpanded && (
+                              <div className='ml-12 flex flex-col gap-1'>
+                                {FREEKASSA_CRYPTO_COINS.map(coin => (
+                                  <button
+                                    key={coin.id}
+                                    type='button'
+                                    onClick={() => handleCryptoSubSelect(coin)}
+                                    className={cn(
+                                      'flex items-center gap-2 rounded-lg border px-3 py-2 text-left text-sm transition-all',
+                                      selectedCryptoSubId === coin.id
+                                        ? 'border-foreground bg-foreground/5'
+                                        : 'border-border hover:border-foreground/30'
+                                    )}
+                                  >
+                                    <span className='font-medium'>{coin.name}</span>
+                                    <span className='text-muted-foreground ml-auto text-xs'>{coin.range} {coin.symbol}</span>
+                                  </button>
+                                ))}
+                              </div>
                             )}
-                          </button>
+                          </div>
                         )
                       })}
                     </div>

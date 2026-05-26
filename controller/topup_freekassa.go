@@ -22,12 +22,19 @@ import (
 const freeKassaPayURL = "https://pay.freekassa.net/"
 
 func resolvePaymentSystemId(paymentMethod string) string {
+        // Handle specific crypto sub-methods: freekassa_crypto_24, freekassa_crypto_15, etc.
+        if strings.HasPrefix(paymentMethod, "freekassa_crypto_") {
+                id := strings.TrimPrefix(paymentMethod, "freekassa_crypto_")
+                if id != "" {
+                        return id
+                }
+        }
         switch paymentMethod {
         case "freekassa_card":
                 if setting.FreeKassaCardPaymentSystemId != "" {
                         return setting.FreeKassaCardPaymentSystemId
                 }
-                return setting.FreeKassaPaymentSystemId
+                return "36"
         case "freekassa_crypto":
                 if setting.FreeKassaCryptoPaymentSystemId != "" {
                         return setting.FreeKassaCryptoPaymentSystemId
