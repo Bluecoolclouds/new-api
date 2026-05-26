@@ -265,7 +265,10 @@ export function RechargeFormCard({
   const hasWaffoPaymentMethods =
     Array.isArray(waffoPayMethods) && waffoPayMethods.length > 0
   const minTopup = getMinTopupAmount(topupInfo)
-  const maxTopup = Math.max(minTopup * 200, 10000)
+  const maxTopup =
+    localCurrency === 'rub' && rubRate > 1
+      ? Math.round(20000 / rubRate)
+      : Math.max(minTopup * 200, 10000)
   const redemptionEnabled = topupInfo?.enable_redemption !== false
 
   // Build unified methods list — only FreeKassa for now
@@ -648,19 +651,15 @@ export function RechargeFormCard({
                   {/* Total + CTA */}
                   <div className='flex items-center justify-between gap-4 px-4 py-3.5'>
                     <div>
-                      <p className='text-muted-foreground text-xs'>{t('Total')}</p>
+                      <p className='text-muted-foreground text-xs'>{t('Will be credited')}</p>
                       {calculating ? (
                         <Skeleton className='mt-1 h-7 w-24' />
                       ) : (
                         <div className='mt-0.5 flex items-baseline gap-1'>
+                          <span className='text-muted-foreground text-base font-medium'>$</span>
                           <span className='text-2xl font-bold tabular-nums leading-none'>
-                            {paymentAmount > 0 ? formatCurrency(paymentAmount) : '—'}
+                            {topupAmount > 0 ? formatCurrency(topupAmount) : '—'}
                           </span>
-                          {paymentAmount > 0 && (
-                            <span className='text-muted-foreground text-base font-medium'>
-                              {displaySymbol}
-                            </span>
-                          )}
                         </div>
                       )}
                     </div>
