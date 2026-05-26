@@ -38,14 +38,14 @@ import { getApiKeys } from '@/features/keys/api'
 import {
   useDashboardContentVisibility,
 } from '../../hooks/use-status-data'
-import { GreetingHeader } from './greeting-header'
 import { AnnouncementsPanel } from './announcements-panel'
 import { ApiInfoPanel } from './api-info-panel'
 import { ApiKeysMiniPanel } from './api-keys-mini-panel'
 import { FAQPanel } from './faq-panel'
+import { GettingStartedPanel } from './getting-started-panel'
+import { GreetingHeader } from './greeting-header'
 import { PerformanceHealthPanel } from './performance-health-panel'
-import { PopularModelsPanel } from './popular-models-panel'
-import { QuickActionsSidebar } from './quick-actions-sidebar'
+import { QuickActionsPanel } from './quick-actions-panel'
 import { RecentActivityPanel } from './recent-activity-panel'
 import { SummaryCards } from './summary-cards'
 import { UptimePanel } from './uptime-panel'
@@ -77,11 +77,10 @@ export function OverviewDashboard() {
     uptimeKuma: showUptimePanel,
   } = useDashboardContentVisibility()
   const isAdmin = Boolean(user?.role && user.role >= ROLE.ADMIN)
-  const showLeftContentPanels =
-    isAdmin || showApiInfoPanel || showAnnouncementsPanel || showFAQPanel
-  const showContentPanels = showLeftContentPanels || showUptimePanel
+  const showContentPanels =
+    isAdmin || showApiInfoPanel || showFAQPanel || showUptimePanel
 
-  // ── Quota chart data (shared by UsageOverview + PopularModels) ──
+  // ── Quota chart data ──
   const quotaQuery = useQuery({
     queryKey: ['dashboard', 'overview', 'quota-data'],
     queryFn: async () => {
@@ -110,6 +109,11 @@ export function OverviewDashboard() {
     },
     staleTime: 60 * 1000,
   })
+
+  // ── Getting started step detection ──
+  const hasApiKey = (apiKeysQuery.data?.length ?? 0) > 0
+  const hasBalance = (user?.quota ?? 0) > 0
+  const hasRequests = quotaData.length > 0
 
   // ── Quick actions ──
   const quickActions = useMemo<QuickAction[]>(
@@ -149,95 +153,107 @@ export function OverviewDashboard() {
   )
 
   return (
-    <div className='grid grid-cols-1 items-start gap-4 xl:grid-cols-[minmax(0,1fr)_17rem]'>
+    <div className='flex flex-col gap-4'>
 
-      {/* ── Main content column ── */}
-      <div className='flex flex-col gap-4 min-w-0'>
+      {/* ── Full-width top section ── */}
+      <CardStaggerContainer>
+        <CardStaggerItem>
+          <GreetingHeader />
+        </CardStaggerItem>
+      </CardStaggerContainer>
 
-        {/* 1. Greeting header */}
-        <CardStaggerContainer>
-          <CardStaggerItem>
-            <GreetingHeader />
-          </CardStaggerItem>
-        </CardStaggerContainer>
+      <CardStaggerContainer>
+        <CardStaggerItem>
+          <SummaryCards />
+        </CardStaggerItem>
+      </CardStaggerContainer>
 
-        {/* 2. Stat cards */}
-        <CardStaggerContainer>
-          <CardStaggerItem>
-            <SummaryCards />
-          </CardStaggerItem>
-        </CardStaggerContainer>
+      {/* ── Two-column layout: main + sidebar ── */}
+      <div className='grid grid-cols-1 items-start gap-4 xl:grid-cols-[minmax(0,1fr)_22rem]'>
 
-        {/* 3. Usage chart */}
-        <CardStaggerContainer>
-          <CardStaggerItem>
-            <UsageOverviewPanel data={quotaData} loading={quotaLoading} />
-          </CardStaggerItem>
-        </CardStaggerContainer>
+        {/* ── Main content column ── */}
+        <div className='flex flex-col gap-4 min-w-0'>
 
-        {/* 4. Popular models */}
-        <CardStaggerContainer>
-          <CardStaggerItem>
-            <PopularModelsPanel data={quotaData} loading={quotaLoading} />
-          </CardStaggerItem>
-        </CardStaggerContainer>
+          {/* 1. Getting started guide (hides when all steps done) */}
+          <CardStaggerContainer>
+            <CardStaggerItem>
+              <GettingStartedPanel
+                hasApiKey={hasApiKey}
+                hasBalance={hasBalance}
+                hasRequests={hasRequests}
+              />
+            </CardStaggerItem>
+          </CardStaggerContainer>
 
-        {/* 5. API keys mini table */}
-        <CardStaggerContainer>
-          <CardStaggerItem>
-            <ApiKeysMiniPanel
-              keys={apiKeysQuery.data ?? []}
-              loading={apiKeysQuery.isLoading}
-            />
-          </CardStaggerItem>
-        </CardStaggerContainer>
+          {/* 2. Usage chart */}
+          <CardStaggerContainer>
+            <CardStaggerItem>
+              <UsageOverviewPanel data={quotaData} loading={quotaLoading} />
+            </CardStaggerItem>
+          </CardStaggerContainer>
 
-        {/* 6. Content panels (3-col: info / announcements / FAQ + uptime) */}
-        {showContentPanels && (
-          <CardStaggerContainer
-            className={cn('grid grid-cols-1 gap-4', 'sm:grid-cols-2 lg:grid-cols-3')}
-          >
-            {isAdmin && (
-              <CardStaggerItem className='sm:col-span-2 lg:col-span-3'>
-                <PerformanceHealthPanel />
-              </CardStaggerItem>
-            )}
-            {showApiInfoPanel && (
-              <CardStaggerItem>
-                <ApiInfoPanel />
-              </CardStaggerItem>
-            )}
-            {showAnnouncementsPanel && (
+          {/* 3. Quick actions (horizontal grid) */}
+          <CardStaggerContainer>
+            <CardStaggerItem>
+              <QuickActionsPanel actions={visibleQuickActions} />
+            </CardStaggerItem>
+          </CardStaggerContainer>
+
+          {/* 4. API keys mini table */}
+          <CardStaggerContainer>
+            <CardStaggerItem>
+              <ApiKeysMiniPanel
+                keys={apiKeysQuery.data ?? []}
+                loading={apiKeysQuery.isLoading}
+              />
+            </CardStaggerItem>
+          </CardStaggerContainer>
+
+          {/* 5. Content panels (info / FAQ / uptime) */}
+          {showContentPanels && (
+            <CardStaggerContainer
+              className={cn('grid grid-cols-1 gap-4', 'sm:grid-cols-2 lg:grid-cols-3')}
+            >
+              {isAdmin && (
+                <CardStaggerItem className='sm:col-span-2 lg:col-span-3'>
+                  <PerformanceHealthPanel />
+                </CardStaggerItem>
+              )}
+              {showApiInfoPanel && (
+                <CardStaggerItem>
+                  <ApiInfoPanel />
+                </CardStaggerItem>
+              )}
+              {showFAQPanel && (
+                <CardStaggerItem>
+                  <FAQPanel />
+                </CardStaggerItem>
+              )}
+              {showUptimePanel && (
+                <CardStaggerItem>
+                  <UptimePanel />
+                </CardStaggerItem>
+              )}
+            </CardStaggerContainer>
+          )}
+        </div>
+
+        {/* ── Right sidebar (22rem) ── */}
+        <div className='flex flex-col gap-4'>
+          <CardStaggerContainer>
+            <CardStaggerItem>
+              <RecentActivityPanel />
+            </CardStaggerItem>
+          </CardStaggerContainer>
+
+          {showAnnouncementsPanel && (
+            <CardStaggerContainer>
               <CardStaggerItem>
                 <AnnouncementsPanel />
               </CardStaggerItem>
-            )}
-            {showFAQPanel && (
-              <CardStaggerItem>
-                <FAQPanel />
-              </CardStaggerItem>
-            )}
-            {showUptimePanel && (
-              <CardStaggerItem>
-                <UptimePanel />
-              </CardStaggerItem>
-            )}
-          </CardStaggerContainer>
-        )}
-      </div>
-
-      {/* ── Right sidebar column ── */}
-      <div className='flex flex-col gap-4'>
-        <CardStaggerContainer>
-          <CardStaggerItem>
-            <QuickActionsSidebar actions={visibleQuickActions} />
-          </CardStaggerItem>
-        </CardStaggerContainer>
-        <CardStaggerContainer>
-          <CardStaggerItem>
-            <RecentActivityPanel />
-          </CardStaggerItem>
-        </CardStaggerContainer>
+            </CardStaggerContainer>
+          )}
+        </div>
       </div>
     </div>
   )

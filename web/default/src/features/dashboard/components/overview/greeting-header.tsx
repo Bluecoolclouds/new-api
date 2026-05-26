@@ -26,7 +26,7 @@ export function GreetingHeader() {
           <h2 className='truncate text-lg font-semibold tracking-tight'>
             {t(getGreeting())}, {name}!
           </h2>
-          <p className='text-muted-foreground truncate text-xs'>
+          <p className='text-muted-foreground text-xs leading-snug'>
             {t('Manage your API keys, track usage, and explore models.')}
           </p>
         </div>
