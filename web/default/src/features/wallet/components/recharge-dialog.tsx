@@ -1,16 +1,11 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
-import { Plus } from 'lucide-react'
+import { Plus, X } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
+import { Dialog as DialogPrimitive } from '@base-ui/react/dialog'
 import { useStatus } from '@/hooks/use-status'
 import { useSystemConfig } from '@/hooks/use-system-config'
 import { Button } from '@/components/ui/button'
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from '@/components/ui/dialog'
+import { Dialog, DialogPortal, DialogTrigger } from '@/components/ui/dialog'
 import {
   useTopupInfo,
   usePayment,
@@ -243,14 +238,31 @@ export function RechargeDialog(props: { triggerClassName?: string }) {
           </Button>
         }
       />
-      <DialogContent className='flex max-h-[calc(100dvh-2rem)] flex-col max-sm:h-dvh max-sm:w-screen max-sm:max-w-none max-sm:rounded-none sm:max-w-lg'>
-        <DialogHeader>
-          <DialogTitle>{t('Add Funds')}</DialogTitle>
-        </DialogHeader>
-        <div className='min-h-0 flex-1 overflow-y-auto'>
-          {open && <RechargeContent />}
-        </div>
-      </DialogContent>
+      <DialogPortal>
+        {/* no DialogOverlay — no backdrop/dimming */}
+        <DialogPrimitive.Popup
+          aria-label={t('Add Funds')}
+          className='data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95 fixed top-1/2 left-1/2 z-50 flex max-h-[calc(100dvh-2rem)] w-full max-w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 flex-col rounded-xl duration-100 outline-none sm:max-w-lg'
+        >
+          {/* close button */}
+          <DialogPrimitive.Close
+            render={
+              <Button
+                variant='ghost'
+                size='icon-sm'
+                className='absolute top-2 right-2 z-10'
+                aria-label='Close'
+              />
+            }
+          >
+            <X className='size-4' aria-hidden='true' />
+          </DialogPrimitive.Close>
+
+          <div className='min-h-0 flex-1 overflow-y-auto'>
+            {open && <RechargeContent />}
+          </div>
+        </DialogPrimitive.Popup>
+      </DialogPortal>
     </Dialog>
   )
 }
