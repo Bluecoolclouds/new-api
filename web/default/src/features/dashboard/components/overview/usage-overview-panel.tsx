@@ -151,22 +151,6 @@ export function UsageOverviewPanel({ data, loading }: UsageOverviewPanelProps) {
       description={t('Spend & requests — last 7 days')}
       contentClassName='p-0'
     >
-      {/* Stats row */}
-      <div className='grid grid-cols-2 divide-x border-b'>
-        <div className='px-4 py-3 sm:px-5'>
-          <div className='text-xl font-semibold tabular-nums'>
-            {loading ? <Skeleton className='h-7 w-24' /> : formatQuota(totalSpend)}
-          </div>
-          <div className='text-muted-foreground mt-0.5 text-xs'>{t('Total spend')}</div>
-        </div>
-        <div className='px-4 py-3 sm:px-5'>
-          <div className='text-xl font-semibold tabular-nums'>
-            {loading ? <Skeleton className='h-7 w-16' /> : totalRequests.toLocaleString()}
-          </div>
-          <div className='text-muted-foreground mt-0.5 text-xs'>{t('Total requests')}</div>
-        </div>
-      </div>
-
       {/* Chart */}
       <div className='h-64 sm:h-72'>
         {loading ? (
