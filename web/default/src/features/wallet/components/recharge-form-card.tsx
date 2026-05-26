@@ -302,6 +302,16 @@ export function RechargeFormCard({
     setLocalAmount(newDisplayAmt.toString())
   }
 
+  // Auto-select first available method so calculations use the correct payment type
+  useEffect(() => {
+    if (allMethodCards.length > 0 && !localSelectedMethod) {
+      const first = allMethodCards[0]
+      setLocalSelectedMethod(first.method)
+      if (onMethodChange) onMethodChange(first.method)
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [allMethodCards.length])
+
   const handleMethodCardClick = (method: PaymentMethod, waffoIndex?: number) => {
     setLocalSelectedMethod(method)
 
@@ -594,9 +604,9 @@ export function RechargeFormCard({
                       </p>
                       <p className={cn(
                         'text-sm font-bold',
-                        bonusPct > 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-muted-foreground'
+                        bonusPct > 0 ? 'text-emerald-600 dark:text-emerald-400' : ''
                       )}>
-                        {bonusPct > 0 ? `+${bonusPct}%` : '—'}
+                        {bonusPct > 0 ? `+${bonusPct}%` : '0%'}
                       </p>
                     </div>
 
