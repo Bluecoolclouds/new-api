@@ -191,6 +191,7 @@ interface RechargeFormCardProps {
   onWaffoMethodSelect?: (method: WaffoPayMethod, index: number) => void
   enableWaffoPancakeTopup?: boolean
   enableFreeKassaTopup?: boolean
+  rawUsdExchangeRate?: number
 }
 
 // ============================================================================
@@ -228,27 +229,35 @@ export function RechargeFormCard({
   onWaffoMethodSelect,
   enableWaffoPancakeTopup,
   enableFreeKassaTopup,
+  rawUsdExchangeRate = 1,
 }: RechargeFormCardProps) {
   const { t } = useTranslation()
+
+  // Use rawUsdExchangeRate (always the actual RUB rate, even in USD-display mode)
+  const rubRate = rawUsdExchangeRate > 1 ? rawUsdExchangeRate : usdExchangeRate
+
   const [localAmount, setLocalAmount] = useState(topupAmount.toString())
   const [localSelectedMethod, setLocalSelectedMethod] = useState<PaymentMethod | null>(null)
   const [localCurrency, setLocalCurrency] = useState<'rub' | 'usd'>(
-    usdExchangeRate > 1 ? 'rub' : 'usd'
+    rubRate > 1 ? 'rub' : 'usd'
   )
 
-  const displayRate = localCurrency === 'rub' ? usdExchangeRate : 1
   const displaySymbol = localCurrency === 'rub' ? '₽' : '$'
+  const showCurrencyToggle = rubRate > 1
 
   const toDisplay = (usdAmount: number) =>
-    localCurrency === 'rub' ? Math.round(usdAmount * usdExchangeRate) : usdAmount
+    localCurrency === 'rub' && rubRate > 1 ? Math.round(usdAmount * rubRate) : usdAmount
   const toBase = (displayAmount: number) =>
-    localCurrency === 'rub' && usdExchangeRate > 1
-      ? displayAmount / usdExchangeRate
+    localCurrency === 'rub' && rubRate > 1
+      ? displayAmount / rubRate
       : displayAmount
 
   useEffect(() => {
-    setLocalAmount(topupAmount.toString())
-  }, [topupAmount])
+    const display = localCurrency === 'rub' && rubRate > 1
+      ? Math.round(topupAmount * rubRate)
+      : topupAmount
+    setLocalAmount(display.toString())
+  }, [topupAmount, localCurrency, rubRate])
 
   const hasConfigurableTopup =
     topupInfo?.enable_online_topup ||
@@ -293,8 +302,8 @@ export function RechargeFormCard({
 
   const handleCurrencySwitch = (c: 'rub' | 'usd') => {
     setLocalCurrency(c)
-    const newDisplayAmt = c === 'rub'
-      ? Math.round(topupAmount * usdExchangeRate)
+    const newDisplayAmt = c === 'rub' && rubRate > 1
+      ? Math.round(topupAmount * rubRate)
       : topupAmount
     setLocalAmount(newDisplayAmt.toString())
   }
@@ -408,7 +417,7 @@ export function RechargeFormCard({
                     {t('Top Up Amount')}
                   </Label>
                   {/* Currency toggle — inline with label */}
-                  {usdExchangeRate > 1 && (
+                  {showCurrencyToggle && (
                     <div className='inline-flex rounded-lg border bg-muted/30 p-0.5 gap-0.5'>
                       {(['rub', 'usd'] as const).map((c) => (
                         <button
@@ -451,7 +460,7 @@ export function RechargeFormCard({
                     type='range'
                     min={toDisplay(minTopup)}
                     max={toDisplay(maxTopup)}
-                    step={localCurrency === 'rub' ? Math.round(usdExchangeRate) : 1}
+                    step={localCurrency === 'rub' ? Math.round(rubRate) : 1}
                     value={Math.min(
                       Math.max(toDisplay(topupAmount), toDisplay(minTopup)),
                       toDisplay(maxTopup)
