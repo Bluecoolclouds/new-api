@@ -499,9 +499,9 @@ func GetAllTopUps(c *gin.Context) {
                 err    error
         )
         if keyword != "" {
-                topups, total, err = model.SearchAllTopUps(keyword, paymentMethod, pageInfo)
+                topups, total, err = model.SearchAllTopUps(keyword, pageInfo)
         } else {
-                topups, total, err = model.GetAllTopUps(pageInfo, paymentMethod)
+                topups, total, err = model.GetAllTopUps(pageInfo)
         }
         if err != nil {
                 common.ApiError(c, err)
