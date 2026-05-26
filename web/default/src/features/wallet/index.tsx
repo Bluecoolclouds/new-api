@@ -250,6 +250,15 @@ export function Wallet(props: WalletProps) {
     return topupInfo?.discount?.[topupAmount] || DEFAULT_DISCOUNT_RATE
   }, [topupInfo, topupAmount])
 
+  // Handle method change without opening dialog — just recalculate summary
+  const handleMethodChange = useCallback(
+    async (method: PaymentMethod) => {
+      setSelectedPaymentMethod(method)
+      await calculatePaymentAmount(topupAmount, method.type)
+    },
+    [topupAmount, calculatePaymentAmount]
+  )
+
   const handleSubscriptionAvailabilityChange = useCallback(
     (available: boolean) => {
       setShowSubscriptionPanel(available)
@@ -304,6 +313,8 @@ export function Wallet(props: WalletProps) {
                     topupInfo?.enable_waffo_pancake_topup
                   }
                   enableFreeKassaTopup={topupInfo?.enable_freekassa_topup}
+                  onMethodChange={handleMethodChange}
+                  discountRate={getDiscountRate()}
                 />
               </div>
 
