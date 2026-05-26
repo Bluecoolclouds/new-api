@@ -67,6 +67,7 @@ import {
 } from './utils'
 import {
   WaffoPancakeSettingsSection,
+  type WaffoPancakeBinding,
   type WaffoPancakeSettingsValues,
 } from './waffo-pancake-settings-section'
 import {
@@ -182,6 +183,23 @@ export function PaymentSettingsSection({
     () => JSON.stringify(defaultValues),
     [defaultValues]
   )
+
+  const [waffoPancakeValues, setWaffoPancakeValues] =
+    React.useState<WaffoPancakeSettingsValues>(waffoPancakeDefaultValues)
+  const [selectedBinding, setSelectedBinding] =
+    React.useState<WaffoPancakeBinding>({
+      storeID: waffoPancakeProvisionedStoreID ?? '',
+      productID: waffoPancakeProvisionedProductID ?? '',
+    })
+
+  const handleWaffoPancakeValueChange = <
+    K extends keyof WaffoPancakeSettingsValues,
+  >(
+    key: K,
+    value: WaffoPancakeSettingsValues[K]
+  ) => {
+    setWaffoPancakeValues((prev) => ({ ...prev, [key]: value }))
+  }
 
   const [payMethodsVisualMode, setPayMethodsVisualMode] = React.useState(true)
   const [amountOptionsVisualMode, setAmountOptionsVisualMode] =
@@ -1217,8 +1235,14 @@ export function PaymentSettingsSection({
 
       <WaffoPancakeSettingsSection
         defaultValues={waffoPancakeDefaultValues}
-        provisionedStoreID={waffoPancakeProvisionedStoreID}
-        provisionedProductID={waffoPancakeProvisionedProductID}
+        values={waffoPancakeValues}
+        onValueChange={handleWaffoPancakeValueChange}
+        selectedBinding={selectedBinding}
+        savedBinding={{
+          storeID: waffoPancakeProvisionedStoreID ?? '',
+          productID: waffoPancakeProvisionedProductID ?? '',
+        }}
+        onSelectedBindingChange={setSelectedBinding}
       />
 
       <Separator />
