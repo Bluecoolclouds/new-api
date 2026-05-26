@@ -87,10 +87,14 @@ export function isWaffoPancakePayment(paymentType: string): boolean {
 }
 
 /**
- * Check if payment method is FreeKassa
+ * Check if payment method is FreeKassa (any variant: SBP, card, crypto)
  */
 export function isFreeKassaPayment(paymentType: string): boolean {
-  return paymentType === PAYMENT_TYPES.FREEKASSA
+  return (
+    paymentType === PAYMENT_TYPES.FREEKASSA ||
+    paymentType === PAYMENT_TYPES.FREEKASSA_CARD ||
+    paymentType === PAYMENT_TYPES.FREEKASSA_CRYPTO
+  )
 }
 
 /**

@@ -37,6 +37,8 @@ export const PAYMENT_TYPES = {
   WAFFO: 'waffo',
   WAFFO_PANCAKE: 'waffo_pancake',
   FREEKASSA: 'freekassa',
+  FREEKASSA_CARD: 'freekassa_card',
+  FREEKASSA_CRYPTO: 'freekassa_crypto',
 } as const
 
 /**
@@ -55,6 +57,8 @@ export const PAYMENT_ICON_COLORS = {
   [PAYMENT_TYPES.WAFFO]: '#2563EB',
   [PAYMENT_TYPES.WAFFO_PANCAKE]: '#F97316',
   [PAYMENT_TYPES.FREEKASSA]: '#10B981',
+  [PAYMENT_TYPES.FREEKASSA_CARD]: '#3B82F6',
+  [PAYMENT_TYPES.FREEKASSA_CRYPTO]: '#F59E0B',
 } as const
 
 /**

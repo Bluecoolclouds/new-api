@@ -17,7 +17,7 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 For commercial licensing, please contact support@quantumnous.com
 */
 import { useState, useEffect, useMemo } from 'react'
-import { Gift, ExternalLink, Loader2, Receipt, WalletCards, ArrowRight, Zap, TrendingUp } from 'lucide-react'
+import { Gift, ExternalLink, Loader2, Receipt, WalletCards, ArrowRight, Zap, TrendingUp, CreditCard, Coins } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { cn } from '@/lib/utils'
 import { Alert, AlertDescription } from '@/components/ui/alert'
@@ -52,7 +52,9 @@ function getMethodSubtitle(type: string, t: (key: string) => string): string {
     alipay: t('Alipay'),
     wxpay: t('WeChat Pay'),
     stripe: t('Card / Bank'),
-    freekassa: t('Cards / SBP'),
+    freekassa: t('SBP / Fast Pay'),
+    freekassa_card: t('Visa / MC / Mir'),
+    freekassa_crypto: t('USDT / BTC / ETH'),
     waffo: t('Waffo Pay'),
     waffo_pancake: t('Waffo'),
     creem: t('Creem'),
@@ -185,6 +187,8 @@ interface RechargeFormCardProps {
   onWaffoMethodSelect?: (method: WaffoPayMethod, index: number) => void
   enableWaffoPancakeTopup?: boolean
   enableFreeKassaTopup?: boolean
+  freekassaCardEnabled?: boolean
+  freekassaCryptoEnabled?: boolean
   rawUsdExchangeRate?: number
   freekassaUnitPrice?: number
   freekassaCbrRate?: number
@@ -225,6 +229,8 @@ export function RechargeFormCard({
   onWaffoMethodSelect,
   enableWaffoPancakeTopup,
   enableFreeKassaTopup,
+  freekassaCardEnabled,
+  freekassaCryptoEnabled,
   rawUsdExchangeRate = 1,
   freekassaUnitPrice = 0,
   freekassaCbrRate = 0,
@@ -293,18 +299,30 @@ export function RechargeFormCard({
       : Math.max(minTopup * 200, 10000)
   const redemptionEnabled = topupInfo?.enable_redemption !== false
 
-  // Build unified methods list — only FreeKassa for now
+  // Build unified methods list
   const allMethodCards = useMemo(() => {
     const methods: { method: PaymentMethod; waffoIndex?: number }[] = []
 
     if (enableFreeKassaTopup) {
       methods.push({
-        method: { type: 'freekassa', name: 'FreeKassa' },
+        method: { type: 'freekassa', name: 'СБП' },
+      })
+    }
+
+    if (freekassaCardEnabled) {
+      methods.push({
+        method: { type: 'freekassa_card', name: t('Cards') },
+      })
+    }
+
+    if (freekassaCryptoEnabled) {
+      methods.push({
+        method: { type: 'freekassa_crypto', name: t('Crypto') },
       })
     }
 
     return methods
-  }, [enableFreeKassaTopup])
+  }, [enableFreeKassaTopup, freekassaCardEnabled, freekassaCryptoEnabled, t])
 
   const handleAmountChange = (value: string) => {
     setLocalAmount(value)
@@ -593,6 +611,10 @@ export function RechargeFormCard({
                                   alt='СБП'
                                   className='h-5 w-5 object-contain'
                                 />
+                              ) : method.type === 'freekassa_card' ? (
+                                <CreditCard className='h-5 w-5 text-blue-500' />
+                              ) : method.type === 'freekassa_crypto' ? (
+                                <Coins className='h-5 w-5 text-amber-500' />
                               ) : (
                                 getPaymentIcon(
                                   method.type.startsWith('waffo-') ? 'waffo' : method.type,

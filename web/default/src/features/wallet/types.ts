@@ -93,7 +93,7 @@ export interface FreeKassaPaymentRequest {
   /** Amount to top up */
   amount: number
   /** Payment method identifier */
-  payment_method: 'freekassa'
+  payment_method: 'freekassa' | 'freekassa_card' | 'freekassa_crypto'
 }
 
 /**
@@ -167,6 +167,10 @@ export interface TopupInfo {
   waffo_pancake_min_topup?: number
   /** Whether FreeKassa topup is enabled */
   enable_freekassa_topup?: boolean
+  /** Whether FreeKassa card payment is enabled */
+  freekassa_card_enabled?: boolean
+  /** Whether FreeKassa crypto payment is enabled */
+  freekassa_crypto_enabled?: boolean
   /** Minimum topup amount for FreeKassa */
   freekassa_min_topup?: number
   /** FreeKassa unit price (₽ per $1 of credits) */

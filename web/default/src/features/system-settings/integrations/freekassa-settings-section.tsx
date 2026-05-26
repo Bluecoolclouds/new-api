@@ -47,6 +47,8 @@ const freeKassaSchema = z.object({
   FreeKassaMinTopUp: z.coerce.number().min(0),
   FreeKassaReturnURL: z.string(),
   FreeKassaPaymentSystemId: z.string(),
+  FreeKassaCardPaymentSystemId: z.string(),
+  FreeKassaCryptoPaymentSystemId: z.string(),
   FreeKassaCBRMarkup: z.coerce.number(),
   FreeKassaCBRAutoSync: z.boolean(),
 })
@@ -161,6 +163,12 @@ export function FreeKassaSettingsSection({ defaultValues }: Props) {
     }
     if (values.FreeKassaPaymentSystemId !== initial.FreeKassaPaymentSystemId) {
       updates.push({ key: 'FreeKassaPaymentSystemId', value: values.FreeKassaPaymentSystemId })
+    }
+    if (values.FreeKassaCardPaymentSystemId !== initial.FreeKassaCardPaymentSystemId) {
+      updates.push({ key: 'FreeKassaCardPaymentSystemId', value: values.FreeKassaCardPaymentSystemId })
+    }
+    if (values.FreeKassaCryptoPaymentSystemId !== initial.FreeKassaCryptoPaymentSystemId) {
+      updates.push({ key: 'FreeKassaCryptoPaymentSystemId', value: values.FreeKassaCryptoPaymentSystemId })
     }
     if (values.FreeKassaCBRMarkup !== initial.FreeKassaCBRMarkup) {
       updates.push({ key: 'FreeKassaCBRMarkup', value: values.FreeKassaCBRMarkup })
@@ -502,7 +510,7 @@ export function FreeKassaSettingsSection({ defaultValues }: Props) {
             name='FreeKassaPaymentSystemId'
             render={({ field }) => (
               <FormItem>
-                <FormLabel>{t('Payment System ID (parameter «i»)')}</FormLabel>
+                <FormLabel>{t('SBP Payment System ID (parameter «i»)')}</FormLabel>
                 <FormControl>
                   <Input
                     placeholder='44'
@@ -511,7 +519,49 @@ export function FreeKassaSettingsSection({ defaultValues }: Props) {
                   />
                 </FormControl>
                 <p className='text-muted-foreground text-xs'>
-                  {t('FreeKassa payment method ID passed as the «i» parameter. Default: 44.')}
+                  {t('FreeKassa payment method ID for SBP (fast bank transfers). Default: 44.')}
+                </p>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name='FreeKassaCardPaymentSystemId'
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>{t('Card Payment System ID (Visa/MC/Mir)')}</FormLabel>
+                <FormControl>
+                  <Input
+                    placeholder='6'
+                    autoComplete='off'
+                    {...field}
+                  />
+                </FormControl>
+                <p className='text-muted-foreground text-xs'>
+                  {t('FreeKassa payment method ID for bank cards. Leave empty to hide this option. Common IDs: 6 (Visa/MC), 8 (Mir).')}
+                </p>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name='FreeKassaCryptoPaymentSystemId'
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>{t('Crypto Payment System ID')}</FormLabel>
+                <FormControl>
+                  <Input
+                    placeholder='171'
+                    autoComplete='off'
+                    {...field}
+                  />
+                </FormControl>
+                <p className='text-muted-foreground text-xs'>
+                  {t('FreeKassa payment method ID for cryptocurrency. Leave empty to hide this option. Common IDs: 171 (USDT TRC20), 16 (Bitcoin), 40 (Ethereum).')}
                 </p>
                 <FormMessage />
               </FormItem>

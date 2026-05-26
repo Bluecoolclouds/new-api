@@ -21,6 +21,23 @@ import (
 
 const freeKassaPayURL = "https://pay.freekassa.net/"
 
+func resolvePaymentSystemId(paymentMethod string) string {
+        switch paymentMethod {
+        case "freekassa_card":
+                if setting.FreeKassaCardPaymentSystemId != "" {
+                        return setting.FreeKassaCardPaymentSystemId
+                }
+                return setting.FreeKassaPaymentSystemId
+        case "freekassa_crypto":
+                if setting.FreeKassaCryptoPaymentSystemId != "" {
+                        return setting.FreeKassaCryptoPaymentSystemId
+                }
+                return setting.FreeKassaPaymentSystemId
+        default:
+                return setting.FreeKassaPaymentSystemId
+        }
+}
+
 type FreeKassaPayRequest struct {
         Amount        int64  `json:"amount"`
         PaymentMethod string `json:"payment_method"`
@@ -181,8 +198,9 @@ func RequestFreeKassaPay(c *gin.Context) {
                 params.Set("em", email)
         }
 
-        if setting.FreeKassaPaymentSystemId != "" {
-                params.Set("i", setting.FreeKassaPaymentSystemId)
+        paymentSystemId := resolvePaymentSystemId(req.PaymentMethod)
+        if paymentSystemId != "" {
+                params.Set("i", paymentSystemId)
         }
 
         if setting.FreeKassaReturnURL != "" {

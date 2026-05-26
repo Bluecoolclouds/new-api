@@ -124,6 +124,8 @@ func InitOptionMap() {
         common.OptionMap["FreeKassaPaymentSystemId"] = setting.FreeKassaPaymentSystemId
         common.OptionMap["FreeKassaCBRMarkup"] = strconv.FormatFloat(setting.FreeKassaCBRMarkup, 'f', -1, 64)
         common.OptionMap["FreeKassaCBRAutoSync"] = strconv.FormatBool(setting.FreeKassaCBRAutoSync)
+        common.OptionMap["FreeKassaCardPaymentSystemId"] = setting.FreeKassaCardPaymentSystemId
+        common.OptionMap["FreeKassaCryptoPaymentSystemId"] = setting.FreeKassaCryptoPaymentSystemId
         common.OptionMap["TopupGroupRatio"] = common.TopupGroupRatio2JSONString()
         common.OptionMap["Chats"] = setting.Chats2JsonString()
         common.OptionMap["AutoGroups"] = setting.AutoGroups2JsonString()
@@ -492,6 +494,10 @@ func updateOptionMap(key string, value string) (err error) {
                 setting.FreeKassaCBRMarkup, _ = strconv.ParseFloat(value, 64)
         case "FreeKassaCBRAutoSync":
                 setting.FreeKassaCBRAutoSync = value == "true"
+        case "FreeKassaCardPaymentSystemId":
+                setting.FreeKassaCardPaymentSystemId = value
+        case "FreeKassaCryptoPaymentSystemId":
+                setting.FreeKassaCryptoPaymentSystemId = value
         case "TopupGroupRatio":
                 err = common.UpdateTopupGroupRatioByJSONString(value)
         case "GitHubClientId":

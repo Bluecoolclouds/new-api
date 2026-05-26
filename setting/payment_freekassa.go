@@ -11,3 +11,6 @@ var FreeKassaPaymentSystemId = "44"
 
 var FreeKassaCBRMarkup = 0.0
 var FreeKassaCBRAutoSync = false
+
+var FreeKassaCardPaymentSystemId = ""
+var FreeKassaCryptoPaymentSystemId = ""
