@@ -119,12 +119,21 @@ api.interceptors.response.use(
 // ============================================================================
 
 /**
- * Get user ID from localStorage
+ * Get user ID from localStorage.
+ * Reads the explicit 'uid' key first; falls back to the id inside the
+ * persisted 'user' object so that sessions restored from a cookie (where
+ * handleLoginSuccess was never called) still produce a valid header.
  */
 function getUserId(): string | null {
   try {
     if (typeof window !== 'undefined') {
-      return window.localStorage.getItem('uid')
+      const uid = window.localStorage.getItem('uid')
+      if (uid) return uid
+      const userStr = window.localStorage.getItem('user')
+      if (userStr) {
+        const user = JSON.parse(userStr) as { id?: number }
+        if (user?.id) return String(user.id)
+      }
     }
   } catch {
     /* empty */
