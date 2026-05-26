@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next'
 import {
   Copy, Check, Key, Zap, CreditCard, AlertCircle, Code2,
   BookOpen, ArrowRight, ExternalLink, ChevronDown, ChevronRight,
+  HelpCircle, MessageSquare,
 } from 'lucide-react'
 import { PublicLayout } from '@/components/layout'
 import { cn } from '@/lib/utils'
@@ -187,7 +188,7 @@ export function Docs() {
   const [activeTab, setActiveTab] = useState<'python' | 'js'>('python')
   const [activeSection, setActiveSection] = useState('quickstart')
 
-  const sectionIds = ['quickstart', 'endpoints', 'clients', 'topup', 'errors'] as const
+  const sectionIds = ['quickstart', 'endpoints', 'clients', 'topup', 'errors', 'faq', 'support'] as const
   const sectionRefs = useRef<Record<string, HTMLElement | null>>({})
 
   useEffect(() => {
@@ -301,6 +302,8 @@ asyncio.run(main())`
             {t('Справка')}
           </div>
           <NavItem icon={<AlertCircle className='h-3.5 w-3.5' />} label={t('Ошибки')} active={activeSection === 'errors'} onClick={() => scrollTo('errors')} />
+          <NavItem icon={<HelpCircle className='h-3.5 w-3.5' />} label='FAQ' active={activeSection === 'faq'} onClick={() => scrollTo('faq')} />
+          <NavItem icon={<MessageSquare className='h-3.5 w-3.5' />} label={t('Поддержка')} active={activeSection === 'support'} onClick={() => scrollTo('support')} />
         </aside>
 
         {/* ── Main content ── */}
@@ -584,6 +587,118 @@ asyncio.run(main())`
                     </div>
                   </div>
                 ))}
+              </div>
+            </SectionCard>
+
+            {/* FAQ ── */}
+            <SectionCard id='faq' icon={<HelpCircle className='h-4 w-4 text-primary' />} title='FAQ' subtitle='Часто задаваемые вопросы'>
+              <div className='p-5 flex flex-col gap-5'>
+
+                {/* HTTP статусы */}
+                <div>
+                  <div className='text-xs font-semibold text-foreground mb-2'>HTTP-статусы и их значения</div>
+                  <div className='rounded-xl border border-border/60 overflow-hidden'>
+                    <div className='grid grid-cols-[80px_1fr_1fr] text-[10px] font-semibold uppercase tracking-wider text-muted-foreground bg-muted/30 px-4 py-2 border-b border-border/40'>
+                      <span>Статус</span>
+                      <span>Описание</span>
+                      <span>Что делать</span>
+                    </div>
+                    {[
+                      { code: '400', desc: 'Неверный формат запроса', fix: 'Проверьте структуру JSON-тела запроса' },
+                      { code: '401', desc: 'Ошибка проверки API-ключа', fix: 'Убедитесь в правильности ключа и его сроке действия' },
+                      { code: '403', desc: 'Недостаточно прав доступа', fix: 'Проверьте группу токена и доступные модели' },
+                      { code: '404', desc: 'Ресурс не найден', fix: 'Проверьте URL и название эндпоинта' },
+                      { code: '413', desc: 'Слишком большое тело запроса', fix: 'Уменьшите объём передаваемых данных' },
+                      { code: '429', desc: 'Превышен лимит запросов', fix: 'Проверьте баланс, снизьте частоту запросов' },
+                      { code: '500', desc: 'Внутренняя ошибка сервера', fix: 'Повторите запрос позже' },
+                      { code: '503', desc: 'Сервер временно недоступен', fix: 'Ведётся техническое обслуживание' },
+                    ].map((row) => (
+                      <div key={row.code} className='grid grid-cols-[80px_1fr_1fr] items-start gap-2 px-4 py-2.5 border-b border-border/30 last:border-0 hover:bg-muted/20 transition-colors'>
+                        <code className='font-mono text-xs font-bold text-foreground'>{row.code}</code>
+                        <span className='text-xs text-muted-foreground'>{row.desc}</span>
+                        <span className='text-xs text-muted-foreground'>{row.fix}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Общие вопросы */}
+                <div className='flex flex-col gap-3'>
+                  <div className='text-xs font-semibold text-foreground mb-1'>Общие вопросы</div>
+                  {[
+                    {
+                      q: 'Почему модель не отвечает?',
+                      a: 'Скорее всего, для выбранной модели нужна другая группа токена. Создайте новый ключ и выберите подходящую группу в разделе «Ключи».',
+                    },
+                    {
+                      q: 'Поддерживается ли потоковая передача (streaming)?',
+                      a: 'Да, добавьте "stream": true в тело запроса — большинство моделей его поддерживают.',
+                    },
+                    {
+                      q: 'Как проверить расход токенов и баланс?',
+                      a: 'Перейдите в раздел «Консоль» — там отображается история запросов и текущий баланс.',
+                    },
+                    {
+                      q: 'Можно ли использовать один ключ для всех приложений?',
+                      a: 'Да, один API-ключ работает со всеми поддерживаемыми клиентами: Cursor, Cherry Studio, Cline и др.',
+                    },
+                  ].map((faq, i) => (
+                    <div key={i} className='rounded-lg border border-border/50 bg-muted/20 px-4 py-3'>
+                      <div className='text-sm font-medium text-foreground mb-1'>{faq.q}</div>
+                      <div className='text-xs text-muted-foreground leading-relaxed'>{faq.a}</div>
+                    </div>
+                  ))}
+                </div>
+
+              </div>
+            </SectionCard>
+
+            {/* Support ── */}
+            <SectionCard id='support' icon={<MessageSquare className='h-4 w-4 text-primary' />} title='Поддержка' subtitle='Как связаться и что подготовить'>
+              <div className='p-5 flex flex-col gap-4'>
+
+                <div className='rounded-lg border border-border/50 bg-muted/20 px-4 py-3 text-sm text-muted-foreground'>
+                  💡 Перед обращением в поддержку проверьте раздел <span className='font-medium text-foreground'>FAQ</span> и <span className='font-medium text-foreground'>Коды ошибок</span> выше — большинство проблем решается там.
+                </div>
+
+                <div>
+                  <div className='text-xs font-semibold text-foreground mb-2'>Что подготовить при обращении</div>
+                  <div className='flex flex-col gap-2'>
+                    {[
+                      { num: '1', label: 'Приложение', desc: 'какое используете (Cursor, Cherry Studio и т.д.)' },
+                      { num: '2', label: 'Текст ошибки', desc: 'полное сообщение об ошибке из приложения' },
+                      { num: '3', label: 'HTTP-статус', desc: 'код ошибки (401, 429 и т.д.)' },
+                      { num: '4', label: 'Имя ключа', desc: 'название API-ключа из раздела «Ключи»' },
+                    ].map((item) => (
+                      <div key={item.num} className='flex gap-3 items-start'>
+                        <span className='flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary text-[10px] font-bold mt-0.5'>{item.num}</span>
+                        <span className='text-sm text-foreground'>
+                          <span className='font-medium'>{item.label}</span>
+                          <span className='text-muted-foreground'> — {item.desc}</span>
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className='rounded-lg border border-border/50 overflow-hidden'>
+                  <div className='bg-muted/30 px-4 py-2.5 text-xs font-semibold text-muted-foreground border-b border-border/40 uppercase tracking-wider'>
+                    Полезные ссылки
+                  </div>
+                  {[
+                    { label: 'Кошелёк — пополнение баланса', to: '/wallet/' as const, internal: true },
+                    { label: 'Консоль — история запросов', to: '/dashboard' as const, internal: true },
+                    { label: 'Ключи — управление API-ключами', to: '/_authenticated/keys/' as const, internal: true },
+                  ].map((link) => (
+                    <div key={link.label} className='flex items-center justify-between px-4 py-2.5 border-b border-border/30 last:border-0 hover:bg-muted/20 transition-colors'>
+                      <span className='text-sm text-foreground'>{link.label}</span>
+                      <Link to={link.to} className='text-xs text-primary hover:underline flex items-center gap-1'>
+                        Открыть <ArrowRight className='h-3 w-3' />
+                      </Link>
+                    </div>
+                  ))}
+                </div>
+
               </div>
             </SectionCard>
 
