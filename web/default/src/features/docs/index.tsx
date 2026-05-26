@@ -3,7 +3,7 @@ import { Link } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
 import {
   Copy, Check, Key, Zap, CreditCard, AlertCircle, Code2,
-  BookOpen, ArrowRight, ExternalLink,
+  BookOpen, ArrowRight, ExternalLink, ChevronDown, ChevronRight,
 } from 'lucide-react'
 import { PublicLayout } from '@/components/layout'
 import { cn } from '@/lib/utils'
@@ -65,6 +65,22 @@ function EndpointRow({ label, value }: { label: string; value: string }) {
   )
 }
 
+/* ─── Config row ────────────────────────────────────────────────────────── */
+function ConfigRow({ label, value, copyable }: { label: string; value: string; copyable?: boolean }) {
+  const { copied, copy } = useCopy(value)
+  return (
+    <div className='flex items-center gap-3 py-1.5'>
+      <span className='text-xs text-muted-foreground w-28 shrink-0'>{label}</span>
+      <code className='flex-1 font-mono text-xs bg-muted/40 px-2 py-1 rounded border border-border/40 text-foreground truncate'>{value}</code>
+      {copyable && (
+        <button onClick={copy} className='shrink-0 text-muted-foreground hover:text-foreground transition-colors p-1 rounded' aria-label='Copy'>
+          {copied ? <Check className='h-3 w-3 text-green-500' /> : <Copy className='h-3 w-3' />}
+        </button>
+      )}
+    </div>
+  )
+}
+
 /* ─── Section card wrapper ──────────────────────────────────────────────── */
 function SectionCard({
   icon, title, subtitle, children, id,
@@ -116,6 +132,54 @@ function NavItem({
   )
 }
 
+/* ─── Accordion integration item ────────────────────────────────────────── */
+function IntegrationItem({
+  emoji, title, subtitle, children,
+}: {
+  emoji: string
+  title: string
+  subtitle: string
+  children: React.ReactNode
+}) {
+  const [open, setOpen] = useState(false)
+  return (
+    <div className='border-b border-border/40 last:border-0'>
+      <button
+        onClick={() => setOpen((v) => !v)}
+        className='flex w-full items-center gap-3 px-5 py-3.5 hover:bg-muted/20 transition-colors text-left'
+      >
+        <span className='text-base leading-none w-6 text-center'>{emoji}</span>
+        <div className='flex-1 min-w-0'>
+          <div className='text-sm font-semibold text-foreground'>{title}</div>
+          <div className='text-xs text-muted-foreground mt-0.5'>{subtitle}</div>
+        </div>
+        {open
+          ? <ChevronDown className='h-4 w-4 text-muted-foreground shrink-0' />
+          : <ChevronRight className='h-4 w-4 text-muted-foreground shrink-0' />}
+      </button>
+      {open && (
+        <div className='px-5 pb-5 flex flex-col gap-3 bg-muted/5'>
+          {children}
+        </div>
+      )}
+    </div>
+  )
+}
+
+/* ─── Step list ─────────────────────────────────────────────────────────── */
+function Steps({ items }: { items: (string | React.ReactNode)[] }) {
+  return (
+    <ol className='flex flex-col gap-2'>
+      {items.map((item, i) => (
+        <li key={i} className='flex gap-3 text-sm'>
+          <span className='flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary text-[10px] font-bold mt-0.5'>{i + 1}</span>
+          <span className='text-muted-foreground leading-snug'>{item}</span>
+        </li>
+      ))}
+    </ol>
+  )
+}
+
 /* ─── Main component ────────────────────────────────────────────────────── */
 export function Docs() {
   const { t } = useTranslation()
@@ -126,14 +190,11 @@ export function Docs() {
   const sectionIds = ['quickstart', 'endpoints', 'clients', 'topup', 'errors'] as const
   const sectionRefs = useRef<Record<string, HTMLElement | null>>({})
 
-  /* track active section on scroll */
   useEffect(() => {
     const observer = new IntersectionObserver(
       (entries) => {
         for (const entry of entries) {
-          if (entry.isIntersecting) {
-            setActiveSection(entry.target.id)
-          }
+          if (entry.isIntersecting) setActiveSection(entry.target.id)
         }
       },
       { rootMargin: '-30% 0px -60% 0px', threshold: 0 },
@@ -148,17 +209,6 @@ export function Docs() {
   function scrollTo(id: string) {
     document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
   }
-
-  const clients = [
-    { label: 'VS Code + Continue', href: 'https://continue.dev' },
-    { label: 'Cursor', href: 'https://www.cursor.com' },
-    { label: 'Cherry Studio', href: 'https://cherry-ai.com' },
-    { label: 'OpenCode', href: 'https://opencode.ai' },
-    { label: 'JetBrains AI', href: 'https://www.jetbrains.com/ai' },
-    { label: 'Zed', href: 'https://zed.dev' },
-    { label: 'Lobechat', href: 'https://lobechat.com' },
-    { label: 'NextChat', href: 'https://nextchat.dev' },
-  ]
 
   const pythonExample = `from openai import OpenAI
 
@@ -186,13 +236,42 @@ const response = await client.chat.completions.create({
 });
 console.log(response.choices[0].message.content);`
 
+  const batchPythonExample = `import aiohttp
+import asyncio
+
+API_KEY = "sk-ВАШ_КЛЮЧ"
+BASE_URL = "${baseUrl}/v1"
+
+async def chat(session, prompt):
+    headers = {
+        "Authorization": f"Bearer {API_KEY}",
+        "Content-Type": "application/json"
+    }
+    body = {
+        "model": "gpt-4o",
+        "messages": [{"role": "user", "content": prompt}]
+    }
+    async with session.post(f"{BASE_URL}/chat/completions", headers=headers, json=body) as resp:
+        data = await resp.json()
+        return data["choices"][0]["message"]["content"]
+
+async def main():
+    prompts = ["Что такое Python?", "Что такое API?", "Объясни asyncio"]
+    async with aiohttp.ClientSession() as session:
+        tasks = [chat(session, p) for p in prompts]
+        results = await asyncio.gather(*tasks, return_exceptions=True)
+        for i, result in enumerate(results):
+            print(f"[{i+1}] {result}\\n")
+
+asyncio.run(main())`
+
   const errors = [
-    { code: '401', label: 'Unauthorized', dot: 'bg-red-500', desc: t('Неверный или истёкший API-ключ. Проверьте ключ в разделе «Ключи» и убедитесь, что он активен.') },
-    { code: '429', label: 'Too Many Requests', dot: 'bg-amber-500', desc: t('Превышен лимит запросов. Проверьте лимиты ключа или обратитесь в поддержку.') },
-    { code: '402', label: 'Insufficient Balance', dot: 'bg-orange-500', desc: t('Недостаточно средств на балансе. Пополните кошелёк.') },
-    { code: '404', label: 'Model not found', dot: 'bg-muted-foreground/60', desc: t('Модель недоступна для вашего ключа. Проверьте настройки доступа в разделе «Ключи».') },
-    { code: 'URL', label: 'base_url wrong', dot: 'bg-blue-500', desc: t('Убедитесь что Base URL указан без двойного слэша и заканчивается на /v1.') },
-    { code: 'TLS', label: 'SSL / TLS error', dot: 'bg-muted-foreground/60', desc: t('Используйте HTTPS-адрес. Если запускаете локально, отключите проверку сертификата только для тестов.') },
+    { code: '401', label: 'Unauthorized', dot: 'bg-red-500', desc: 'Неверный или истёкший API-ключ. Проверьте ключ в разделе «Ключи» и убедитесь, что он активен.' },
+    { code: '429', label: 'Too Many Requests', dot: 'bg-amber-500', desc: 'Превышен лимит запросов. Проверьте лимиты ключа или обратитесь в поддержку.' },
+    { code: '402', label: 'Insufficient Balance', dot: 'bg-orange-500', desc: 'Недостаточно средств на балансе. Пополните кошелёк.' },
+    { code: '404', label: 'Model not found', dot: 'bg-muted-foreground/60', desc: 'Модель недоступна для вашего ключа. Проверьте настройки доступа в разделе «Ключи».' },
+    { code: 'URL', label: 'base_url wrong', dot: 'bg-blue-500', desc: `Убедитесь что Base URL указан без двойного слэша и заканчивается на /v1.` },
+    { code: 'TLS', label: 'SSL / TLS error', dot: 'bg-muted-foreground/60', desc: 'Используйте HTTPS-адрес. Если запускаете локально, отключите проверку сертификата только для тестов.' },
   ]
 
   return (
@@ -209,44 +288,19 @@ console.log(response.choices[0].message.content);`
           <div className='text-[10px] font-semibold uppercase tracking-wider text-muted-foreground px-3 mb-1'>
             {t('Начало работы')}
           </div>
-          <NavItem
-            icon={<Zap className='h-3.5 w-3.5' />}
-            label={t('Быстрый старт')}
-            active={activeSection === 'quickstart'}
-            onClick={() => scrollTo('quickstart')}
-          />
-          <NavItem
-            icon={<Key className='h-3.5 w-3.5' />}
-            label={t('API-ключи')}
-            active={activeSection === 'endpoints'}
-            onClick={() => scrollTo('endpoints')}
-          />
+          <NavItem icon={<Zap className='h-3.5 w-3.5' />} label={t('Быстрый старт')} active={activeSection === 'quickstart'} onClick={() => scrollTo('quickstart')} />
+          <NavItem icon={<Key className='h-3.5 w-3.5' />} label={t('API-ключи')} active={activeSection === 'endpoints'} onClick={() => scrollTo('endpoints')} />
 
           <div className='text-[10px] font-semibold uppercase tracking-wider text-muted-foreground px-3 mt-4 mb-1'>
             {t('Интеграция')}
           </div>
-          <NavItem
-            icon={<span className='text-xs'>🖥️</span>}
-            label={t('Клиенты и IDE')}
-            active={activeSection === 'clients'}
-            onClick={() => scrollTo('clients')}
-          />
-          <NavItem
-            icon={<CreditCard className='h-3.5 w-3.5' />}
-            label={t('Оплата')}
-            active={activeSection === 'topup'}
-            onClick={() => scrollTo('topup')}
-          />
+          <NavItem icon={<span className='text-xs'>🖥️</span>} label={t('Клиенты и IDE')} active={activeSection === 'clients'} onClick={() => scrollTo('clients')} />
+          <NavItem icon={<CreditCard className='h-3.5 w-3.5' />} label={t('Оплата')} active={activeSection === 'topup'} onClick={() => scrollTo('topup')} />
 
           <div className='text-[10px] font-semibold uppercase tracking-wider text-muted-foreground px-3 mt-4 mb-1'>
             {t('Справка')}
           </div>
-          <NavItem
-            icon={<AlertCircle className='h-3.5 w-3.5' />}
-            label={t('Ошибки')}
-            active={activeSection === 'errors'}
-            onClick={() => scrollTo('errors')}
-          />
+          <NavItem icon={<AlertCircle className='h-3.5 w-3.5' />} label={t('Ошибки')} active={activeSection === 'errors'} onClick={() => scrollTo('errors')} />
         </aside>
 
         {/* ── Main content ── */}
@@ -255,47 +309,19 @@ console.log(response.choices[0].message.content);`
 
             {/* Quick-start ── */}
             <div id='quickstart'>
-              <div className='mb-1 text-xs font-semibold text-muted-foreground uppercase tracking-wider'>
-                {t('Быстрый старт')}
-              </div>
-              <h1 className='text-2xl font-bold tracking-tight text-foreground mb-1'>
-                {t('Три шага до первого запроса')}
-              </h1>
-              <p className='text-muted-foreground text-sm mb-6'>
-                {t('Займёт меньше пяти минут.')}
-              </p>
+              <div className='mb-1 text-xs font-semibold text-muted-foreground uppercase tracking-wider'>{t('Быстрый старт')}</div>
+              <h1 className='text-2xl font-bold tracking-tight text-foreground mb-1'>{t('Три шага до первого запроса')}</h1>
+              <p className='text-muted-foreground text-sm mb-6'>{t('Займёт меньше пяти минут.')}</p>
 
-              {/* 3-step cards */}
               <div className='grid grid-cols-1 sm:grid-cols-3 gap-3 mb-8'>
                 {[
-                  {
-                    icon: <Key className='h-5 w-5 text-primary' />,
-                    title: t('Создайте ключ'),
-                    desc: t('Ключи → Добавить ключ'),
-                    to: '/_authenticated/keys/' as const,
-                  },
-                  {
-                    icon: <CreditCard className='h-5 w-5 text-primary' />,
-                    title: t('Пополните баланс'),
-                    desc: t('Кошелёк → FreeKassa / СБП'),
-                    to: '/wallet/' as const,
-                  },
-                  {
-                    icon: <Code2 className='h-5 w-5 text-primary' />,
-                    title: t('Отправьте запрос'),
-                    desc: t('Скопируйте пример ниже'),
-                    to: '/docs' as const,
-                  },
+                  { icon: <Key className='h-5 w-5 text-primary' />, title: t('Создайте ключ'), desc: t('Ключи → Добавить ключ'), to: '/_authenticated/keys/' as const },
+                  { icon: <CreditCard className='h-5 w-5 text-primary' />, title: t('Пополните баланс'), desc: t('Кошелёк → FreeKassa / СБП'), to: '/wallet/' as const },
+                  { icon: <Code2 className='h-5 w-5 text-primary' />, title: t('Отправьте запрос'), desc: t('Скопируйте пример ниже'), to: '/docs' as const },
                 ].map((s, i) => (
-                  <Link
-                    key={i}
-                    to={s.to}
-                    className='group flex flex-col gap-2.5 rounded-xl border border-border/60 bg-card p-4 hover:border-foreground/20 hover:shadow-sm transition-all'
-                  >
+                  <Link key={i} to={s.to} className='group flex flex-col gap-2.5 rounded-xl border border-border/60 bg-card p-4 hover:border-foreground/20 hover:shadow-sm transition-all'>
                     <div className='flex items-start justify-between'>
-                      <div className='flex h-8 w-8 items-center justify-center rounded-lg bg-muted border border-border/50'>
-                        {s.icon}
-                      </div>
+                      <div className='flex h-8 w-8 items-center justify-center rounded-lg bg-muted border border-border/50'>{s.icon}</div>
                       <ArrowRight className='h-3.5 w-3.5 text-muted-foreground group-hover:text-foreground transition-colors' />
                     </div>
                     <div>
@@ -306,7 +332,6 @@ console.log(response.choices[0].message.content);`
                 ))}
               </div>
 
-              {/* Code example */}
               <div className='rounded-xl border border-border/60 bg-card overflow-hidden'>
                 <div className='flex items-center justify-between px-5 py-3.5 border-b border-border/50'>
                   <div className='flex items-center gap-2'>
@@ -315,37 +340,20 @@ console.log(response.choices[0].message.content);`
                   </div>
                   <div className='flex gap-1'>
                     {(['python', 'js'] as const).map((tab) => (
-                      <button
-                        key={tab}
-                        onClick={() => setActiveTab(tab)}
-                        className={cn(
-                          'rounded-md px-2.5 py-1 text-xs font-medium transition-colors',
-                          activeTab === tab
-                            ? 'bg-foreground text-background'
-                            : 'text-muted-foreground hover:text-foreground',
-                        )}
-                      >
+                      <button key={tab} onClick={() => setActiveTab(tab)} className={cn('rounded-md px-2.5 py-1 text-xs font-medium transition-colors', activeTab === tab ? 'bg-foreground text-background' : 'text-muted-foreground hover:text-foreground')}>
                         {tab === 'python' ? 'Python' : 'JS'}
                       </button>
                     ))}
                   </div>
                 </div>
                 <div className='p-4'>
-                  <CodeBlock
-                    code={activeTab === 'python' ? pythonExample : jsExample}
-                    lang={activeTab === 'python' ? 'python' : 'javascript'}
-                  />
+                  <CodeBlock code={activeTab === 'python' ? pythonExample : jsExample} lang={activeTab === 'python' ? 'python' : 'javascript'} />
                 </div>
               </div>
             </div>
 
             {/* Endpoints ── */}
-            <SectionCard
-              id='endpoints'
-              icon={<Zap className='h-4 w-4 text-primary' />}
-              title={t('Эндпоинты API')}
-              subtitle={t('Совместимость с OpenAI SDK')}
-            >
+            <SectionCard id='endpoints' icon={<Zap className='h-4 w-4 text-primary' />} title={t('Эндпоинты API')} subtitle={t('Совместимость с OpenAI SDK')}>
               <div>
                 <EndpointRow label='Base URL' value={`${baseUrl}/v1`} />
                 <EndpointRow label='Chat completions' value={`${baseUrl}/v1/chat/completions`} />
@@ -355,45 +363,191 @@ console.log(response.choices[0].message.content);`
             </SectionCard>
 
             {/* Clients ── */}
-            <SectionCard
-              id='clients'
-              icon={<span className='text-sm leading-none'>🖥️</span>}
-              title={t('Клиенты и IDE')}
-              subtitle={t('Приложения, поддерживающие OpenAI-совместимый API')}
-            >
-              <div className='p-5 flex flex-col gap-4'>
-                <p className='text-muted-foreground text-sm'>
-                  {t('Укажите Base URL и ваш API-ключ в настройках любого из этих клиентов:')}
-                </p>
-                <div className='flex flex-wrap gap-2'>
-                  {clients.map((c) => (
-                    <a
-                      key={c.label}
-                      href={c.href}
-                      target='_blank'
-                      rel='noopener noreferrer'
-                      className='inline-flex items-center gap-1.5 rounded-full border border-border/60 bg-muted/30 px-3 py-1.5 text-xs font-medium text-foreground hover:bg-muted hover:border-foreground/20 transition-colors'
-                    >
-                      {c.label}
-                      <ExternalLink className='h-2.5 w-2.5 text-muted-foreground' />
-                    </a>
-                  ))}
-                </div>
-                <div className='rounded-lg border border-border/50 bg-muted/30 px-4 py-3 text-xs'>
-                  <span className='font-semibold text-foreground'>{t('Пример для Cursor:')} </span>
-                  <span className='text-muted-foreground'>Settings → Models → Base URL → </span>
-                  <code className='font-mono text-foreground'>{baseUrl}/v1</code>
-                </div>
+            <SectionCard id='clients' icon={<span className='text-sm leading-none'>🖥️</span>} title={t('Клиенты и IDE')} subtitle={t('Пошаговые инструкции подключения')}>
+              <div>
+
+                {/* Cursor */}
+                <IntegrationItem emoji='🖱️' title='Cursor' subtitle='AI-редактор кода на базе VS Code'>
+                  <Steps items={[
+                    <>Откройте маркетплейс Cursor, найдите <strong>Cline</strong> и установите.</>,
+                    'Значок Cline появится в верхнем меню — откройте его.',
+                    'Нажмите значок настроек в правом верхнем углу.',
+                    <>Заполните параметры:</>,
+                  ]} />
+                  <div className='flex flex-col gap-1.5 mt-1'>
+                    <ConfigRow label='API Provider' value='OpenAI Compatible' />
+                    <ConfigRow label='Base URL' value={`${baseUrl}/v1`} copyable />
+                    <ConfigRow label='API Key' value='Ваш API-ключ' />
+                    <ConfigRow label='Model' value='gpt-4o' />
+                  </div>
+                  <p className='text-xs text-muted-foreground'>Введите «Привет» в чат Cline — если получили ответ, настройка выполнена ✅</p>
+                </IntegrationItem>
+
+                {/* Cherry Studio */}
+                <IntegrationItem emoji='🍒' title='Cherry Studio' subtitle='Open-source десктопный AI-клиент'>
+                  <Steps items={[
+                    'Запустите Cherry Studio → Настройки → Поставщики моделей.',
+                    'Нажмите «Добавить поставщика» → тип OpenAI.',
+                    <>Заполните параметры:</>,
+                    'Нажмите «Проверить соединение» → Сохранить.',
+                    'Главный экран → Добавить ассистента → выбрать модель.',
+                  ]} />
+                  <div className='flex flex-col gap-1.5 mt-1'>
+                    <ConfigRow label='URL' value={`${baseUrl}`} copyable />
+                    <ConfigRow label='API Key' value='Ваш API-ключ' />
+                  </div>
+                  <a href='https://www.cherry-ai.com/' target='_blank' rel='noopener noreferrer' className='inline-flex items-center gap-1 text-xs text-primary hover:underline'>
+                    cherry-ai.com <ExternalLink className='h-2.5 w-2.5' />
+                  </a>
+                </IntegrationItem>
+
+                {/* VS Code + Cline */}
+                <IntegrationItem emoji='💙' title='VS Code — Cline' subtitle='Плагин для AI-разработки прямо в VS Code'>
+                  <Steps items={[
+                    'Откройте маркетплейс VS Code, найдите Cline и установите.',
+                    'Нажмите значок Cline в боковой панели → иконка настроек.',
+                    <>Заполните параметры:</>,
+                  ]} />
+                  <div className='flex flex-col gap-1.5 mt-1'>
+                    <ConfigRow label='API Provider' value='OpenAI Compatible' />
+                    <ConfigRow label='Base URL' value={`${baseUrl}/v1`} copyable />
+                    <ConfigRow label='API Key' value='Ваш API-ключ' />
+                    <ConfigRow label='Model ID' value='gpt-4o' />
+                  </div>
+                </IntegrationItem>
+
+                {/* Claude Code */}
+                <IntegrationItem emoji='🤖' title='Claude Code' subtitle='AI-ассистент для программирования в терминале'>
+                  <p className='text-xs text-muted-foreground'>Требуется Node.js v18+. Установка:</p>
+                  <CodeBlock code={`npm install -g @anthropic-ai/claude-code`} lang='bash' />
+                  <p className='text-xs text-muted-foreground mt-1'>Запуск (macOS / Linux):</p>
+                  <CodeBlock code={`export ANTHROPIC_AUTH_TOKEN=sk-ВАШ_КЛЮЧ\nexport ANTHROPIC_BASE_URL=${baseUrl}\nclaude`} lang='bash' />
+                  <p className='text-xs text-muted-foreground mt-1'>Запуск (Windows cmd):</p>
+                  <CodeBlock code={`set ANTHROPIC_AUTH_TOKEN=sk-ВАШ_КЛЮЧ\nset ANTHROPIC_BASE_URL=${baseUrl}\nclaude`} lang='cmd' />
+                </IntegrationItem>
+
+                {/* Gemini CLI */}
+                <IntegrationItem emoji='✨' title='Gemini CLI' subtitle='Официальный CLI Google для работы с Gemini'>
+                  <p className='text-xs text-muted-foreground'>Требуется Node.js v18+. Установка:</p>
+                  <CodeBlock code={`npm install -g @google/gemini-cli`} lang='bash' />
+                  <p className='text-xs text-muted-foreground mt-1'>Запуск (macOS / Linux):</p>
+                  <CodeBlock code={`export GEMINI_API_KEY=sk-ВАШ_КЛЮЧ\nexport GOOGLE_GEMINI_BASE_URL=${baseUrl}\ngemini`} lang='bash' />
+                  <p className='text-xs text-muted-foreground mt-1'>Запуск (Windows):</p>
+                  <CodeBlock code={`set GEMINI_API_KEY=sk-ВАШ_КЛЮЧ\nset GOOGLE_GEMINI_BASE_URL=${baseUrl}\ngemini`} lang='cmd' />
+                </IntegrationItem>
+
+                {/* Trae */}
+                <IntegrationItem emoji='🛠️' title='Trae' subtitle='AI-среда разработки на базе VS Code'>
+                  <Steps items={[
+                    'Откройте Trae → Расширения → найдите cline → установите.',
+                    'Нажмите значок Cline в боковой панели.',
+                    <>Заполните параметры:</>,
+                  ]} />
+                  <div className='flex flex-col gap-1.5 mt-1'>
+                    <ConfigRow label='Base URL' value={`${baseUrl}/v1`} copyable />
+                    <ConfigRow label='API Key' value='Ваш API-ключ' />
+                    <ConfigRow label='Model' value='gpt-4o' />
+                  </div>
+                  <a href='https://www.trae.cn/' target='_blank' rel='noopener noreferrer' className='inline-flex items-center gap-1 text-xs text-primary hover:underline'>
+                    trae.cn <ExternalLink className='h-2.5 w-2.5' />
+                  </a>
+                </IntegrationItem>
+
+                {/* Chatbox */}
+                <IntegrationItem emoji='💬' title='Chatbox' subtitle='Приложение для чата с AI, десктоп и веб'>
+                  <Steps items={[
+                    <>Откройте <a href='https://web.chatboxai.app/' target='_blank' rel='noopener noreferrer' className='text-primary hover:underline'>web.chatboxai.app</a> или десктопное приложение.</>,
+                    'Настройки → Поставщик модели → нажмите +.',
+                    <>Заполните поля:</>,
+                  ]} />
+                  <div className='flex flex-col gap-1.5 mt-1'>
+                    <ConfigRow label='Режим API' value='OpenAI Compatible' />
+                    <ConfigRow label='URL API' value={`${baseUrl}`} copyable />
+                    <ConfigRow label='API-ключ' value='Ваш API-ключ' />
+                  </div>
+                  <p className='text-xs text-muted-foreground'>Нажмите «Получить» для загрузки списка моделей, выберите нужную ✅</p>
+                </IntegrationItem>
+
+                {/* N8N */}
+                <IntegrationItem emoji='⚙️' title='N8N' subtitle='Автоматизация задач с AI через HTTP'>
+                  <p className='text-xs text-muted-foreground'>Добавьте узел <strong>HTTP Request</strong>:</p>
+                  <div className='flex flex-col gap-1.5 mt-1'>
+                    <ConfigRow label='Метод' value='POST' />
+                    <ConfigRow label='URL' value={`${baseUrl}/v1/chat/completions`} copyable />
+                  </div>
+                  <p className='text-xs text-muted-foreground mt-2'>Заголовки:</p>
+                  <CodeBlock code={`{\n  "Authorization": "Bearer ВАШ_КЛЮЧ",\n  "Content-Type": "application/json"\n}`} lang='json' />
+                  <p className='text-xs text-muted-foreground mt-1'>Тело запроса:</p>
+                  <CodeBlock code={`{\n  "model": "gpt-4o",\n  "messages": [\n    { "role": "user", "content": "Привет" }\n  ]\n}`} lang='json' />
+                </IntegrationItem>
+
+                {/* Dify */}
+                <IntegrationItem emoji='🔷' title='Dify' subtitle='Open-source платформа для LLM-приложений'>
+                  <Steps items={[
+                    <>Войдите на <a href='https://dify.ai' target='_blank' rel='noopener noreferrer' className='text-primary hover:underline'>dify.ai</a> → Настройки → Поставщики моделей.</>,
+                    'Установите плагин OpenAI-API-compatible.',
+                    'Нажмите «Добавить модель» и заполните:',
+                    'В рабочем пространстве выберите добавленную модель в правом верхнем углу.',
+                  ]} />
+                  <div className='flex flex-col gap-1.5 mt-1'>
+                    <ConfigRow label='API-ключ' value='Ваш API-ключ' />
+                    <ConfigRow label='URL' value={`${baseUrl}`} copyable />
+                  </div>
+                </IntegrationItem>
+
+                {/* SillyTavern */}
+                <IntegrationItem emoji='🎭' title='SillyTavern' subtitle='Локальный интерфейс для ролевых игр с AI'>
+                  <Steps items={[
+                    'После запуска SillyTavern нажмите «Подключить API».',
+                    <>Заполните параметры:</>,
+                    <>Нажмите «Управление ключами» → «Добавить ключ API».</>,
+                    'В разделе «Доступные модели» выберите нужную → «Подключить».',
+                  ]} />
+                  <div className='flex flex-col gap-1.5 mt-1'>
+                    <ConfigRow label='API' value='Chat Completions' />
+                    <ConfigRow label='Источник' value='Custom (Пользовательский)' />
+                    <ConfigRow label='URL' value={`${baseUrl}/v1`} copyable />
+                  </div>
+                  <p className='text-xs text-muted-foreground'>Зелёный индикатор = готово к работе ✅</p>
+                </IntegrationItem>
+
+                {/* OpenWebUI / Lobechat */}
+                <IntegrationItem emoji='🌐' title='OpenWebUI / Lobechat / NextChat' subtitle='Веб-интерфейсы с поддержкой OpenAI API'>
+                  <Steps items={[
+                    'Откройте настройки → раздел API / Model Provider.',
+                    <>Укажите Base URL и API-ключ:</>,
+                  ]} />
+                  <div className='flex flex-col gap-1.5 mt-1'>
+                    <ConfigRow label='Base URL' value={`${baseUrl}/v1`} copyable />
+                    <ConfigRow label='API Key' value='Ваш API-ключ' />
+                  </div>
+                  <div className='flex gap-3 flex-wrap mt-1'>
+                    {[
+                      { label: 'OpenWebUI', href: 'https://openwebui.com' },
+                      { label: 'Lobechat', href: 'https://lobechat.com' },
+                      { label: 'NextChat', href: 'https://nextchat.dev' },
+                    ].map((l) => (
+                      <a key={l.label} href={l.href} target='_blank' rel='noopener noreferrer' className='inline-flex items-center gap-1 text-xs text-primary hover:underline'>
+                        {l.label} <ExternalLink className='h-2.5 w-2.5' />
+                      </a>
+                    ))}
+                  </div>
+                </IntegrationItem>
+
+                {/* Пакетные запросы */}
+                <IntegrationItem emoji='🐍' title='Пакетные запросы Python' subtitle='Параллельные async-запросы через aiohttp'>
+                  <p className='text-xs text-muted-foreground'>Используйте <code className='font-mono bg-muted/40 px-1 rounded'>aiohttp</code> для параллельных запросов. Результаты записывайте по мере получения.</p>
+                  <CodeBlock code={batchPythonExample} lang='python' />
+                  <div className='rounded-lg border border-amber-500/20 bg-amber-500/5 px-3 py-2.5 text-xs text-muted-foreground'>
+                    ⚠️ Не отправляйте слишком много запросов из одного скрипта — это может переполнить TCP-соединения. Обязательно обрабатывайте ошибки.
+                  </div>
+                </IntegrationItem>
+
               </div>
             </SectionCard>
 
             {/* Top-up ── */}
-            <SectionCard
-              id='topup'
-              icon={<CreditCard className='h-4 w-4 text-primary' />}
-              title={t('Пополнение баланса')}
-              subtitle={t('Банковские карты и СБП')}
-            >
+            <SectionCard id='topup' icon={<CreditCard className='h-4 w-4 text-primary' />} title={t('Пополнение баланса')} subtitle={t('Банковские карты и СБП')}>
               <div className='p-5 flex flex-col gap-3'>
                 {[
                   <>{t('Перейдите в раздел')} <Link to='/wallet/' className='text-primary hover:underline'>{t('Кошелёк')}</Link>.</>,
@@ -401,9 +555,7 @@ console.log(response.choices[0].message.content);`
                   t('Оплатите через банковскую карту или СБП. Баланс зачисляется автоматически.'),
                 ].map((step, i) => (
                   <div key={i} className='flex gap-3 text-sm'>
-                    <span className='flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary text-[10px] font-bold mt-0.5'>
-                      {i + 1}
-                    </span>
+                    <span className='flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary text-[10px] font-bold mt-0.5'>{i + 1}</span>
                     <span className='text-foreground leading-snug'>{step}</span>
                   </div>
                 ))}
@@ -411,22 +563,14 @@ console.log(response.choices[0].message.content);`
                   💡 {t('Стоимость запросов списывается автоматически. Следите за балансом в разделе')}{' '}
                   <Link to='/dashboard' className='text-primary hover:underline'>{t('Консоль')}</Link>.
                 </div>
-                <Link
-                  to='/wallet/'
-                  className='mt-1 inline-flex items-center gap-1.5 text-sm font-medium text-primary hover:underline'
-                >
+                <Link to='/wallet/' className='mt-1 inline-flex items-center gap-1.5 text-sm font-medium text-primary hover:underline'>
                   {t('Пополнить баланс')} <ArrowRight className='h-3.5 w-3.5' />
                 </Link>
               </div>
             </SectionCard>
 
             {/* Errors ── */}
-            <SectionCard
-              id='errors'
-              icon={<AlertCircle className='h-4 w-4 text-amber-500' />}
-              title={t('Коды ошибок')}
-              subtitle={t('Частые проблемы и решения')}
-            >
+            <SectionCard id='errors' icon={<AlertCircle className='h-4 w-4 text-amber-500' />} title={t('Коды ошибок')} subtitle={t('Частые проблемы и решения')}>
               <div className='divide-y divide-border/40'>
                 {errors.map((e) => (
                   <div key={e.code} className='flex items-start gap-4 px-5 py-3.5 hover:bg-muted/20 transition-colors'>
