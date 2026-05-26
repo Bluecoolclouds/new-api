@@ -16,7 +16,7 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 For commercial licensing, please contact support@quantumnous.com
 */
-import { useState, useEffect, useCallback, useMemo } from 'react'
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 import { getSelf } from '@/lib/api'
 import { useStatus } from '@/hooks/use-status'
@@ -154,12 +154,17 @@ export function Wallet(props: WalletProps) {
     calculatePaymentAmount(preset.value, getCurrentPaymentType())
   }
 
-  // Handle topup amount change
-  const handleTopupAmountChange = (amount: number) => {
+  const amountDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  // Handle topup amount change — debounced so slider doesn't flood the API
+  const handleTopupAmountChange = useCallback((amount: number) => {
     setTopupAmount(amount)
     setSelectedPreset(null)
-    calculatePaymentAmount(amount, getCurrentPaymentType())
-  }
+    if (amountDebounceRef.current) clearTimeout(amountDebounceRef.current)
+    amountDebounceRef.current = setTimeout(() => {
+      calculatePaymentAmount(amount, getCurrentPaymentType())
+    }, 400)
+  }, [calculatePaymentAmount, getCurrentPaymentType])
 
   // Handle payment method selection
   const handlePaymentMethodSelect = async (method: PaymentMethod) => {
