@@ -26,7 +26,7 @@ function ActionRow({ action }: { action: QuickAction }) {
       </span>
       <span className='flex min-w-0 flex-1 flex-col gap-0.5'>
         <span className='text-xs font-medium'>{action.title}</span>
-        <span className='text-muted-foreground text-[10px] leading-snug'>
+        <span className='text-muted-foreground text-[11px]'>
           {action.description}
         </span>
       </span>
