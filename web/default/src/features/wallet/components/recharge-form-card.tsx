@@ -17,16 +17,16 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 For commercial licensing, please contact support@quantumnous.com
 */
 import { useState, useEffect, useMemo } from 'react'
-import { Gift, ExternalLink, Loader2, Receipt, WalletCards, ArrowRight } from 'lucide-react'
+import { Gift, ExternalLink, Loader2, Receipt, WalletCards, ArrowRight, Zap, TrendingUp } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { cn } from '@/lib/utils'
 import { Alert, AlertDescription } from '@/components/ui/alert'
+import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Skeleton } from '@/components/ui/skeleton'
-import { TitledCard } from '@/components/ui/titled-card'
 import {
   formatCurrency,
   formatQuotaShort,
@@ -380,76 +380,83 @@ export function RechargeFormCard({
   }
 
   return (
-    <TitledCard
-      title={t('Add Funds')}
-      description={t('Choose an amount and payment method')}
-      icon={<WalletCards className='h-4 w-4' />}
-      action={
-        onOpenBilling ? (
-          <Button
-            variant='outline'
-            size='sm'
+    <div className='space-y-3'>
+
+      {/* ── Header strip ─────────────────────────────────────────── */}
+      <div className='flex items-center justify-between px-1'>
+        <div className='flex items-center gap-2.5'>
+          <div className='bg-foreground flex h-7 w-7 items-center justify-center rounded-lg'>
+            <WalletCards className='text-background h-3.5 w-3.5' />
+          </div>
+          <span className='text-sm font-semibold'>{t('Add Funds')}</span>
+        </div>
+        {onOpenBilling && (
+          <button
+            type='button'
             onClick={onOpenBilling}
-            className='w-full gap-2 sm:w-auto'
+            className='text-muted-foreground hover:text-foreground flex items-center gap-1.5 text-xs transition-colors'
           >
-            <Receipt className='h-4 w-4' />
+            <Receipt className='h-3.5 w-3.5' />
             {t('Order History')}
-          </Button>
-        ) : null
-      }
-      contentClassName='space-y-4 sm:space-y-5'
-    >
+          </button>
+        )}
+      </div>
+
       {hasAnyTopup ? (
         <>
           {hasConfigurableTopup && (
-            <div className='space-y-5'>
+            <>
+              {/* ── 1. AMOUNT CARD (dark band) ───────────────────────── */}
+              <Card className='gap-0 overflow-hidden py-0 shadow-sm'>
+                <div className='from-foreground to-foreground/80 bg-gradient-to-br px-5 pb-4 pt-5'>
+                  {/* Row: label + currency toggle */}
+                  <div className='mb-4 flex items-start justify-between'>
+                    <p className='text-background/60 text-xs font-medium uppercase tracking-wider'>
+                      {t('Top Up Amount')}
+                    </p>
+                    {showCurrencyToggle && (
+                      <div className='bg-background/10 inline-flex gap-0.5 rounded-lg p-0.5'>
+                        {(['rub', 'usd'] as const).map((c) => (
+                          <button
+                            key={c}
+                            type='button'
+                            onClick={() => handleCurrencySwitch(c)}
+                            className={cn(
+                              'rounded-md px-3 py-1 text-xs font-semibold transition-all',
+                              localCurrency === c
+                                ? 'bg-background text-foreground shadow-sm'
+                                : 'text-background/60 hover:text-background'
+                            )}
+                          >
+                            {c === 'rub' ? '₽' : '$'}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
 
-              {/* ── 1. СУММА ПОПОЛНЕНИЯ ──────────────────────────────── */}
-              <div className='space-y-3'>
-                <div className='flex items-center justify-between gap-2'>
-                  <Label className='text-muted-foreground text-xs font-medium tracking-wider uppercase'>
-                    {t('Top Up Amount')}
-                  </Label>
-                  {/* Currency toggle — inline with label */}
-                  {showCurrencyToggle && (
-                    <div className='inline-flex rounded-lg border bg-muted/30 p-0.5 gap-0.5'>
-                      {(['rub', 'usd'] as const).map((c) => (
-                        <button
-                          key={c}
-                          type='button'
-                          onClick={() => handleCurrencySwitch(c)}
-                          className={cn(
-                            'rounded-md px-3 py-1 text-xs font-medium transition-all',
-                            localCurrency === c
-                              ? 'bg-background shadow-sm text-foreground'
-                              : 'text-muted-foreground hover:text-foreground'
-                          )}
-                        >
-                          {c === 'rub' ? '₽' : '$'}
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </div>
+                  {/* Big bare input */}
+                  <div className='relative mb-5 flex items-baseline gap-1'>
+                    <input
+                      id='topup-amount'
+                      type='number'
+                      value={localAmount}
+                      onChange={(e) => handleAmountChange(e.target.value)}
+                      min={toDisplay(minTopup)}
+                      placeholder='0'
+                      className={cn(
+                        'text-background w-full bg-transparent text-4xl font-bold tabular-nums tracking-tight',
+                        'placeholder:text-background/30 placeholder:text-2xl placeholder:font-light',
+                        'focus:outline-none',
+                        '[appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none'
+                      )}
+                    />
+                    <span className='text-background/70 shrink-0 text-xl font-semibold'>
+                      {displaySymbol}
+                    </span>
+                  </div>
 
-                {/* Big amount input */}
-                <div className='relative'>
-                  <Input
-                    id='topup-amount'
-                    type='number'
-                    value={localAmount}
-                    onChange={(e) => handleAmountChange(e.target.value)}
-                    min={toDisplay(minTopup)}
-                    placeholder={`${t('Minimum')} ${toDisplay(minTopup)}`}
-                    className='h-14 pr-12 text-2xl font-bold tabular-nums tracking-tight'
-                  />
-                  <span className='text-muted-foreground pointer-events-none absolute top-1/2 right-4 -translate-y-1/2 text-lg font-medium'>
-                    {displaySymbol}
-                  </span>
-                </div>
-
-                {/* Slider */}
-                <div className='px-1'>
+                  {/* Slider */}
                   <input
                     type='range'
                     min={toDisplay(minTopup)}
@@ -460,180 +467,215 @@ export function RechargeFormCard({
                       toDisplay(maxTopup)
                     )}
                     onChange={(e) => handleSliderChange(parseFloat(e.target.value))}
-                    className='w-full cursor-pointer accent-foreground'
-                    style={{ height: '4px' }}
+                    className='w-full cursor-pointer'
+                    style={{ height: '3px', accentColor: 'white', opacity: 0.8 }}
                   />
-                  <div className='text-muted-foreground mt-1 flex justify-between text-[10px]'>
-                    <span>{toDisplay(minTopup).toLocaleString()}</span>
-                    <span>{toDisplay(maxTopup).toLocaleString()}</span>
+                  <div className='text-background/40 mt-1 flex justify-between text-[10px]'>
+                    <span>{toDisplay(minTopup).toLocaleString()}{displaySymbol}</span>
+                    <span>{toDisplay(maxTopup).toLocaleString()}{displaySymbol}</span>
                   </div>
                 </div>
 
                 {/* Preset chips */}
                 {presetAmounts.length > 0 && (
-                  <div className='flex flex-wrap gap-1.5'>
-                    {presetAmounts.slice(0, 8).map((preset) => (
-                      <button
-                        key={preset.value}
-                        type='button'
-                        onClick={() => onSelectPreset(preset)}
-                        className={cn(
-                          'rounded-lg border px-3 py-1.5 text-sm font-medium transition-all',
-                          selectedPreset === preset.value
-                            ? 'border-foreground bg-foreground text-background'
-                            : 'border-border text-muted-foreground hover:border-foreground/40 hover:text-foreground'
-                        )}
-                      >
-                        {toDisplay(preset.value).toLocaleString()}
-                        {displaySymbol}
-                        {preset.discount && preset.discount < 1 && (
-                          <span className='ml-1.5 text-green-600 text-xs'>
-                            -{Math.round((1 - preset.discount) * 100)}%
-                          </span>
-                        )}
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              {/* ── 2. СПОСОБ ОПЛАТЫ ─────────────────────────────────── */}
-              {allMethodCards.length > 0 && (
-                <div className='space-y-2'>
-                  <Label className='text-muted-foreground text-xs font-medium tracking-wider uppercase'>
-                    {t('Payment Method')}
-                  </Label>
-                  <div className='flex flex-wrap gap-2'>
-                    {allMethodCards.map(({ method, waffoIndex }) => {
-                      const methodMin =
-                        method.min_topup ||
-                        (method.type.startsWith('waffo-') ? waffoMinTopup : 0) ||
-                        0
-                      const disabled = methodMin > topupAmount
-                      const isLoading =
-                        paymentLoading === method.type ||
-                        (waffoIndex !== undefined &&
-                          paymentLoading === `waffo-${waffoIndex}`)
-                      return (
-                        <MethodCard
-                          key={method.type}
-                          icon={
-                            method.type === 'freekassa' ? (
-                              <img
-                                src='/images/sbp-logo.svg'
-                                alt='СБП'
-                                className='h-6 w-6 object-contain'
-                              />
-                            ) : getPaymentIcon(
-                              method.type.startsWith('waffo-') ? 'waffo' : method.type,
-                              'h-6 w-6',
-                              method.icon,
-                              method.name
-                            )
-                          }
-                          name={method.name}
-                          subtitle={getMethodSubtitle(
-                            method.type.startsWith('waffo-') ? 'waffo' : method.type,
-                            t
+                  <CardContent className='px-5 py-3.5'>
+                    <div className='flex flex-wrap gap-1.5'>
+                      {presetAmounts.slice(0, 8).map((preset) => (
+                        <button
+                          key={preset.value}
+                          type='button'
+                          onClick={() => onSelectPreset(preset)}
+                          className={cn(
+                            'rounded-full border px-3 py-1.5 text-sm font-medium transition-all',
+                            selectedPreset === preset.value
+                              ? 'border-foreground bg-foreground text-background shadow-sm'
+                              : 'border-border text-muted-foreground hover:border-foreground/30 hover:text-foreground'
                           )}
-                          selected={localSelectedMethod?.type === method.type}
-                          disabled={disabled}
-                          loading={isLoading}
-                          onClick={() => !disabled && handleMethodCardClick(method, waffoIndex)}
-                        />
-                      )
-                    })}
-                  </div>
-                </div>
+                        >
+                          {toDisplay(preset.value).toLocaleString()}{displaySymbol}
+                          {preset.discount && preset.discount < 1 && (
+                            <span className='ml-1.5 text-xs text-green-600'>
+                              -{Math.round((1 - preset.discount) * 100)}%
+                            </span>
+                          )}
+                        </button>
+                      ))}
+                    </div>
+                  </CardContent>
+                )}
+              </Card>
+
+              {/* ── 2. METHOD CARD ───────────────────────────────────── */}
+              {allMethodCards.length > 0 && (
+                <Card className='gap-0 py-0 shadow-sm'>
+                  <CardContent className='p-4'>
+                    <p className='text-muted-foreground mb-3 text-xs font-medium uppercase tracking-wider'>
+                      {t('Payment Method')}
+                    </p>
+                    <div className='flex flex-col gap-2'>
+                      {allMethodCards.map(({ method, waffoIndex }) => {
+                        const methodMin =
+                          method.min_topup ||
+                          (method.type.startsWith('waffo-') ? waffoMinTopup : 0) ||
+                          0
+                        const disabled = methodMin > topupAmount
+                        const isSelected = localSelectedMethod?.type === method.type
+                        const isLoading =
+                          paymentLoading === method.type ||
+                          (waffoIndex !== undefined &&
+                            paymentLoading === `waffo-${waffoIndex}`)
+                        const subtitle = getMethodSubtitle(
+                          method.type.startsWith('waffo-') ? 'waffo' : method.type,
+                          t
+                        )
+                        return (
+                          <button
+                            key={method.type}
+                            type='button'
+                            disabled={disabled}
+                            onClick={() => !disabled && handleMethodCardClick(method, waffoIndex)}
+                            className={cn(
+                              'flex w-full items-center gap-3 rounded-xl border px-4 py-3 text-left transition-all',
+                              isSelected
+                                ? 'border-foreground bg-foreground/5 ring-1 ring-foreground/10'
+                                : 'border-border hover:border-foreground/30',
+                              disabled && 'cursor-not-allowed opacity-40'
+                            )}
+                          >
+                            <div className='bg-muted flex h-9 w-9 shrink-0 items-center justify-center rounded-lg'>
+                              {isLoading ? (
+                                <Loader2 className='h-4 w-4 animate-spin' />
+                              ) : method.type === 'freekassa' ? (
+                                <img
+                                  src='/images/sbp-logo.svg'
+                                  alt='СБП'
+                                  className='h-5 w-5 object-contain'
+                                />
+                              ) : (
+                                getPaymentIcon(
+                                  method.type.startsWith('waffo-') ? 'waffo' : method.type,
+                                  'h-5 w-5',
+                                  method.icon,
+                                  method.name
+                                )
+                              )}
+                            </div>
+                            <div className='min-w-0 flex-1'>
+                              <p className='text-sm font-semibold'>{method.name}</p>
+                              {subtitle && (
+                                <p className='text-muted-foreground text-xs'>{subtitle}</p>
+                              )}
+                            </div>
+                            {isSelected && (
+                              <Badge
+                                variant='outline'
+                                className='shrink-0 border-emerald-200 bg-emerald-500/10 text-[10px] text-emerald-700 dark:border-emerald-800 dark:text-emerald-400'
+                              >
+                                {t('Selected')}
+                              </Badge>
+                            )}
+                          </button>
+                        )
+                      })}
+                    </div>
+                  </CardContent>
+                </Card>
               )}
 
-              {/* ── 3. ИТОГОВАЯ ПАНЕЛЬ ───────────────────────────────── */}
-              <div className='rounded-xl border bg-muted/20 overflow-hidden'>
-                {/* Строки деталей */}
-                <div className='divide-y'>
-                  {/* Выгода */}
-                  <div className='flex items-center justify-between px-4 py-2.5'>
-                    <span className='text-sm text-muted-foreground'>{t('Bonus')}</span>
-                    <span className={cn(
-                      'text-sm font-medium tabular-nums',
-                      bonusPct > 0 ? 'text-green-600 dark:text-green-400' : 'text-muted-foreground'
-                    )}>
-                      {bonusPct > 0 ? `+${bonusPct}%` : '—'}
-                    </span>
-                  </div>
-
-                  {/* Без скидки */}
-                  <div className='flex items-center justify-between px-4 py-2.5'>
-                    <span className='text-sm text-muted-foreground'>{t('Without discount')}</span>
-                    <span className='text-sm font-medium text-muted-foreground tabular-nums'>
-                      {equivalentAmount != null && equivalentAmount > 0
-                        ? `${formatCurrency(equivalentAmount)} ${displaySymbol}`
-                        : '—'}
-                    </span>
-                  </div>
-
-                  {/* Курс */}
-                  {ratePerMillion != null && ratePerMillion > 0 && (
-                    <div className='flex items-center justify-between px-4 py-2.5'>
-                      <span className='text-sm text-muted-foreground'>{t('Rate')}</span>
-                      <span className='text-sm font-medium text-muted-foreground tabular-nums'>
-                        {formatCurrency(ratePerMillion)} / 1M
-                      </span>
+              {/* ── 3. SUMMARY CARD ──────────────────────────────────── */}
+              <Card className='gap-0 overflow-hidden py-0 shadow-sm'>
+                <CardContent className='p-0'>
+                  {/* 3-column stats grid */}
+                  <div className='grid grid-cols-3 divide-x border-b'>
+                    {/* Bonus */}
+                    <div className='px-4 py-3 text-center'>
+                      <p className='text-muted-foreground mb-1 text-[10px] uppercase tracking-wide'>
+                        {t('Bonus')}
+                      </p>
+                      <p className={cn(
+                        'text-sm font-bold',
+                        bonusPct > 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-muted-foreground'
+                      )}>
+                        {bonusPct > 0 ? `+${bonusPct}%` : '—'}
+                      </p>
                     </div>
-                  )}
 
-                  {/* Всего получите */}
-                  {totalCredits > 0 && (
-                    <div className='flex items-center justify-between px-4 py-2.5'>
-                      <span className='text-sm text-muted-foreground'>{t('You will receive')}</span>
-                      <span className='text-sm font-semibold tabular-nums'>
-                        {formatQuotaShort(totalCredits)}
-                      </span>
-                    </div>
-                  )}
-                </div>
-
-                {/* К оплате — выделенная строка */}
-                <div className='border-t bg-muted/30 px-4 py-3 flex items-center justify-between gap-4'>
-                  <div>
-                    <p className='text-xs text-muted-foreground'>{t('Total')}</p>
-                    {calculating ? (
-                      <Skeleton className='mt-1 h-7 w-24' />
-                    ) : (
-                      <p className='text-xl font-bold tabular-nums leading-none'>
-                        {paymentAmount > 0 ? (
+                    {/* Credits */}
+                    <div className='px-4 py-3 text-center'>
+                      <p className='text-muted-foreground mb-1 text-[10px] uppercase tracking-wide'>
+                        {t('Credits')}
+                      </p>
+                      <p className='flex items-center justify-center gap-1 text-sm font-bold'>
+                        {totalCredits > 0 ? (
                           <>
-                            {formatCurrency(paymentAmount)}
-                            <span className='ml-1 text-sm font-normal text-muted-foreground'>
+                            <Zap className='h-3 w-3 text-amber-500' />
+                            {formatQuotaShort(totalCredits)}
+                          </>
+                        ) : (
+                          <span className='text-muted-foreground'>—</span>
+                        )}
+                      </p>
+                    </div>
+
+                    {/* Rate */}
+                    <div className='px-4 py-3 text-center'>
+                      <p className='text-muted-foreground mb-1 text-[10px] uppercase tracking-wide'>
+                        {t('Rate')}
+                      </p>
+                      <p className='flex items-center justify-center gap-1 text-sm font-bold'>
+                        {ratePerMillion != null && ratePerMillion > 0 ? (
+                          <>
+                            <TrendingUp className='h-3 w-3 text-blue-500' />
+                            {formatCurrency(ratePerMillion)}
+                          </>
+                        ) : (
+                          <span className='text-muted-foreground'>—</span>
+                        )}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Total + CTA */}
+                  <div className='flex items-center justify-between gap-4 px-4 py-3.5'>
+                    <div>
+                      <p className='text-muted-foreground text-xs'>{t('Total')}</p>
+                      {calculating ? (
+                        <Skeleton className='mt-1 h-7 w-24' />
+                      ) : (
+                        <div className='mt-0.5 flex items-baseline gap-1'>
+                          <span className='text-2xl font-bold tabular-nums leading-none'>
+                            {paymentAmount > 0 ? formatCurrency(paymentAmount) : '—'}
+                          </span>
+                          {paymentAmount > 0 && (
+                            <span className='text-muted-foreground text-base font-medium'>
                               {displaySymbol}
                             </span>
-                          </>
-                        ) : '—'}
-                      </p>
-                    )}
+                          )}
+                        </div>
+                      )}
+                    </div>
+                    <Button
+                      size='lg'
+                      className='h-11 shrink-0 gap-2 rounded-xl px-6'
+                      disabled={!canProceed}
+                      onClick={handleProceedToPayment}
+                    >
+                      {paymentLoading && localSelectedMethod?.type === paymentLoading ? (
+                        <Loader2 className='h-4 w-4 animate-spin' />
+                      ) : (
+                        <ArrowRight className='h-4 w-4' />
+                      )}
+                      {t('Proceed to Payment')}
+                    </Button>
                   </div>
-                  <Button
-                    className='gap-2 shrink-0'
-                    disabled={!canProceed}
-                    onClick={handleProceedToPayment}
-                  >
-                    {paymentLoading && localSelectedMethod?.type === paymentLoading ? (
-                      <Loader2 className='h-4 w-4 animate-spin' />
-                    ) : (
-                      <ArrowRight className='h-4 w-4' />
-                    )}
-                    {t('Proceed to Payment')}
-                  </Button>
-                </div>
-
-                {!localSelectedMethod && (
-                  <p className='text-muted-foreground text-center text-[11px] pb-2'>
-                    {t('Select a payment method above')}
-                  </p>
-                )}
-              </div>
-
-            </div>
+                  {!localSelectedMethod && allMethodCards.length > 0 && (
+                    <p className='text-muted-foreground pb-2 text-center text-[11px]'>
+                      {t('Select a payment method above')}
+                    </p>
+                  )}
+                </CardContent>
+              </Card>
+            </>
           )}
         </>
       ) : (
@@ -646,69 +688,73 @@ export function RechargeFormCard({
         </Alert>
       )}
 
-      {/* Creem Products Section */}
+      {/* ── Creem Products ───────────────────────────────────────── */}
       {enableCreemTopup &&
         Array.isArray(creemProducts) &&
         creemProducts.length > 0 &&
         onCreemProductSelect && (
-          <div className='space-y-2.5 border-t pt-4 sm:space-y-3 sm:pt-5'>
-            <Label className='text-muted-foreground text-xs font-medium tracking-wider uppercase'>
-              {t('Creem Payment')}
-            </Label>
-            <CreemProductsSection
-              products={creemProducts}
-              onProductSelect={onCreemProductSelect}
-            />
-          </div>
+          <Card className='gap-0 py-0 shadow-sm'>
+            <CardContent className='p-4'>
+              <Label className='text-muted-foreground mb-3 block text-xs font-medium uppercase tracking-wider'>
+                {t('Creem Payment')}
+              </Label>
+              <CreemProductsSection
+                products={creemProducts}
+                onProductSelect={onCreemProductSelect}
+              />
+            </CardContent>
+          </Card>
         )}
 
-      {/* Redemption Code Section */}
+      {/* ── Redemption Code ──────────────────────────────────────── */}
       {redemptionEnabled ? (
-        <div className='space-y-2.5 border-t pt-4 sm:space-y-3 sm:pt-5'>
-          <div className='flex items-center gap-2'>
-            <Gift className='text-muted-foreground h-4 w-4' />
-            <Label
-              htmlFor='redemption-code'
-              className='text-muted-foreground text-xs font-medium tracking-wider uppercase'
-            >
-              {t('Have a Code?')}
-            </Label>
-          </div>
-          <div className='grid grid-cols-[minmax(0,1fr)_auto] gap-2'>
-            <Input
-              id='redemption-code'
-              value={redemptionCode}
-              onChange={(e) => onRedemptionCodeChange(e.target.value)}
-              placeholder={t('Enter your redemption code')}
-              className='h-9 min-w-0'
-            />
-            <Button
-              onClick={onRedeem}
-              disabled={redeeming}
-              variant='outline'
-              className='h-9 px-4'
-            >
-              {redeeming && <Loader2 className='mr-2 h-4 w-4 animate-spin' />}
-              {t('Redeem')}
-            </Button>
-          </div>
-          {topupLink && (
-            <p className='text-muted-foreground text-xs'>
-              {t('Need a redemption code?')}{' '}
-              <a
-                href={topupLink}
-                target='_blank'
-                rel='noopener noreferrer'
-                className='inline-flex items-center gap-1 underline-offset-4 hover:underline'
+        <Card className='gap-0 py-0 shadow-sm'>
+          <CardContent className='p-4 space-y-3'>
+            <div className='flex items-center gap-2'>
+              <Gift className='text-muted-foreground h-4 w-4' />
+              <Label
+                htmlFor='redemption-code'
+                className='text-muted-foreground text-xs font-medium uppercase tracking-wider'
               >
-                {t('Get one here')}
-                <ExternalLink className='h-3 w-3' />
-              </a>
-            </p>
-          )}
-        </div>
+                {t('Have a Code?')}
+              </Label>
+            </div>
+            <div className='grid grid-cols-[minmax(0,1fr)_auto] gap-2'>
+              <Input
+                id='redemption-code'
+                value={redemptionCode}
+                onChange={(e) => onRedemptionCodeChange(e.target.value)}
+                placeholder={t('Enter your redemption code')}
+                className='h-9 min-w-0'
+              />
+              <Button
+                onClick={onRedeem}
+                disabled={redeeming}
+                variant='outline'
+                className='h-9 px-4'
+              >
+                {redeeming && <Loader2 className='mr-2 h-4 w-4 animate-spin' />}
+                {t('Redeem')}
+              </Button>
+            </div>
+            {topupLink && (
+              <p className='text-muted-foreground text-xs'>
+                {t('Need a redemption code?')}{' '}
+                <a
+                  href={topupLink}
+                  target='_blank'
+                  rel='noopener noreferrer'
+                  className='inline-flex items-center gap-1 underline-offset-4 hover:underline'
+                >
+                  {t('Get one here')}
+                  <ExternalLink className='h-3 w-3' />
+                </a>
+              </p>
+            )}
+          </CardContent>
+        </Card>
       ) : (
-        <Alert className='border-t'>
+        <Alert>
           <AlertDescription>
             {t(
               'Redemption codes are disabled until the administrator confirms compliance terms.'
@@ -716,6 +762,6 @@ export function RechargeFormCard({
           </AlertDescription>
         </Alert>
       )}
-    </TitledCard>
+    </div>
   )
 }
