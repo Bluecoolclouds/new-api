@@ -537,6 +537,71 @@ asyncio.run(main())`
                   </div>
                 </IntegrationItem>
 
+                {/* OpenClaw */}
+                <IntegrationItem emoji='🦞' title='OpenClaw' subtitle='AI-шлюз в вашем мессенджере: Telegram, Discord, WhatsApp и др.'>
+                  <p className='text-xs text-muted-foreground'>Установка (требуется Node.js):</p>
+                  <CodeBlock code={`npm install -g openclaw@latest\nopenclaw onboard`} lang='bash' />
+                  <p className='text-xs text-muted-foreground mt-1'>
+                    При прохождении мастера: выберите <strong>QuickStart</strong>, шаг с ключом API — пропустить, затем выберите <strong>All providers</strong>.
+                  </p>
+                  <p className='text-xs text-muted-foreground mt-1'>Откройте конфигурационный файл:</p>
+                  <CodeBlock code={`open ~/.openclaw`} lang='bash' />
+                  <p className='text-xs text-muted-foreground mt-1'>Замените содержимое <code className='font-mono bg-muted/40 px-1 rounded'>openclaw.json</code>:</p>
+                  <CodeBlock code={`{
+  "gateway": { "mode": "local" },
+  "agents": {
+    "defaults": {
+      "model": { "primary": "proxy/gpt-4o" },
+      "models": { "proxy/gpt-4o": {} }
+    }
+  },
+  "models": {
+    "mode": "merge",
+    "providers": {
+      "proxy": {
+        "baseUrl": "${baseUrl}/v1",
+        "apiKey": "sk-ВАШ_КЛЮЧ",
+        "api": "openai-completions",
+        "models": [{
+          "id": "gpt-4o",
+          "name": "gpt-4o",
+          "contextWindow": 128000,
+          "maxTokens": 32000
+        }]
+      }
+    }
+  }
+}`} lang='json' />
+                  <p className='text-xs text-muted-foreground'>Запуск шлюза:</p>
+                  <CodeBlock code={`openclaw gateway`} lang='bash' />
+                  <a href='https://docs.openclaw.ai/zh-CN' target='_blank' rel='noopener noreferrer' className='inline-flex items-center gap-1 text-xs text-primary hover:underline'>
+                    docs.openclaw.ai <ExternalLink className='h-2.5 w-2.5' />
+                  </a>
+                </IntegrationItem>
+
+                {/* Xinghu Claw */}
+                <IntegrationItem emoji='🤖' title='Xinghu Claw' subtitle='Деплой OpenClaw-бота за 1 минуту — без технических знаний'>
+                  <p className='text-xs text-muted-foreground'>
+                    Десктопный инструмент для запуска AI-бота в Telegram, Feishu, DingTalk, Discord. Автоматически устанавливает Node.js, Git и зависимости.
+                  </p>
+                  <div className='flex flex-col gap-1.5'>
+                    <div className='text-xs font-medium text-foreground'>Поддерживаемые ОС:</div>
+                    <div className='flex gap-2 flex-wrap text-xs text-muted-foreground'>
+                      <span className='bg-muted/40 border border-border/50 rounded px-2 py-1'>Windows 11 (64-bit)</span>
+                      <span className='bg-muted/40 border border-border/50 rounded px-2 py-1'>macOS Apple Silicon (M1–M4)</span>
+                    </div>
+                  </div>
+                  <Steps items={[
+                    <>Скачайте установщик с <a href='https://xinghuclaw.com/' target='_blank' rel='noopener noreferrer' className='text-primary hover:underline'>xinghuclaw.com</a> и запустите.</>,
+                    'При первом запуске дождитесь автоматической установки окружения (все пункты ✅).',
+                    'Нажмите «Новый экземпляр», выберите модель и платформу (Telegram, Discord и др.).',
+                    'Нажмите «Деплой» — бот запустится автоматически ✅',
+                  ]} />
+                  <div className='rounded-lg border border-border/50 bg-muted/20 px-3 py-2.5 text-xs text-muted-foreground'>
+                    💡 Смена модели и обновление API-ключа доступны в любой момент через кнопки «Сменить модель» / «Обновить API Key».
+                  </div>
+                </IntegrationItem>
+
                 {/* Пакетные запросы */}
                 <IntegrationItem emoji='🐍' title='Пакетные запросы Python' subtitle='Параллельные async-запросы через aiohttp'>
                   <p className='text-xs text-muted-foreground'>Используйте <code className='font-mono bg-muted/40 px-1 rounded'>aiohttp</code> для параллельных запросов. Результаты записывайте по мере получения.</p>
