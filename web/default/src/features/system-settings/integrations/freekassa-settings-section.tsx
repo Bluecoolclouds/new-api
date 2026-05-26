@@ -33,6 +33,7 @@ import {
 } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
 import { Switch } from '@/components/ui/switch'
+import { api } from '@/lib/api'
 import { SettingsForm } from '../components/settings-form-layout'
 import { SettingsPageActionsPortal } from '../components/settings-page-context'
 import { useUpdateOption } from '../hooks/use-update-option'
@@ -89,8 +90,8 @@ export function FreeKassaSettingsSection({ defaultValues }: Props) {
   const fetchCBRRate = async () => {
     setCbrFetching(true)
     try {
-      const res = await fetch('/api/option/cbr-rate', { credentials: 'include' })
-      const data = await res.json()
+      const res = await api.get<{ success: boolean; rate: number; fetchedAt: number; message?: string }>('/api/option/cbr-rate')
+      const data = res.data
       if (data.success) {
         setLiveRate(data.rate)
         setFetchedAt(data.fetchedAt)
@@ -108,11 +109,8 @@ export function FreeKassaSettingsSection({ defaultValues }: Props) {
   const applyCBRRate = async () => {
     setCbrApplying(true)
     try {
-      const res = await fetch('/api/option/cbr-rate/apply', {
-        method: 'POST',
-        credentials: 'include',
-      })
-      const data = await res.json()
+      const res = await api.post<{ success: boolean; rate: number; unitPrice: number; message?: string }>('/api/option/cbr-rate/apply')
+      const data = res.data
       if (data.success) {
         setLiveRate(data.rate)
         form.setValue('FreeKassaUnitPrice', data.unitPrice)
