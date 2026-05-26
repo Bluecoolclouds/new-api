@@ -119,29 +119,39 @@ function MethodCard({
       onClick={onClick}
       disabled={disabled}
       className={cn(
-        'flex flex-col items-center gap-1.5 rounded-xl border px-3 py-3 text-center transition-all duration-150 min-w-[76px] flex-shrink-0',
-        'hover:border-foreground/40 hover:bg-accent/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+        'flex w-full items-center gap-4 rounded-xl border px-4 py-3.5 text-left transition-all duration-150',
+        'hover:border-foreground/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
         selected
-          ? 'border-foreground bg-foreground/5 dark:bg-foreground/10 ring-1 ring-foreground/20'
+          ? 'border-foreground/60 bg-foreground/5 dark:bg-foreground/10'
           : 'border-border bg-background',
         disabled && 'cursor-not-allowed opacity-40'
       )}
     >
-      <div className='flex h-10 w-10 items-center justify-center rounded-lg bg-muted/60'>
+      <div className={cn(
+        'flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl transition-colors',
+        selected ? 'bg-foreground/10' : 'bg-muted/60'
+      )}>
         {loading ? (
           <Loader2 className='h-5 w-5 animate-spin text-muted-foreground' />
         ) : (
-          <span className='text-2xl leading-none [&>svg]:h-6 [&>svg]:w-6 [&>img]:h-6 [&>img]:w-6'>
+          <span className='[&>svg]:h-6 [&>svg]:w-6 [&>img]:h-6 [&>img]:w-6'>
             {icon}
           </span>
         )}
       </div>
-      <div className='flex flex-col items-center gap-0.5'>
-        <span className='text-xs font-semibold leading-tight'>{name}</span>
+      <div className='flex flex-col gap-0.5 min-w-0 flex-1'>
+        <span className='text-sm font-semibold leading-tight'>{name}</span>
         {subtitle && (
-          <span className='text-muted-foreground text-[10px] leading-tight'>{subtitle}</span>
+          <span className='text-muted-foreground text-xs leading-tight'>{subtitle}</span>
         )}
       </div>
+      {selected && (
+        <div className='flex-shrink-0 flex h-5 w-5 items-center justify-center rounded-full bg-foreground'>
+          <svg className='h-3 w-3 text-background' viewBox='0 0 12 12' fill='none'>
+            <path d='M2 6l3 3 5-5' stroke='currentColor' strokeWidth='1.5' strokeLinecap='round' strokeLinejoin='round'/>
+          </svg>
+        </div>
+      )}
     </button>
   )
 }
@@ -389,14 +399,108 @@ export function RechargeFormCard({
       {hasAnyTopup ? (
         <>
           {hasConfigurableTopup && (
-            <>
-              {/* ── Payment Method Cards ─────────────────────────────── */}
+            <div className='space-y-5'>
+
+              {/* ── 1. СУММА ПОПОЛНЕНИЯ ──────────────────────────────── */}
+              <div className='space-y-3'>
+                <div className='flex items-center justify-between gap-2'>
+                  <Label className='text-muted-foreground text-xs font-medium tracking-wider uppercase'>
+                    {t('Top Up Amount')}
+                  </Label>
+                  {/* Currency toggle — inline with label */}
+                  {usdExchangeRate > 1 && (
+                    <div className='inline-flex rounded-lg border bg-muted/30 p-0.5 gap-0.5'>
+                      {(['rub', 'usd'] as const).map((c) => (
+                        <button
+                          key={c}
+                          type='button'
+                          onClick={() => handleCurrencySwitch(c)}
+                          className={cn(
+                            'rounded-md px-3 py-1 text-xs font-medium transition-all',
+                            localCurrency === c
+                              ? 'bg-background shadow-sm text-foreground'
+                              : 'text-muted-foreground hover:text-foreground'
+                          )}
+                        >
+                          {c === 'rub' ? '₽' : '$'}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* Big amount input */}
+                <div className='relative'>
+                  <Input
+                    id='topup-amount'
+                    type='number'
+                    value={localAmount}
+                    onChange={(e) => handleAmountChange(e.target.value)}
+                    min={toDisplay(minTopup)}
+                    placeholder={`${t('Minimum')} ${toDisplay(minTopup)}`}
+                    className='h-14 pr-12 text-2xl font-bold tabular-nums tracking-tight'
+                  />
+                  <span className='text-muted-foreground pointer-events-none absolute top-1/2 right-4 -translate-y-1/2 text-lg font-medium'>
+                    {displaySymbol}
+                  </span>
+                </div>
+
+                {/* Slider */}
+                <div className='px-1'>
+                  <input
+                    type='range'
+                    min={toDisplay(minTopup)}
+                    max={toDisplay(maxTopup)}
+                    step={localCurrency === 'rub' ? Math.round(usdExchangeRate) : 1}
+                    value={Math.min(
+                      Math.max(toDisplay(topupAmount), toDisplay(minTopup)),
+                      toDisplay(maxTopup)
+                    )}
+                    onChange={(e) => handleSliderChange(parseFloat(e.target.value))}
+                    className='w-full cursor-pointer accent-foreground'
+                    style={{ height: '4px' }}
+                  />
+                  <div className='text-muted-foreground mt-1 flex justify-between text-[10px]'>
+                    <span>{toDisplay(minTopup).toLocaleString()}</span>
+                    <span>{toDisplay(maxTopup).toLocaleString()}</span>
+                  </div>
+                </div>
+
+                {/* Preset chips */}
+                {presetAmounts.length > 0 && (
+                  <div className='flex flex-wrap gap-1.5'>
+                    {presetAmounts.slice(0, 8).map((preset) => (
+                      <button
+                        key={preset.value}
+                        type='button'
+                        onClick={() => onSelectPreset(preset)}
+                        className={cn(
+                          'rounded-lg border px-3 py-1.5 text-sm font-medium transition-all',
+                          selectedPreset === preset.value
+                            ? 'border-foreground bg-foreground text-background'
+                            : 'border-border text-muted-foreground hover:border-foreground/40 hover:text-foreground'
+                        )}
+                      >
+                        {toDisplay(preset.value).toLocaleString()}
+                        {displaySymbol}
+                        {preset.discount && preset.discount < 1 && (
+                          <span className='ml-1.5 text-green-600 text-xs'>
+                            -{Math.round((1 - preset.discount) * 100)}%
+                          </span>
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* ── 2. СПОСОБ ОПЛАТЫ ─────────────────────────────────── */}
               {allMethodCards.length > 0 && (
                 <div className='space-y-2'>
                   <Label className='text-muted-foreground text-xs font-medium tracking-wider uppercase'>
                     {t('Payment Method')}
                   </Label>
-                  <div className='flex flex-wrap gap-2'>
+                  <div className='space-y-2'>
                     {allMethodCards.map(({ method, waffoIndex }) => {
                       const methodMin =
                         method.min_topup ||
@@ -407,7 +511,6 @@ export function RechargeFormCard({
                         paymentLoading === method.type ||
                         (waffoIndex !== undefined &&
                           paymentLoading === `waffo-${waffoIndex}`)
-
                       return (
                         <MethodCard
                           key={method.type}
@@ -419,9 +522,7 @@ export function RechargeFormCard({
                                 className='h-6 w-6 object-contain'
                               />
                             ) : getPaymentIcon(
-                              method.type.startsWith('waffo-')
-                                ? 'waffo'
-                                : method.type,
+                              method.type.startsWith('waffo-') ? 'waffo' : method.type,
                               'h-6 w-6',
                               method.icon,
                               method.name
@@ -429,17 +530,13 @@ export function RechargeFormCard({
                           }
                           name={method.name}
                           subtitle={getMethodSubtitle(
-                            method.type.startsWith('waffo-')
-                              ? 'waffo'
-                              : method.type,
+                            method.type.startsWith('waffo-') ? 'waffo' : method.type,
                             t
                           )}
                           selected={localSelectedMethod?.type === method.type}
                           disabled={disabled}
                           loading={isLoading}
-                          onClick={() =>
-                            !disabled && handleMethodCardClick(method, waffoIndex)
-                          }
+                          onClick={() => !disabled && handleMethodCardClick(method, waffoIndex)}
                         />
                       )
                     })}
@@ -447,169 +544,73 @@ export function RechargeFormCard({
                 </div>
               )}
 
-              {/* ── Currency Selector ────────────────────────────────── */}
-              {usdExchangeRate > 1 && (
-                <div className='space-y-2'>
-                  <Label className='text-muted-foreground text-xs font-medium tracking-wider uppercase'>
-                    {t('Currency')}
-                  </Label>
-                  <div className='inline-flex rounded-lg border bg-muted/30 p-0.5 gap-0.5'>
-                    {(['rub', 'usd'] as const).map((c) => (
-                      <button
-                        key={c}
-                        type='button'
-                        onClick={() => handleCurrencySwitch(c)}
-                        className={cn(
-                          'rounded-md px-4 py-1.5 text-sm font-medium transition-all',
-                          localCurrency === c
-                            ? 'bg-background shadow-sm text-foreground'
-                            : 'text-muted-foreground hover:text-foreground'
-                        )}
-                      >
-                        {c === 'rub' ? '₽ ' + t('Rubles') : '$ ' + t('Dollars')}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* ── Amount Input + Summary Panel ─────────────────────── */}
-              <div className='grid gap-4 md:grid-cols-[minmax(0,1fr)_220px] md:items-start'>
-                {/* LEFT: amount input + slider + presets */}
-                <div className='space-y-3'>
-                  <Label
-                    htmlFor='topup-amount'
-                    className='text-muted-foreground text-xs font-medium tracking-wider uppercase'
-                  >
-                    {t('Top Up Amount')}
-                  </Label>
-
-                  {/* Amount input */}
-                  <div className='relative'>
-                    <Input
-                      id='topup-amount'
-                      type='number'
-                      value={localAmount}
-                      onChange={(e) => handleAmountChange(e.target.value)}
-                      min={toDisplay(minTopup)}
-                      placeholder={`${t('Minimum')} ${toDisplay(minTopup)}`}
-                      className='h-10 pr-8 text-base font-medium sm:text-lg'
-                    />
-                    <span className='text-muted-foreground pointer-events-none absolute top-1/2 right-3 -translate-y-1/2 text-sm'>
-                      {displaySymbol}
+              {/* ── 3. ИТОГОВАЯ ПАНЕЛЬ ───────────────────────────────── */}
+              <div className='rounded-xl border bg-muted/20 overflow-hidden'>
+                {/* Строки деталей */}
+                <div className='divide-y'>
+                  {/* Выгода */}
+                  <div className='flex items-center justify-between px-4 py-2.5'>
+                    <span className='text-sm text-muted-foreground'>{t('Bonus')}</span>
+                    <span className={cn(
+                      'text-sm font-medium tabular-nums',
+                      bonusPct > 0 ? 'text-green-600 dark:text-green-400' : 'text-muted-foreground'
+                    )}>
+                      {bonusPct > 0 ? `+${bonusPct}%` : '—'}
                     </span>
                   </div>
 
-                  {/* Slider — compact width */}
-                  <div className='px-0.5 max-w-xs'>
-                    <input
-                      type='range'
-                      min={toDisplay(minTopup)}
-                      max={toDisplay(maxTopup)}
-                      step={localCurrency === 'rub' ? Math.round(usdExchangeRate) : 1}
-                      value={Math.min(
-                        Math.max(toDisplay(topupAmount), toDisplay(minTopup)),
-                        toDisplay(maxTopup)
-                      )}
-                      onChange={(e) => handleSliderChange(parseFloat(e.target.value))}
-                      className='w-full cursor-pointer accent-foreground'
-                      style={{ height: '4px' }}
-                    />
-                    <div className='text-muted-foreground mt-1 flex justify-between text-[10px]'>
-                      <span>{toDisplay(minTopup).toLocaleString()}</span>
-                      <span>{toDisplay(maxTopup).toLocaleString()}</span>
-                    </div>
+                  {/* Без скидки */}
+                  <div className='flex items-center justify-between px-4 py-2.5'>
+                    <span className='text-sm text-muted-foreground'>{t('Without discount')}</span>
+                    <span className='text-sm font-medium text-muted-foreground tabular-nums'>
+                      {equivalentAmount != null && equivalentAmount > 0
+                        ? `${formatCurrency(equivalentAmount)} ${displaySymbol}`
+                        : '—'}
+                    </span>
                   </div>
 
-                  {/* Preset quick-select chips */}
-                  {presetAmounts.length > 0 && (
-                    <div className='flex flex-wrap gap-1.5'>
-                      {presetAmounts.slice(0, 8).map((preset) => (
-                        <button
-                          key={preset.value}
-                          type='button'
-                          onClick={() => onSelectPreset(preset)}
-                          className={cn(
-                            'rounded-md border px-2.5 py-1 text-xs font-medium transition-colors',
-                            selectedPreset === preset.value
-                              ? 'border-foreground bg-foreground text-background'
-                              : 'border-border text-muted-foreground hover:border-foreground/40 hover:text-foreground'
-                          )}
-                        >
-                          {toDisplay(preset.value).toLocaleString()}
-                          {preset.discount && preset.discount < 1 && (
-                            <span className='ml-1 text-green-600'>
-                              -{Math.round((1 - preset.discount) * 100)}%
-                            </span>
-                          )}
-                        </button>
-                      ))}
+                  {/* Курс */}
+                  {ratePerMillion != null && ratePerMillion > 0 && (
+                    <div className='flex items-center justify-between px-4 py-2.5'>
+                      <span className='text-sm text-muted-foreground'>{t('Rate')}</span>
+                      <span className='text-sm font-medium text-muted-foreground tabular-nums'>
+                        {formatCurrency(ratePerMillion)} / 1M
+                      </span>
+                    </div>
+                  )}
+
+                  {/* Всего получите */}
+                  {totalCredits > 0 && (
+                    <div className='flex items-center justify-between px-4 py-2.5'>
+                      <span className='text-sm text-muted-foreground'>{t('You will receive')}</span>
+                      <span className='text-sm font-semibold tabular-nums'>
+                        {formatQuotaShort(totalCredits)}
+                      </span>
                     </div>
                   )}
                 </div>
 
-                {/* RIGHT: summary panel */}
-                <div className='rounded-xl border bg-muted/30 p-4 space-y-3'>
-                  {/* ИТОГО */}
+                {/* К оплате — выделенная строка */}
+                <div className='border-t bg-muted/30 px-4 py-3 flex items-center justify-between gap-4'>
                   <div>
-                    <p className='text-muted-foreground text-xs font-medium tracking-wider uppercase mb-1'>
-                      {t('Total')}
-                    </p>
+                    <p className='text-xs text-muted-foreground'>{t('Total')}</p>
                     {calculating ? (
-                      <Skeleton className='h-8 w-24' />
+                      <Skeleton className='mt-1 h-7 w-24' />
                     ) : (
-                      <p className='text-2xl font-bold leading-none'>
-                        {paymentAmount > 0 ? formatCurrency(paymentAmount) : '—'}
-                        {paymentAmount > 0 && (
-                          <span className='text-base font-normal text-muted-foreground ml-1'>
-                            {usdExchangeRate === 1 ? '$' : '₽'}
-                          </span>
-                        )}
+                      <p className='text-xl font-bold tabular-nums leading-none'>
+                        {paymentAmount > 0 ? (
+                          <>
+                            {formatCurrency(paymentAmount)}
+                            <span className='ml-1 text-sm font-normal text-muted-foreground'>
+                              {displaySymbol}
+                            </span>
+                          </>
+                        ) : '—'}
                       </p>
                     )}
                   </div>
-
-                  <div className='border-t pt-2.5 space-y-2'>
-                    {/* Выгода — always shown */}
-                    <SummaryRow
-                      label={t('Bonus')}
-                      value={bonusPct > 0 ? `+${bonusPct}%` : '—'}
-                      highlight={bonusPct > 0}
-                    />
-
-                    {/* Без скидки — always shown */}
-                    <SummaryRow
-                      label={t('Without discount')}
-                      value={
-                        equivalentAmount != null && equivalentAmount > 0
-                          ? `${formatCurrency(equivalentAmount)} ${displaySymbol}`
-                          : '—'
-                      }
-                      muted
-                    />
-
-                    {/* Курс */}
-                    {ratePerMillion != null && ratePerMillion > 0 && (
-                      <SummaryRow
-                        label={t('Rate')}
-                        value={`${formatCurrency(ratePerMillion)} / 1M`}
-                        muted
-                      />
-                    )}
-
-                    {/* Всего получите */}
-                    {totalCredits > 0 && (
-                      <SummaryRow
-                        label={t('You will receive')}
-                        value={formatQuotaShort(totalCredits)}
-                        muted
-                      />
-                    )}
-                  </div>
-
-                  {/* Proceed button */}
                   <Button
-                    className='w-full gap-2 mt-1'
+                    className='gap-2 shrink-0'
                     disabled={!canProceed}
                     onClick={handleProceedToPayment}
                   >
@@ -620,15 +621,16 @@ export function RechargeFormCard({
                     )}
                     {t('Proceed to Payment')}
                   </Button>
-
-                  {!localSelectedMethod && (
-                    <p className='text-muted-foreground text-center text-[11px]'>
-                      {t('Select a payment method above')}
-                    </p>
-                  )}
                 </div>
+
+                {!localSelectedMethod && (
+                  <p className='text-muted-foreground text-center text-[11px] pb-2'>
+                    {t('Select a payment method above')}
+                  </p>
+                )}
               </div>
-            </>
+
+            </div>
           )}
         </>
       ) : (
