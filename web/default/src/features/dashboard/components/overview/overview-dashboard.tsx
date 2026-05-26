@@ -63,6 +63,7 @@ import { ApiKeysMiniPanel } from './api-keys-mini-panel'
 import { FAQPanel } from './faq-panel'
 import { GreetingHeader } from './greeting-header'
 import { PerformanceHealthPanel } from './performance-health-panel'
+import { QuickActionsSidebar } from './quick-actions-sidebar'
 import { RecentActivityPanel } from './recent-activity-panel'
 import { SummaryCards } from './summary-cards'
 import { UptimePanel } from './uptime-panel'
@@ -796,9 +797,21 @@ export function OverviewDashboard() {
         <div className='flex flex-col gap-4'>
           <CardStaggerContainer>
             <CardStaggerItem>
+              <QuickActionsSidebar actions={visibleQuickActions} />
+            </CardStaggerItem>
+          </CardStaggerContainer>
+          <CardStaggerContainer>
+            <CardStaggerItem>
               <RecentActivityPanel />
             </CardStaggerItem>
           </CardStaggerContainer>
+          {showAnnouncementsPanel && (
+            <CardStaggerContainer>
+              <CardStaggerItem>
+                <AnnouncementsPanel title={t('News')} />
+              </CardStaggerItem>
+            </CardStaggerContainer>
+          )}
         </div>
       </div>
     </div>

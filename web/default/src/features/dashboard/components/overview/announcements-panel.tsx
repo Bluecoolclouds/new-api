@@ -42,7 +42,11 @@ const AnnouncementStatusDot = memo(function AnnouncementStatusDot(props: {
   )
 })
 
-export function AnnouncementsPanel() {
+interface AnnouncementsPanelProps {
+  title?: string
+}
+
+export function AnnouncementsPanel({ title }: AnnouncementsPanelProps = {}) {
   const { t } = useTranslation()
   const { items: list, loading } = useAnnouncements()
   const [selectedAnnouncement, setSelectedAnnouncement] =
@@ -59,7 +63,7 @@ export function AnnouncementsPanel() {
       title={
         <span className='flex items-center gap-2'>
           <Megaphone className='text-muted-foreground/60 size-4' />
-          {t('Announcements')}
+          {title ?? t('Announcements')}
         </span>
       }
       description={t('Latest platform updates and notices')}
