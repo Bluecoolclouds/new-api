@@ -142,8 +142,8 @@ func GetTopUpInfo(c *gin.Context) {
                 "topup_link":              common.TopUpLink,
                 "freekassa_unit_price":     setting.FreeKassaUnitPrice,
                 "freekassa_cbr_rate":       lastCBRRate,
-                "freekassa_card_enabled":   enableFreeKassa && setting.FreeKassaCardPaymentSystemId != "",
-                "freekassa_crypto_enabled": enableFreeKassa && setting.FreeKassaCryptoPaymentSystemId != "",
+                "freekassa_card_enabled":   enableFreeKassa,
+                "freekassa_crypto_enabled": enableFreeKassa,
         }
         common.ApiSuccess(c, data)
 }
