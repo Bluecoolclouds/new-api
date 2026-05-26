@@ -119,38 +119,32 @@ function MethodCard({
       onClick={onClick}
       disabled={disabled}
       className={cn(
-        'flex w-full items-center gap-4 rounded-xl border px-4 py-3.5 text-left transition-all duration-150',
-        'hover:border-foreground/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+        'inline-flex items-center gap-2.5 rounded-full border px-4 py-2.5 transition-all duration-150',
+        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
         selected
-          ? 'border-foreground/60 bg-foreground/5 dark:bg-foreground/10'
-          : 'border-border bg-background',
+          ? 'border-foreground bg-foreground text-background shadow-sm'
+          : 'border-border bg-background text-foreground hover:border-foreground/40 hover:bg-muted/50',
         disabled && 'cursor-not-allowed opacity-40'
       )}
     >
-      <div className={cn(
-        'flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl transition-colors',
-        selected ? 'bg-foreground/10' : 'bg-muted/60'
-      )}>
-        {loading ? (
-          <Loader2 className='h-5 w-5 animate-spin text-muted-foreground' />
-        ) : (
-          <span className='[&>svg]:h-6 [&>svg]:w-6 [&>img]:h-6 [&>img]:w-6'>
-            {icon}
-          </span>
-        )}
-      </div>
-      <div className='flex flex-col gap-0.5 min-w-0 flex-1'>
-        <span className='text-sm font-semibold leading-tight'>{name}</span>
-        {subtitle && (
-          <span className='text-muted-foreground text-xs leading-tight'>{subtitle}</span>
-        )}
-      </div>
-      {selected && (
-        <div className='flex-shrink-0 flex h-5 w-5 items-center justify-center rounded-full bg-foreground'>
-          <svg className='h-3 w-3 text-background' viewBox='0 0 12 12' fill='none'>
-            <path d='M2 6l3 3 5-5' stroke='currentColor' strokeWidth='1.5' strokeLinecap='round' strokeLinejoin='round'/>
-          </svg>
-        </div>
+      {loading ? (
+        <Loader2 className='h-4 w-4 animate-spin' />
+      ) : (
+        <span className={cn(
+          'flex-shrink-0 [&>svg]:h-5 [&>svg]:w-5 [&>img]:h-5 [&>img]:w-5',
+          selected ? '[&>svg]:text-background [&>img]:brightness-0 [&>img]:invert' : ''
+        )}>
+          {icon}
+        </span>
+      )}
+      <span className='text-sm font-semibold leading-none whitespace-nowrap'>{name}</span>
+      {subtitle && (
+        <span className={cn(
+          'text-xs leading-none whitespace-nowrap',
+          selected ? 'text-background/70' : 'text-muted-foreground'
+        )}>
+          · {subtitle}
+        </span>
       )}
     </button>
   )
@@ -509,7 +503,7 @@ export function RechargeFormCard({
                   <Label className='text-muted-foreground text-xs font-medium tracking-wider uppercase'>
                     {t('Payment Method')}
                   </Label>
-                  <div className='space-y-2'>
+                  <div className='flex flex-wrap gap-2'>
                     {allMethodCards.map(({ method, waffoIndex }) => {
                       const methodMin =
                         method.min_topup ||
