@@ -90,7 +90,6 @@ export function ApiKeysMiniPanel({ keys, loading }: ApiKeysMiniPanelProps) {
       loading={loading}
       empty={!loading && keys.length === 0}
       emptyMessage={t('No API keys yet')}
-      height='h-28'
       contentClassName='p-0'
       headerActions={
         <div className='flex items-center gap-2'>
@@ -115,9 +114,9 @@ export function ApiKeysMiniPanel({ keys, loading }: ApiKeysMiniPanelProps) {
       }
     >
       {/* Table header */}
-      <div className='text-muted-foreground border-b px-4 py-1.5 sm:px-5'>
-        <div className='grid items-center gap-3 text-[10px] font-medium uppercase tracking-wider'
-          style={{ gridTemplateColumns: 'minmax(0,1fr) 10rem 6rem 7rem 2rem' }}
+      <div className='text-muted-foreground border-b px-4 py-2 sm:px-5'>
+        <div className='grid items-center gap-3 text-[11px] font-medium uppercase tracking-wider'
+          style={{ gridTemplateColumns: 'minmax(0,1fr) minmax(0,9rem) minmax(0,6rem) minmax(0,8rem) auto' }}
         >
           <span>{t('Name')}</span>
           <span>{t('Budget')}</span>
@@ -134,11 +133,11 @@ export function ApiKeysMiniPanel({ keys, loading }: ApiKeysMiniPanelProps) {
             <Link
               key={key.id}
               to='/keys'
-              className='hover:bg-muted/30 flex items-center gap-3 px-4 py-2.5 transition-colors sm:px-5'
+              className='hover:bg-muted/30 flex items-center px-4 py-3 transition-colors sm:px-5'
             >
               <div
                 className='grid w-full items-center gap-3'
-                style={{ gridTemplateColumns: 'minmax(0,1fr) 10rem 6rem 7rem 2rem' }}
+                style={{ gridTemplateColumns: 'minmax(0,1fr) minmax(0,9rem) minmax(0,6rem) minmax(0,8rem) auto' }}
               >
                 {/* Name + status dot */}
                 <span className='flex min-w-0 items-center gap-2'>
@@ -159,7 +158,7 @@ export function ApiKeysMiniPanel({ keys, loading }: ApiKeysMiniPanelProps) {
                     {budget.remaining}
                   </span>
                   {!key.unlimited_quota && (
-                    <span className='text-muted-foreground text-[10px] tabular-nums'>
+                    <span className='text-muted-foreground text-xs tabular-nums'>
                       / {budget.total}
                     </span>
                   )}
@@ -170,17 +169,17 @@ export function ApiKeysMiniPanel({ keys, loading }: ApiKeysMiniPanelProps) {
                   {key.group ? (
                     <Badge
                       variant='secondary'
-                      className='max-w-full truncate px-1.5 py-0 text-[10px]'
+                      className='max-w-full truncate px-1.5 py-0 text-xs'
                     >
                       {key.group}
                     </Badge>
                   ) : (
-                    <span className='text-muted-foreground text-[10px]'>—</span>
+                    <span className='text-muted-foreground text-xs'>—</span>
                   )}
                 </span>
 
                 {/* Key excerpt */}
-                <span className='text-muted-foreground min-w-0 truncate font-mono text-[10px]'>
+                <span className='text-muted-foreground min-w-0 truncate font-mono text-xs'>
                   {formatKeyExcerpt(key.key)}
                 </span>
 
