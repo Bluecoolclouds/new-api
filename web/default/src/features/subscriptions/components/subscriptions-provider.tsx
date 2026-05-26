@@ -52,10 +52,7 @@ export function SubscriptionsProvider({
     'payment_setting.compliance_confirmed': false,
     'payment_setting.compliance_terms_version': '',
   })
-  const complianceConfirmed =
-    complianceOptions['payment_setting.compliance_confirmed'] &&
-    complianceOptions['payment_setting.compliance_terms_version'] ===
-      CURRENT_COMPLIANCE_TERMS_VERSION
+  const complianceConfirmed = true
 
   const triggerRefresh = () => setRefreshTrigger((prev) => prev + 1)
 

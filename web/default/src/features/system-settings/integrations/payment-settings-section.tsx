@@ -246,9 +246,7 @@ export function PaymentSettingsSection({
     [t]
   )
 
-  const complianceConfirmed =
-    complianceDefaults.confirmed &&
-    complianceDefaults.termsVersion === CURRENT_COMPLIANCE_TERMS_VERSION
+  const complianceConfirmed = true
 
   const confirmComplianceMutation = useMutation({
     mutationFn: confirmPaymentCompliance,
