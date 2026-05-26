@@ -318,7 +318,7 @@ asyncio.run(main())`
 
               <div className='grid grid-cols-1 sm:grid-cols-3 gap-3 mb-8'>
                 {[
-                  { icon: <Key className='h-5 w-5 text-primary' />, title: t('Создайте ключ'), desc: t('Ключи → Добавить ключ'), to: '/_authenticated/keys/' as const },
+                  { icon: <Key className='h-5 w-5 text-primary' />, title: t('Создайте ключ'), desc: t('Ключи → Добавить ключ'), to: '/keys' as const },
                   { icon: <CreditCard className='h-5 w-5 text-primary' />, title: t('Пополните баланс'), desc: t('Кошелёк → FreeKassa / СБП'), to: '/wallet/' as const },
                   { icon: <Code2 className='h-5 w-5 text-primary' />, title: t('Отправьте запрос'), desc: t('Скопируйте пример ниже'), to: '/docs' as const },
                 ].map((s, i) => (
@@ -753,7 +753,7 @@ asyncio.run(main())`
                   {[
                     { label: 'Кошелёк — пополнение баланса', to: '/wallet/' as const, internal: true },
                     { label: 'Консоль — история запросов', to: '/dashboard' as const, internal: true },
-                    { label: 'Ключи — управление API-ключами', to: '/_authenticated/keys/' as const, internal: true },
+                    { label: 'Ключи — управление API-ключами', to: '/keys' as const, internal: true },
                   ].map((link) => (
                     <div key={link.label} className='flex items-center justify-between px-4 py-2.5 border-b border-border/30 last:border-0 hover:bg-muted/20 transition-colors'>
                       <span className='text-sm text-foreground'>{link.label}</span>
