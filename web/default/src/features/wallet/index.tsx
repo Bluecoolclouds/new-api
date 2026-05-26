@@ -277,16 +277,41 @@ export function Wallet(props: WalletProps) {
         <SectionPageLayout.Title>{t('Wallet')}</SectionPageLayout.Title>
         <SectionPageLayout.Content>
           <div className='mx-auto flex w-full max-w-7xl flex-col gap-4 sm:gap-5'>
-            <WalletStatsCard user={user} loading={userLoading} />
+            <div className='grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,512px)] lg:items-start'>
 
-            <div
-              className={
-                showSubscriptionPanel
-                  ? 'grid gap-4 xl:grid-cols-[minmax(0,1.05fr)_minmax(360px,0.95fr)] xl:items-start'
-                  : 'grid gap-4'
-              }
-            >
-              <div id='wallet-add-funds' className='scroll-mt-4 max-w-lg mx-auto'>
+              {/* ── Left column: stats + subscription + affiliate ── */}
+              <div className='flex flex-col gap-4'>
+                <WalletStatsCard user={user} loading={userLoading} />
+
+                {showSubscriptionPanel && (
+                  <SubscriptionPlansCard
+                    topupInfo={topupInfo}
+                    onAvailabilityChange={handleSubscriptionAvailabilityChange}
+                  />
+                )}
+                {/* Hidden SubscriptionPlansCard to detect availability on mount */}
+                {!showSubscriptionPanel && (
+                  <div className='hidden'>
+                    <SubscriptionPlansCard
+                      topupInfo={topupInfo}
+                      onAvailabilityChange={handleSubscriptionAvailabilityChange}
+                    />
+                  </div>
+                )}
+
+                <AffiliateRewardsCard
+                  user={user}
+                  affiliateLink={affiliateLink}
+                  onTransfer={() => setTransferDialogOpen(true)}
+                  complianceConfirmed={
+                    topupInfo?.payment_compliance_confirmed !== false
+                  }
+                  loading={affiliateLoading}
+                />
+              </div>
+
+              {/* ── Right column: recharge form (unchanged) ── */}
+              <div id='wallet-add-funds' className='scroll-mt-4 max-w-lg mx-auto w-full'>
                 <RechargeFormCard
                   topupInfo={topupInfo}
                   presetAmounts={presetAmounts}
@@ -332,21 +357,7 @@ export function Wallet(props: WalletProps) {
                 />
               </div>
 
-              <SubscriptionPlansCard
-                topupInfo={topupInfo}
-                onAvailabilityChange={handleSubscriptionAvailabilityChange}
-              />
             </div>
-
-            <AffiliateRewardsCard
-              user={user}
-              affiliateLink={affiliateLink}
-              onTransfer={() => setTransferDialogOpen(true)}
-              complianceConfirmed={
-                topupInfo?.payment_compliance_confirmed !== false
-              }
-              loading={affiliateLoading}
-            />
           </div>
         </SectionPageLayout.Content>
       </SectionPageLayout>
