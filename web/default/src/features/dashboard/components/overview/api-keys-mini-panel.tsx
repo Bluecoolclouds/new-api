@@ -148,11 +148,11 @@ export function ApiKeysMiniPanel({ keys, loading }: ApiKeysMiniPanelProps) {
       {/* Column headers */}
       <div className='text-muted-foreground/70 border-b px-4 pb-1.5 pt-2 sm:px-5'>
         <div className='grid items-center gap-3 text-[10px] font-medium uppercase tracking-wider'
-          style={{ gridTemplateColumns: 'minmax(0,1fr) minmax(0,10rem) minmax(0,7rem) auto' }}
+          style={{ gridTemplateColumns: 'minmax(0,1fr) minmax(0,7rem) minmax(0,10rem) auto' }}
         >
           <span>{t('Name')}</span>
+          <span className='text-center'>{t('Budget')}</span>
           <span>{t('Key')}</span>
-          <span className='text-right'>{t('Budget')}</span>
           <span />
         </div>
       </div>
@@ -168,7 +168,7 @@ export function ApiKeysMiniPanel({ keys, loading }: ApiKeysMiniPanelProps) {
             >
               <div
                 className='grid w-full items-center gap-3'
-                style={{ gridTemplateColumns: 'minmax(0,1fr) minmax(0,10rem) minmax(0,7rem) auto' }}
+                style={{ gridTemplateColumns: 'minmax(0,1fr) minmax(0,7rem) minmax(0,10rem) auto' }}
               >
                 {/* Name */}
                 <span className='flex min-w-0 items-center gap-2'>
@@ -191,13 +191,8 @@ export function ApiKeysMiniPanel({ keys, loading }: ApiKeysMiniPanelProps) {
                   </span>
                 </span>
 
-                {/* Key (click to copy) */}
-                <span onClick={(e) => e.preventDefault()}>
-                  <CopyKeyButton apiKey={key} />
-                </span>
-
-                {/* Budget */}
-                <span className='flex min-w-0 flex-col items-end gap-0'>
+                {/* Budget (center) */}
+                <span className='flex min-w-0 flex-col items-center gap-0'>
                   <span className='text-sm font-semibold tabular-nums'>
                     {budget.remaining}
                   </span>
@@ -206,6 +201,11 @@ export function ApiKeysMiniPanel({ keys, loading }: ApiKeysMiniPanelProps) {
                       / {budget.total}
                     </span>
                   )}
+                </span>
+
+                {/* Key (click to copy) */}
+                <span onClick={(e) => e.preventDefault()}>
+                  <CopyKeyButton apiKey={key} />
                 </span>
 
                 {/* Menu */}
