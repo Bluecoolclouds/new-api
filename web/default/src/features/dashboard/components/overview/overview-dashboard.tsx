@@ -599,14 +599,14 @@ export function OverviewDashboard() {
         </CardStaggerItem>
       </CardStaggerContainer>
 
-      {/* ── 2. Stat cards (full width) ── */}
-      <SummaryCards />
-
       {/* ── Two-column layout: main content + right sidebar ── */}
       <div className='grid grid-cols-1 items-start gap-4 xl:grid-cols-[minmax(0,1fr)_22rem]'>
 
         {/* ── Main content column ── */}
         <div className='flex flex-col gap-4 min-w-0'>
+
+          {/* 2. Stat cards */}
+          <SummaryCards />
 
           {/* 3. Setup guide / getting started */}
           {setupGuideExpanded ? (
@@ -725,7 +725,7 @@ export function OverviewDashboard() {
                     {t('Keep the platform ready')}
                   </h3>
                 </div>
-                <div className='grid gap-2 sm:grid-cols-2 xl:grid-cols-4'>
+                <div className='grid gap-2 grid-cols-2 sm:grid-cols-4'>
                   {visibleQuickActions.map((action) => (
                     <QuickActionItem key={action.title} action={action} />
                   ))}
