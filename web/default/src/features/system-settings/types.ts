@@ -271,6 +271,9 @@ export type BillingSettings = {
   FreeKassaMinTopUp: number
   FreeKassaReturnURL: string
   FreeKassaPaymentSystemId: string
+  FreeKassaCardPaymentSystemId: string
+  FreeKassaCryptoPaymentSystemId: string
+  FreeKassaFallbackEmail: string
   FreeKassaCBRMarkup: number
   FreeKassaCBRAutoSync: boolean
   'checkin_setting.enabled': boolean
