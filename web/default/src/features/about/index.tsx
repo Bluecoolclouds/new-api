@@ -74,7 +74,7 @@ function EmptyAboutState() {
               rel='noopener noreferrer'
               className='text-primary hover:underline'
             >
-              {t('APInet')}
+              {t('APINET')}
             </a>{' '}
             © {currentYear}{' '}
             <a

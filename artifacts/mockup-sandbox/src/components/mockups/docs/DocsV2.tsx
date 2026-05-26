@@ -140,7 +140,7 @@ export function DocsV2() {
         {/* Left sidebar */}
         <aside className="hidden lg:flex w-56 shrink-0 border-r border-border/60 bg-muted/10 flex-col pt-6 px-3 gap-0.5">
           <div className="px-3 mb-4">
-            <div className="text-xs font-semibold text-foreground mb-0.5">APInet</div>
+            <div className="text-xs font-semibold text-foreground mb-0.5">APINET</div>
             <div className="text-[11px] text-muted-foreground">Справочная документация</div>
           </div>
           <div className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground/70 px-3 mb-1.5">Начало работы</div>

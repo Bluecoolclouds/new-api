@@ -162,7 +162,7 @@ export function DocsV1() {
             <div className="relative">
               <div className="flex items-center gap-2 text-muted-foreground text-xs mb-3">
                 <BookOpen className="h-3.5 w-3.5" />
-                <span className="font-medium">Документация APInet</span>
+                <span className="font-medium">Документация APINET</span>
               </div>
               <h1 className="text-2xl font-bold tracking-tight text-foreground mb-2">Руководства по интеграции</h1>
               <p className="text-muted-foreground text-sm max-w-lg leading-relaxed">
