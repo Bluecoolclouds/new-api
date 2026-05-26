@@ -23,6 +23,7 @@ import { useStatus } from '@/hooks/use-status'
 import { useSystemConfig } from '@/hooks/use-system-config'
 import { SectionPageLayout } from '@/components/layout'
 import { AffiliateRewardsCard } from './components/affiliate-rewards-card'
+import { RedemptionCodeCard } from './components/redemption-code-card'
 import { BillingHistoryDialog } from './components/dialogs/billing-history-dialog'
 import { CreemConfirmDialog } from './components/dialogs/creem-confirm-dialog'
 import { PaymentConfirmDialog } from './components/dialogs/payment-confirm-dialog'
@@ -296,6 +297,13 @@ export function Wallet(props: WalletProps) {
                     topupInfo?.payment_compliance_confirmed !== false
                   }
                   loading={affiliateLoading}
+                />
+
+                <RedemptionCodeCard
+                  redemptionCode={redemptionCode}
+                  onRedemptionCodeChange={setRedemptionCode}
+                  onRedeem={handleRedeem}
+                  redeeming={redeeming}
                 />
               </div>
 

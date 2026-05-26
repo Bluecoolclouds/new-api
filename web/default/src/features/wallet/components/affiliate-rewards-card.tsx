@@ -61,40 +61,44 @@ export function AffiliateRewardsCard({
 
   return (
     <Card className='bg-muted/20 py-0'>
-      <CardContent className='grid gap-3 p-3 sm:gap-4 sm:p-4 lg:grid-cols-[minmax(200px,1fr)_minmax(180px,0.65fr)_minmax(280px,1fr)] lg:items-center'>
-        <div className='flex min-w-0 items-center gap-2.5'>
-          <div className='bg-background flex size-8 shrink-0 items-center justify-center rounded-lg border'>
-            <Share2 className='text-muted-foreground size-4' />
-          </div>
-          <div className='min-w-0'>
-            <h3 className='truncate text-sm font-semibold'>
-              {t('Referral Program')}
-            </h3>
-            <p className='text-muted-foreground line-clamp-1 text-xs'>
-              {t(
-                'Earn rewards when your referrals add funds. Transfer accumulated rewards to your balance anytime.'
-              )}
-            </p>
-          </div>
-        </div>
-
-        <div className='grid grid-cols-3 gap-1.5 text-center'>
-          {[
-            [t('Pending'), formatQuota(user?.aff_quota ?? 0)],
-            [t('Total Earned'), formatQuota(user?.aff_history_quota ?? 0)],
-            [t('Invites'), String(user?.aff_count ?? 0)],
-          ].map(([label, value]) => (
-            <div key={label}>
-              <div className='text-muted-foreground truncate text-[10px] font-medium tracking-wider uppercase'>
-                {label}
-              </div>
-              <div className='mt-0.5 truncate text-sm font-semibold tabular-nums'>
-                {value}
-              </div>
+      <CardContent className='flex flex-col gap-3 p-3 sm:gap-4 sm:p-4'>
+        {/* Row 1: icon + title/desc  |  stats */}
+        <div className='flex flex-wrap items-center justify-between gap-x-4 gap-y-2'>
+          <div className='flex min-w-0 items-center gap-2.5'>
+            <div className='bg-background flex size-8 shrink-0 items-center justify-center rounded-lg border'>
+              <Share2 className='text-muted-foreground size-4' />
             </div>
-          ))}
+            <div className='min-w-0'>
+              <h3 className='text-sm font-semibold'>
+                {t('Referral Program')}
+              </h3>
+              <p className='text-muted-foreground text-xs'>
+                {t(
+                  'Earn rewards when your referrals add funds. Transfer accumulated rewards to your balance anytime.'
+                )}
+              </p>
+            </div>
+          </div>
+
+          <div className='flex shrink-0 gap-4 text-center'>
+            {[
+              [t('Pending'), formatQuota(user?.aff_quota ?? 0)],
+              [t('Total Earned'), formatQuota(user?.aff_history_quota ?? 0)],
+              [t('Invites'), String(user?.aff_count ?? 0)],
+            ].map(([label, value]) => (
+              <div key={label} className='min-w-[48px]'>
+                <div className='text-muted-foreground text-[10px] font-medium tracking-wider uppercase'>
+                  {label}
+                </div>
+                <div className='mt-0.5 text-sm font-semibold tabular-nums'>
+                  {value}
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
 
+        {/* Row 2: referral link — always full width */}
         <div className='flex items-center gap-2'>
           <Input
             value={affiliateLink}
@@ -120,13 +124,14 @@ export function AffiliateRewardsCard({
             </Button>
           )}
         </div>
-        {!complianceConfirmed ? (
-          <p className='text-muted-foreground text-xs lg:col-span-3'>
+
+        {!complianceConfirmed && (
+          <p className='text-muted-foreground text-xs'>
             {t(
               'Referral reward transfer is disabled until the administrator confirms compliance terms.'
             )}
           </p>
-        ) : null}
+        )}
       </CardContent>
     </Card>
   )
