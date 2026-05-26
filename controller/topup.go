@@ -491,7 +491,6 @@ func GetUserTopUps(c *gin.Context) {
 func GetAllTopUps(c *gin.Context) {
         pageInfo := common.GetPageQuery(c)
         keyword := c.Query("keyword")
-        paymentMethod := c.Query("payment_method")
 
         var (
                 topups []*model.TopUp
