@@ -286,7 +286,7 @@ export function Wallet(props: WalletProps) {
                   : 'grid gap-4'
               }
             >
-              <div id='wallet-add-funds' className='scroll-mt-4'>
+              <div id='wallet-add-funds' className='scroll-mt-4 max-w-lg'>
                 <RechargeFormCard
                   topupInfo={topupInfo}
                   presetAmounts={presetAmounts}
