@@ -222,6 +222,19 @@ export function RechargeFormCard({
   const { t } = useTranslation()
   const [localAmount, setLocalAmount] = useState(topupAmount.toString())
   const [localSelectedMethod, setLocalSelectedMethod] = useState<PaymentMethod | null>(null)
+  const [localCurrency, setLocalCurrency] = useState<'rub' | 'usd'>(
+    usdExchangeRate > 1 ? 'rub' : 'usd'
+  )
+
+  const displayRate = localCurrency === 'rub' ? usdExchangeRate : 1
+  const displaySymbol = localCurrency === 'rub' ? '₽' : '$'
+
+  const toDisplay = (usdAmount: number) =>
+    localCurrency === 'rub' ? Math.round(usdAmount * usdExchangeRate) : usdAmount
+  const toBase = (displayAmount: number) =>
+    localCurrency === 'rub' && usdExchangeRate > 1
+      ? displayAmount / usdExchangeRate
+      : displayAmount
 
   useEffect(() => {
     setLocalAmount(topupAmount.toString())
@@ -242,13 +255,9 @@ export function RechargeFormCard({
   const maxTopup = Math.max(minTopup * 200, 10000)
   const redemptionEnabled = topupInfo?.enable_redemption !== false
 
-  // Build unified methods list for the card row
+  // Build unified methods list — only FreeKassa for now
   const allMethodCards = useMemo(() => {
     const methods: { method: PaymentMethod; waffoIndex?: number }[] = []
-
-    if (hasStandardPaymentMethods) {
-      topupInfo!.pay_methods.forEach((m) => methods.push({ method: m }))
-    }
 
     if (enableFreeKassaTopup) {
       methods.push({
@@ -256,43 +265,28 @@ export function RechargeFormCard({
       })
     }
 
-    if (enableWaffoPancakeTopup) {
-      methods.push({
-        method: { type: 'waffo_pancake', name: 'Waffo' },
-      })
-    }
-
-    if (enableWaffoTopup && hasWaffoPaymentMethods) {
-      waffoPayMethods!.forEach((wm, i) =>
-        methods.push({
-          method: { type: `waffo-${i}`, name: wm.name, icon: wm.icon },
-          waffoIndex: i,
-        })
-      )
-    }
-
     return methods
-  }, [
-    topupInfo,
-    hasStandardPaymentMethods,
-    enableFreeKassaTopup,
-    enableWaffoPancakeTopup,
-    enableWaffoTopup,
-    hasWaffoPaymentMethods,
-    waffoPayMethods,
-  ])
+  }, [enableFreeKassaTopup])
 
   const handleAmountChange = (value: string) => {
     setLocalAmount(value)
-    const numValue = parseInt(value) || 0
+    const numValue = parseFloat(value) || 0
     if (numValue >= 0) {
-      onTopupAmountChange(numValue)
+      onTopupAmountChange(toBase(numValue))
     }
   }
 
   const handleSliderChange = (value: number) => {
     setLocalAmount(value.toString())
-    onTopupAmountChange(value)
+    onTopupAmountChange(toBase(value))
+  }
+
+  const handleCurrencySwitch = (c: 'rub' | 'usd') => {
+    setLocalCurrency(c)
+    const newDisplayAmt = c === 'rub'
+      ? Math.round(topupAmount * usdExchangeRate)
+      : topupAmount
+    setLocalAmount(newDisplayAmt.toString())
   }
 
   const handleMethodCardClick = (method: PaymentMethod, waffoIndex?: number) => {
@@ -417,14 +411,22 @@ export function RechargeFormCard({
                       return (
                         <MethodCard
                           key={method.type}
-                          icon={getPaymentIcon(
-                            method.type.startsWith('waffo-')
-                              ? 'waffo'
-                              : method.type,
-                            'h-6 w-6',
-                            method.icon,
-                            method.name
-                          )}
+                          icon={
+                            method.type === 'freekassa' ? (
+                              <img
+                                src='/images/sbp-logo.svg'
+                                alt='СБП'
+                                className='h-6 w-6 object-contain'
+                              />
+                            ) : getPaymentIcon(
+                              method.type.startsWith('waffo-')
+                                ? 'waffo'
+                                : method.type,
+                              'h-6 w-6',
+                              method.icon,
+                              method.name
+                            )
+                          }
                           name={method.name}
                           subtitle={getMethodSubtitle(
                             method.type.startsWith('waffo-')
@@ -441,6 +443,32 @@ export function RechargeFormCard({
                         />
                       )
                     })}
+                  </div>
+                </div>
+              )}
+
+              {/* ── Currency Selector ────────────────────────────────── */}
+              {usdExchangeRate > 1 && (
+                <div className='space-y-2'>
+                  <Label className='text-muted-foreground text-xs font-medium tracking-wider uppercase'>
+                    {t('Currency')}
+                  </Label>
+                  <div className='inline-flex rounded-lg border bg-muted/30 p-0.5 gap-0.5'>
+                    {(['rub', 'usd'] as const).map((c) => (
+                      <button
+                        key={c}
+                        type='button'
+                        onClick={() => handleCurrencySwitch(c)}
+                        className={cn(
+                          'rounded-md px-4 py-1.5 text-sm font-medium transition-all',
+                          localCurrency === c
+                            ? 'bg-background shadow-sm text-foreground'
+                            : 'text-muted-foreground hover:text-foreground'
+                        )}
+                      >
+                        {c === 'rub' ? '₽ ' + t('Rubles') : '$ ' + t('Dollars')}
+                      </button>
+                    ))}
                   </div>
                 </div>
               )}
@@ -463,30 +491,33 @@ export function RechargeFormCard({
                       type='number'
                       value={localAmount}
                       onChange={(e) => handleAmountChange(e.target.value)}
-                      min={minTopup}
-                      placeholder={`${t('Minimum')} ${minTopup}`}
+                      min={toDisplay(minTopup)}
+                      placeholder={`${t('Minimum')} ${toDisplay(minTopup)}`}
                       className='h-10 pr-8 text-base font-medium sm:text-lg'
                     />
                     <span className='text-muted-foreground pointer-events-none absolute top-1/2 right-3 -translate-y-1/2 text-sm'>
-                      {usdExchangeRate === 1 ? '$' : '₽'}
+                      {displaySymbol}
                     </span>
                   </div>
 
-                  {/* Slider */}
-                  <div className='px-0.5'>
+                  {/* Slider — compact width */}
+                  <div className='px-0.5 max-w-xs'>
                     <input
                       type='range'
-                      min={minTopup}
-                      max={maxTopup}
-                      step={1}
-                      value={Math.min(Math.max(topupAmount, minTopup), maxTopup)}
-                      onChange={(e) => handleSliderChange(parseInt(e.target.value))}
+                      min={toDisplay(minTopup)}
+                      max={toDisplay(maxTopup)}
+                      step={localCurrency === 'rub' ? Math.round(usdExchangeRate) : 1}
+                      value={Math.min(
+                        Math.max(toDisplay(topupAmount), toDisplay(minTopup)),
+                        toDisplay(maxTopup)
+                      )}
+                      onChange={(e) => handleSliderChange(parseFloat(e.target.value))}
                       className='w-full cursor-pointer accent-foreground'
                       style={{ height: '4px' }}
                     />
                     <div className='text-muted-foreground mt-1 flex justify-between text-[10px]'>
-                      <span>{minTopup}</span>
-                      <span>{maxTopup.toLocaleString()}</span>
+                      <span>{toDisplay(minTopup).toLocaleString()}</span>
+                      <span>{toDisplay(maxTopup).toLocaleString()}</span>
                     </div>
                   </div>
 
@@ -505,7 +536,7 @@ export function RechargeFormCard({
                               : 'border-border text-muted-foreground hover:border-foreground/40 hover:text-foreground'
                           )}
                         >
-                          {(preset.value * usdExchangeRate).toLocaleString()}
+                          {toDisplay(preset.value).toLocaleString()}
                           {preset.discount && preset.discount < 1 && (
                             <span className='ml-1 text-green-600'>
                               -{Math.round((1 - preset.discount) * 100)}%
@@ -539,23 +570,23 @@ export function RechargeFormCard({
                   </div>
 
                   <div className='border-t pt-2.5 space-y-2'>
-                    {/* Выгода */}
-                    {bonusPct > 0 && (
-                      <SummaryRow
-                        label={t('Bonus')}
-                        value={`+${bonusPct}%`}
-                        highlight
-                      />
-                    )}
+                    {/* Выгода — always shown */}
+                    <SummaryRow
+                      label={t('Bonus')}
+                      value={bonusPct > 0 ? `+${bonusPct}%` : '—'}
+                      highlight={bonusPct > 0}
+                    />
 
-                    {/* Эквивалент */}
-                    {equivalentAmount != null && (
-                      <SummaryRow
-                        label={t('Without discount')}
-                        value={`${formatCurrency(equivalentAmount)} ${usdExchangeRate === 1 ? '$' : '₽'}`}
-                        muted
-                      />
-                    )}
+                    {/* Без скидки — always shown */}
+                    <SummaryRow
+                      label={t('Without discount')}
+                      value={
+                        equivalentAmount != null && equivalentAmount > 0
+                          ? `${formatCurrency(equivalentAmount)} ${displaySymbol}`
+                          : '—'
+                      }
+                      muted
+                    />
 
                     {/* Курс */}
                     {ratePerMillion != null && ratePerMillion > 0 && (
