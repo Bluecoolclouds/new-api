@@ -85,10 +85,14 @@ export function useTopNavLinks(): TopNavLink[] {
     links.push({ title: t('Rankings'), href: '/rankings', requiresAuth })
   }
 
-  // Docs (external only when explicitly set to http/https URL)
+  // Docs — always internal /docs unless admin set a custom external URL
+  // (ignore the shipped default "https://docs.newapi.pro" so it falls through to /docs)
   if (modules?.docs !== false) {
-    const isExternalDocsLink = docsLink && (docsLink.startsWith('http://') || docsLink.startsWith('https://'))
-    if (isExternalDocsLink) {
+    const isCustomExternalDocsLink =
+      docsLink &&
+      docsLink !== 'https://docs.newapi.pro' &&
+      (docsLink.startsWith('http://') || docsLink.startsWith('https://'))
+    if (isCustomExternalDocsLink) {
       links.push({ title: t('Docs'), href: docsLink, external: true })
     } else {
       links.push({ title: t('Docs'), href: '/docs' })
