@@ -169,6 +169,10 @@ export interface TopupInfo {
   enable_freekassa_topup?: boolean
   /** Minimum topup amount for FreeKassa */
   freekassa_min_topup?: number
+  /** FreeKassa unit price (₽ per $1 of credits) */
+  freekassa_unit_price?: number
+  /** Last fetched CBR USD/RUB rate */
+  freekassa_cbr_rate?: number
   /** Whether redemption code usage is enabled */
   enable_redemption?: boolean
   /** Whether compliance confirmation has been completed */

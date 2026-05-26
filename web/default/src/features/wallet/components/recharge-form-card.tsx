@@ -186,6 +186,8 @@ interface RechargeFormCardProps {
   enableWaffoPancakeTopup?: boolean
   enableFreeKassaTopup?: boolean
   rawUsdExchangeRate?: number
+  freekassaUnitPrice?: number
+  freekassaCbrRate?: number
 }
 
 // ============================================================================
@@ -224,6 +226,8 @@ export function RechargeFormCard({
   enableWaffoPancakeTopup,
   enableFreeKassaTopup,
   rawUsdExchangeRate = 1,
+  freekassaUnitPrice = 0,
+  freekassaCbrRate = 0,
 }: RechargeFormCardProps) {
   const { t } = useTranslation()
 
@@ -236,22 +240,40 @@ export function RechargeFormCard({
     rubRate > 1 ? 'rub' : 'usd'
   )
 
+  // USD mode with FreeKassa: user enters real-dollar payment, gets more credits back
+  const isFreekassaUsdMode =
+    localCurrency === 'usd' &&
+    localSelectedMethod?.type === 'freekassa' &&
+    freekassaCbrRate > 0 &&
+    freekassaUnitPrice > 0
+
   const displaySymbol = localCurrency === 'rub' ? '₽' : '$'
   const showCurrencyToggle = rubRate > 1
 
-  const toDisplay = (usdAmount: number) =>
-    localCurrency === 'rub' && rubRate > 1 ? Math.round(usdAmount * rubRate) : usdAmount
-  const toBase = (displayAmount: number) =>
-    localCurrency === 'rub' && rubRate > 1
-      ? displayAmount / rubRate
-      : displayAmount
+  // toDisplay: credits (USD) → display amount
+  const toDisplay = (usdAmount: number) => {
+    if (localCurrency === 'rub' && rubRate > 1) return Math.round(usdAmount * rubRate)
+    if (isFreekassaUsdMode) return parseFloat((usdAmount * freekassaUnitPrice / freekassaCbrRate).toFixed(2))
+    return usdAmount
+  }
+  // toBase: display amount → credits (USD)
+  const toBase = (displayAmount: number) => {
+    if (localCurrency === 'rub' && rubRate > 1) return displayAmount / rubRate
+    if (isFreekassaUsdMode) return displayAmount * freekassaCbrRate / freekassaUnitPrice
+    return displayAmount
+  }
 
   useEffect(() => {
-    const display = localCurrency === 'rub' && rubRate > 1
-      ? Math.round(topupAmount * rubRate)
-      : topupAmount
+    let display: number
+    if (localCurrency === 'rub' && rubRate > 1) {
+      display = Math.round(topupAmount * rubRate)
+    } else if (localCurrency === 'usd' && localSelectedMethod?.type === 'freekassa' && freekassaCbrRate > 0 && freekassaUnitPrice > 0) {
+      display = parseFloat((topupAmount * freekassaUnitPrice / freekassaCbrRate).toFixed(2))
+    } else {
+      display = topupAmount
+    }
     setLocalAmount(display.toString())
-  }, [topupAmount, localCurrency, rubRate])
+  }, [topupAmount, localCurrency, rubRate, localSelectedMethod?.type, freekassaCbrRate, freekassaUnitPrice])
 
   const hasConfigurableTopup =
     topupInfo?.enable_online_topup ||
@@ -299,9 +321,16 @@ export function RechargeFormCard({
 
   const handleCurrencySwitch = (c: 'rub' | 'usd') => {
     setLocalCurrency(c)
-    const newDisplayAmt = c === 'rub' && rubRate > 1
-      ? Math.round(topupAmount * rubRate)
-      : topupAmount
+    // Let the useEffect recalculate localAmount based on new currency + mode
+    const isFkUsd = c === 'usd' && localSelectedMethod?.type === 'freekassa' && freekassaCbrRate > 0 && freekassaUnitPrice > 0
+    let newDisplayAmt: number
+    if (c === 'rub' && rubRate > 1) {
+      newDisplayAmt = Math.round(topupAmount * rubRate)
+    } else if (isFkUsd) {
+      newDisplayAmt = parseFloat((topupAmount * freekassaUnitPrice / freekassaCbrRate).toFixed(2))
+    } else {
+      newDisplayAmt = topupAmount
+    }
     setLocalAmount(newDisplayAmt.toString())
   }
 
@@ -474,7 +503,7 @@ export function RechargeFormCard({
                     type='range'
                     min={toDisplay(minTopup)}
                     max={toDisplay(maxTopup)}
-                    step={localCurrency === 'rub' ? Math.round(rubRate) : 1}
+                    step={localCurrency === 'rub' ? Math.round(rubRate) : isFreekassaUsdMode ? 0.5 : 1}
                     value={Math.min(
                       Math.max(toDisplay(topupAmount), toDisplay(minTopup)),
                       toDisplay(maxTopup)

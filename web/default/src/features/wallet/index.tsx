@@ -323,6 +323,8 @@ export function Wallet(props: WalletProps) {
                     topupInfo?.enable_waffo_pancake_topup
                   }
                   enableFreeKassaTopup={topupInfo?.enable_freekassa_topup}
+                  freekassaUnitPrice={topupInfo?.freekassa_unit_price}
+                  freekassaCbrRate={topupInfo?.freekassa_cbr_rate}
                   onMethodChange={handleMethodChange}
                   discountRate={getDiscountRate()}
                 />
