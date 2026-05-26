@@ -243,11 +243,11 @@ export function RechargeDialog(props: { triggerClassName?: string }) {
           </Button>
         }
       />
-      <DialogContent className='flex max-h-[90vh] w-full max-w-lg flex-col overflow-hidden p-0'>
-        <DialogHeader className='shrink-0 border-b px-6 py-4'>
+      <DialogContent className='flex max-h-[calc(100dvh-2rem)] flex-col max-sm:h-dvh max-sm:w-screen max-sm:max-w-none max-sm:rounded-none sm:max-w-lg'>
+        <DialogHeader>
           <DialogTitle>{t('Add Funds')}</DialogTitle>
         </DialogHeader>
-        <div className='flex-1 overflow-y-auto px-6 py-4'>
+        <div className='min-h-0 flex-1 overflow-y-auto'>
           {open && <RechargeContent />}
         </div>
       </DialogContent>
