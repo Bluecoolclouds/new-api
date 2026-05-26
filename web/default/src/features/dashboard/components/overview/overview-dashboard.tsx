@@ -38,6 +38,7 @@ import { getApiKeys } from '@/features/keys/api'
 import {
   useDashboardContentVisibility,
 } from '../../hooks/use-status-data'
+import { GreetingHeader } from './greeting-header'
 import { AnnouncementsPanel } from './announcements-panel'
 import { ApiInfoPanel } from './api-info-panel'
 import { ApiKeysMiniPanel } from './api-keys-mini-panel'
@@ -148,104 +149,95 @@ export function OverviewDashboard() {
   )
 
   return (
-    <div className='flex flex-col gap-4'>
-      {/* ── 1. Summary stat cards (full width) ── */}
-      <SummaryCards />
+    <div className='grid grid-cols-1 items-start gap-4 xl:grid-cols-[minmax(0,1fr)_17rem]'>
 
-      {/* ── 2. Two-column layout: main content + right sidebar ── */}
-      <div className='grid grid-cols-1 items-start gap-4 xl:grid-cols-[minmax(0,1fr)_17rem]'>
+      {/* ── Main content column ── */}
+      <div className='flex flex-col gap-4 min-w-0'>
 
-        {/* ── Main content column ── */}
-        <div className='flex flex-col gap-4 min-w-0'>
+        {/* 1. Greeting header */}
+        <CardStaggerContainer>
+          <CardStaggerItem>
+            <GreetingHeader />
+          </CardStaggerItem>
+        </CardStaggerContainer>
 
-          {/* 2a. Usage chart */}
-          <CardStaggerContainer>
-            <CardStaggerItem>
-              <UsageOverviewPanel data={quotaData} loading={quotaLoading} />
-            </CardStaggerItem>
+        {/* 2. Stat cards */}
+        <CardStaggerContainer>
+          <CardStaggerItem>
+            <SummaryCards />
+          </CardStaggerItem>
+        </CardStaggerContainer>
+
+        {/* 3. Usage chart */}
+        <CardStaggerContainer>
+          <CardStaggerItem>
+            <UsageOverviewPanel data={quotaData} loading={quotaLoading} />
+          </CardStaggerItem>
+        </CardStaggerContainer>
+
+        {/* 4. Popular models */}
+        <CardStaggerContainer>
+          <CardStaggerItem>
+            <PopularModelsPanel data={quotaData} loading={quotaLoading} />
+          </CardStaggerItem>
+        </CardStaggerContainer>
+
+        {/* 5. API keys mini table */}
+        <CardStaggerContainer>
+          <CardStaggerItem>
+            <ApiKeysMiniPanel
+              keys={apiKeysQuery.data ?? []}
+              loading={apiKeysQuery.isLoading}
+            />
+          </CardStaggerItem>
+        </CardStaggerContainer>
+
+        {/* 6. Content panels (3-col: info / announcements / FAQ + uptime) */}
+        {showContentPanels && (
+          <CardStaggerContainer
+            className={cn('grid grid-cols-1 gap-4', 'sm:grid-cols-2 lg:grid-cols-3')}
+          >
+            {isAdmin && (
+              <CardStaggerItem className='sm:col-span-2 lg:col-span-3'>
+                <PerformanceHealthPanel />
+              </CardStaggerItem>
+            )}
+            {showApiInfoPanel && (
+              <CardStaggerItem>
+                <ApiInfoPanel />
+              </CardStaggerItem>
+            )}
+            {showAnnouncementsPanel && (
+              <CardStaggerItem>
+                <AnnouncementsPanel />
+              </CardStaggerItem>
+            )}
+            {showFAQPanel && (
+              <CardStaggerItem>
+                <FAQPanel />
+              </CardStaggerItem>
+            )}
+            {showUptimePanel && (
+              <CardStaggerItem>
+                <UptimePanel />
+              </CardStaggerItem>
+            )}
           </CardStaggerContainer>
+        )}
+      </div>
 
-          {/* 2b. Popular models (top by spend) */}
-          <CardStaggerContainer>
-            <CardStaggerItem>
-              <PopularModelsPanel data={quotaData} loading={quotaLoading} />
-            </CardStaggerItem>
-          </CardStaggerContainer>
-
-          {/* 2c. API keys mini table */}
-          <CardStaggerContainer>
-            <CardStaggerItem>
-              <ApiKeysMiniPanel
-                keys={apiKeysQuery.data ?? []}
-                loading={apiKeysQuery.isLoading}
-              />
-            </CardStaggerItem>
-          </CardStaggerContainer>
-
-          {/* 2d. Content panels (info / announcements / FAQ / uptime) */}
-          {showContentPanels && (
-            <CardStaggerContainer
-              className={cn(
-                'grid grid-cols-1 gap-4',
-                showLeftContentPanels &&
-                  showUptimePanel &&
-                  'xl:grid-cols-[minmax(0,1fr)_22rem]'
-              )}
-            >
-              {showLeftContentPanels && (
-                <div
-                  className={cn(
-                    'grid min-w-0 grid-cols-1 gap-4',
-                    (showApiInfoPanel ||
-                      showAnnouncementsPanel ||
-                      showFAQPanel) &&
-                      'sm:grid-cols-2'
-                  )}
-                >
-                  {isAdmin && (
-                    <CardStaggerItem className='sm:col-span-2'>
-                      <PerformanceHealthPanel />
-                    </CardStaggerItem>
-                  )}
-                  {showApiInfoPanel && (
-                    <CardStaggerItem>
-                      <ApiInfoPanel />
-                    </CardStaggerItem>
-                  )}
-                  {showAnnouncementsPanel && (
-                    <CardStaggerItem>
-                      <AnnouncementsPanel />
-                    </CardStaggerItem>
-                  )}
-                  {showFAQPanel && (
-                    <CardStaggerItem>
-                      <FAQPanel />
-                    </CardStaggerItem>
-                  )}
-                </div>
-              )}
-              {showUptimePanel && (
-                <CardStaggerItem>
-                  <UptimePanel />
-                </CardStaggerItem>
-              )}
-            </CardStaggerContainer>
-          )}
-        </div>
-
-        {/* ── Right sidebar column ── */}
-        <div className='flex flex-col gap-4'>
-          <CardStaggerContainer>
-            <CardStaggerItem>
-              <QuickActionsSidebar actions={visibleQuickActions} />
-            </CardStaggerItem>
-          </CardStaggerContainer>
-          <CardStaggerContainer>
-            <CardStaggerItem>
-              <RecentActivityPanel />
-            </CardStaggerItem>
-          </CardStaggerContainer>
-        </div>
+      {/* ── Right sidebar column ── */}
+      <div className='flex flex-col gap-4'>
+        <CardStaggerContainer>
+          <CardStaggerItem>
+            <QuickActionsSidebar actions={visibleQuickActions} />
+          </CardStaggerItem>
+        </CardStaggerContainer>
+        <CardStaggerContainer>
+          <CardStaggerItem>
+            <RecentActivityPanel />
+          </CardStaggerItem>
+        </CardStaggerContainer>
       </div>
     </div>
   )
