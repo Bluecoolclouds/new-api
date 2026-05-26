@@ -49,6 +49,7 @@ const freeKassaSchema = z.object({
   FreeKassaPaymentSystemId: z.string(),
   FreeKassaCardPaymentSystemId: z.string(),
   FreeKassaCryptoPaymentSystemId: z.string(),
+  FreeKassaFallbackEmail: z.string(),
   FreeKassaCBRMarkup: z.coerce.number(),
   FreeKassaCBRAutoSync: z.boolean(),
 })
@@ -169,6 +170,9 @@ export function FreeKassaSettingsSection({ defaultValues }: Props) {
     }
     if (values.FreeKassaCryptoPaymentSystemId !== initial.FreeKassaCryptoPaymentSystemId) {
       updates.push({ key: 'FreeKassaCryptoPaymentSystemId', value: values.FreeKassaCryptoPaymentSystemId })
+    }
+    if (values.FreeKassaFallbackEmail !== initial.FreeKassaFallbackEmail) {
+      updates.push({ key: 'FreeKassaFallbackEmail', value: values.FreeKassaFallbackEmail })
     }
     if (values.FreeKassaCBRMarkup !== initial.FreeKassaCBRMarkup) {
       updates.push({ key: 'FreeKassaCBRMarkup', value: values.FreeKassaCBRMarkup })
@@ -520,6 +524,27 @@ export function FreeKassaSettingsSection({ defaultValues }: Props) {
                 </FormControl>
                 <p className='text-muted-foreground text-xs'>
                   {t('FreeKassa payment method ID for SBP (fast bank transfers). Default: 44.')}
+                </p>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name='FreeKassaFallbackEmail'
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>{t('Fallback Email')}</FormLabel>
+                <FormControl>
+                  <Input
+                    placeholder='test@gmail.com'
+                    autoComplete='off'
+                    {...field}
+                  />
+                </FormControl>
+                <p className='text-muted-foreground text-xs'>
+                  {t('Email sent to FreeKassa when the user has no email in their profile.')}
                 </p>
                 <FormMessage />
               </FormItem>

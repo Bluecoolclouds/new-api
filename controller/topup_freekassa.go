@@ -116,6 +116,9 @@ func getFreeKassaUserEmail(user *model.User) string {
         if user != nil && strings.TrimSpace(user.Email) != "" {
                 return user.Email
         }
+        if setting.FreeKassaFallbackEmail != "" {
+                return setting.FreeKassaFallbackEmail
+        }
         return ""
 }
 

@@ -182,6 +182,9 @@ const BILLING_SECTIONS = [
           FreeKassaMinTopUp: settings.FreeKassaMinTopUp ?? 1,
           FreeKassaReturnURL: settings.FreeKassaReturnURL ?? '',
           FreeKassaPaymentSystemId: settings.FreeKassaPaymentSystemId ?? '44',
+          FreeKassaCardPaymentSystemId: settings.FreeKassaCardPaymentSystemId ?? '',
+          FreeKassaCryptoPaymentSystemId: settings.FreeKassaCryptoPaymentSystemId ?? '',
+          FreeKassaFallbackEmail: settings.FreeKassaFallbackEmail ?? '',
           FreeKassaCBRMarkup: settings.FreeKassaCBRMarkup ?? 0,
           FreeKassaCBRAutoSync: settings.FreeKassaCBRAutoSync ?? false,
         }}
