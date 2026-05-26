@@ -113,19 +113,6 @@ export function ApiKeysMiniPanel({ keys, loading }: ApiKeysMiniPanelProps) {
         </div>
       }
     >
-      {/* Table header */}
-      <div className='text-muted-foreground border-b px-4 py-2 sm:px-5'>
-        <div className='grid items-center gap-3 text-[11px] font-medium uppercase tracking-wider'
-          style={{ gridTemplateColumns: 'minmax(0,1fr) minmax(0,9rem) minmax(0,6rem) minmax(0,8rem) auto' }}
-        >
-          <span>{t('Name')}</span>
-          <span>{t('Budget')}</span>
-          <span>{t('Group')}</span>
-          <span>{t('Key')}</span>
-          <span />
-        </div>
-      </div>
-
       <div className='divide-y'>
         {displayKeys.map((key) => {
           const budget = formatBudget(key)
@@ -133,61 +120,50 @@ export function ApiKeysMiniPanel({ keys, loading }: ApiKeysMiniPanelProps) {
             <Link
               key={key.id}
               to='/keys'
-              className='hover:bg-muted/30 flex items-center px-4 py-3 transition-colors sm:px-5'
+              className='hover:bg-muted/30 flex items-center gap-3 px-4 py-3 transition-colors sm:px-5'
             >
-              <div
-                className='grid w-full items-center gap-3'
-                style={{ gridTemplateColumns: 'minmax(0,1fr) minmax(0,9rem) minmax(0,6rem) minmax(0,8rem) auto' }}
-              >
-                {/* Name + status dot */}
-                <span className='flex min-w-0 items-center gap-2'>
-                  <span className='bg-muted flex size-6 shrink-0 items-center justify-center rounded-md'>
-                    <KeyRound className='size-3' />
-                  </span>
-                  <span className='flex min-w-0 items-center gap-1.5'>
-                    <StatusDot status={key.status ?? 0} />
-                    <span className='truncate text-xs font-medium'>
-                      {key.name || t('Unnamed key')}
-                    </span>
-                  </span>
-                </span>
+              {/* Icon */}
+              <span className='bg-muted flex size-7 shrink-0 items-center justify-center rounded-md'>
+                <KeyRound className='size-3.5' />
+              </span>
 
-                {/* Budget remaining / total */}
-                <span className='flex min-w-0 flex-col gap-0'>
-                  <span className='text-xs font-medium tabular-nums'>
-                    {budget.remaining}
+              {/* Name + key excerpt */}
+              <span className='flex min-w-0 flex-1 flex-col gap-0.5'>
+                <span className='flex items-center gap-1.5'>
+                  <StatusDot status={key.status ?? 0} />
+                  <span className='truncate text-xs font-medium'>
+                    {key.name || t('Unnamed key')}
                   </span>
-                  {!key.unlimited_quota && (
-                    <span className='text-muted-foreground text-xs tabular-nums'>
-                      / {budget.total}
-                    </span>
-                  )}
-                </span>
-
-                {/* Group */}
-                <span className='min-w-0'>
-                  {key.group ? (
+                  {key.group && (
                     <Badge
                       variant='secondary'
-                      className='max-w-full truncate px-1.5 py-0 text-xs'
+                      className='hidden sm:inline-flex shrink-0 px-1.5 py-0 text-[10px]'
                     >
                       {key.group}
                     </Badge>
-                  ) : (
-                    <span className='text-muted-foreground text-xs'>—</span>
                   )}
                 </span>
-
-                {/* Key excerpt */}
-                <span className='text-muted-foreground min-w-0 truncate font-mono text-xs'>
+                <span className='text-muted-foreground truncate font-mono text-[11px]'>
                   {formatKeyExcerpt(key.key)}
                 </span>
+              </span>
 
-                {/* 3-dots menu */}
-                <span onClick={(e) => e.preventDefault()}>
-                  <KeyRowMenu apiKey={key} />
+              {/* Budget */}
+              <span className='flex shrink-0 flex-col items-end gap-0'>
+                <span className='text-xs font-medium tabular-nums'>
+                  {budget.remaining}
                 </span>
-              </div>
+                {!key.unlimited_quota && (
+                  <span className='text-muted-foreground text-[11px] tabular-nums'>
+                    / {budget.total}
+                  </span>
+                )}
+              </span>
+
+              {/* Menu */}
+              <span onClick={(e) => e.preventDefault()}>
+                <KeyRowMenu apiKey={key} />
+              </span>
             </Link>
           )
         })}

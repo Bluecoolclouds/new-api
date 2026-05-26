@@ -1,8 +1,6 @@
-import { Link } from '@tanstack/react-router'
-import { KeyRound, Sparkles } from 'lucide-react'
+import { Sparkles } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { useAuthStore } from '@/stores/auth-store'
-import { Button } from '@/components/ui/button'
 
 function getGreeting(): string {
   const h = new Date().getHours()
@@ -17,24 +15,18 @@ export function GreetingHeader() {
   const name = user?.display_name || user?.username || 'there'
 
   return (
-    <div className='flex flex-wrap items-center justify-between gap-3'>
-      <div className='flex min-w-0 items-center gap-3'>
-        <span className='bg-primary/10 flex size-10 shrink-0 items-center justify-center rounded-xl'>
-          <Sparkles className='text-primary size-5' />
-        </span>
-        <div className='min-w-0'>
-          <h2 className='truncate text-lg font-semibold tracking-tight'>
-            {t(getGreeting())}, {name}!
-          </h2>
-          <p className='text-muted-foreground text-xs leading-snug'>
-            {t('Manage your API keys, track usage, and explore models.')}
-          </p>
-        </div>
+    <div className='flex min-w-0 items-center gap-3'>
+      <span className='bg-primary/10 flex size-10 shrink-0 items-center justify-center rounded-xl'>
+        <Sparkles className='text-primary size-5' />
+      </span>
+      <div className='min-w-0'>
+        <h2 className='truncate text-lg font-semibold tracking-tight'>
+          {t(getGreeting())}, {name}!
+        </h2>
+        <p className='text-muted-foreground text-xs leading-snug'>
+          {t('Manage your API keys, track usage, and explore models.')}
+        </p>
       </div>
-      <Button size='sm' render={<Link to='/keys' />}>
-        <KeyRound data-icon='inline-start' />
-        {t('Create API Key')}
-      </Button>
     </div>
   )
 }
