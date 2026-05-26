@@ -594,10 +594,15 @@ export function OverviewDashboard() {
 
   return (
     <div className='flex flex-col gap-4'>
+
+      {/* ── 1. Краткий обзор использования ── */}
+      <SummaryCards />
+
+      {/* ── 2. Начало работы ── */}
       {setupGuideExpanded ? (
-        <CardStaggerContainer className='grid items-stretch gap-4 xl:grid-cols-[minmax(0,1fr)_22rem]'>
-          <CardStaggerItem className='bg-card h-full overflow-hidden rounded-2xl border shadow-xs'>
-            <div className='relative h-full overflow-hidden p-4 sm:p-5'>
+        <CardStaggerContainer>
+          <CardStaggerItem className='bg-card overflow-hidden rounded-2xl border shadow-xs'>
+            <div className='relative overflow-hidden p-4 sm:p-5'>
               <SetupGuideBackdrop />
               <div className='relative grid gap-5 lg:grid-cols-[minmax(0,1fr)_21rem]'>
                 <div className='flex min-w-0 flex-col gap-5'>
@@ -651,24 +656,6 @@ export function OverviewDashboard() {
               </div>
             </div>
           </CardStaggerItem>
-
-          <CardStaggerItem className='bg-card h-full rounded-2xl border p-4 shadow-xs sm:p-5'>
-            <div className='flex h-full flex-col gap-4'>
-              <div className='flex flex-col gap-1'>
-                <div className='text-muted-foreground text-xs font-medium tracking-wider uppercase'>
-                  {t('Recommended actions')}
-                </div>
-                <h3 className='text-lg font-semibold tracking-tight'>
-                  {t('Keep the platform ready')}
-                </h3>
-              </div>
-              <div className='grid gap-2'>
-                {visibleQuickActions.map((action) => (
-                  <QuickActionItem key={action.title} action={action} />
-                ))}
-              </div>
-            </div>
-          </CardStaggerItem>
         </CardStaggerContainer>
       ) : (
         <CardStaggerContainer>
@@ -704,28 +691,43 @@ export function OverviewDashboard() {
                   </div>
                 </div>
 
-                <div className='flex flex-wrap items-center gap-2'>
-                  {visibleQuickActions.map((action) => (
-                    <CompactQuickAction key={action.title} action={action} />
-                  ))}
-                  <Button
-                    variant='outline'
-                    size='sm'
-                    className='bg-background/70 h-8 min-w-28'
-                    onClick={handleSetupGuideToggle}
-                  >
-                    <ChevronDown data-icon='inline-start' />
-                    {t('Show setup guide')}
-                  </Button>
-                </div>
+                <Button
+                  variant='outline'
+                  size='sm'
+                  className='bg-background/70 h-8 min-w-28'
+                  onClick={handleSetupGuideToggle}
+                >
+                  <ChevronDown data-icon='inline-start' />
+                  {t('Show setup guide')}
+                </Button>
               </div>
             </div>
           </CardStaggerItem>
         </CardStaggerContainer>
       )}
 
-      <SummaryCards />
+      {/* ── 3. Рекомендуемые действия ── */}
+      <CardStaggerContainer>
+        <CardStaggerItem className='bg-card rounded-2xl border p-4 shadow-xs sm:p-5'>
+          <div className='flex flex-col gap-4'>
+            <div className='flex flex-col gap-1'>
+              <div className='text-muted-foreground text-xs font-medium tracking-wider uppercase'>
+                {t('Recommended actions')}
+              </div>
+              <h3 className='text-lg font-semibold tracking-tight'>
+                {t('Keep the platform ready')}
+              </h3>
+            </div>
+            <div className='grid gap-2 sm:grid-cols-2 xl:grid-cols-4'>
+              {visibleQuickActions.map((action) => (
+                <QuickActionItem key={action.title} action={action} />
+              ))}
+            </div>
+          </div>
+        </CardStaggerItem>
+      </CardStaggerContainer>
 
+      {/* ── 4. Информация об API, объявления, FAQ ── */}
       {showContentPanels && (
         <CardStaggerContainer
           className={cn(
