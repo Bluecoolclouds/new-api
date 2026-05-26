@@ -32,6 +32,7 @@ import { StaggerContainer, StaggerItem } from '@/components/page-transition'
 import { getUserQuotaDates } from '@/features/dashboard/api'
 import { useSummaryCardsConfig } from '@/features/dashboard/hooks/use-dashboard-config'
 import type { QuotaDataItem } from '@/features/dashboard/types'
+import { RechargeDialog } from '@/features/wallet/components/recharge-dialog'
 import { StatCard } from '../ui/stat-card'
 
 const SUMMARY_SPARKLINE_BUCKETS = 12
@@ -335,10 +336,17 @@ export function SummaryCards() {
             </div>
           </div>
 
-          <Button className='justify-between' render={<Link to='/wallet' />}>
-            <span>{t('Wallet')}</span>
-            <ArrowRight data-icon='inline-end' />
-          </Button>
+          <div className='flex gap-2'>
+            <RechargeDialog triggerClassName='flex-1' />
+            <Button
+              variant='outline'
+              className='flex-1 justify-between'
+              render={<Link to='/wallet' />}
+            >
+              <span>{t('Wallet')}</span>
+              <ArrowRight data-icon='inline-end' />
+            </Button>
+          </div>
         </div>
       </div>
     </div>
