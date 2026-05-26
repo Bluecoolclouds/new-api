@@ -283,21 +283,10 @@ export function Wallet(props: WalletProps) {
               <div className='flex flex-col gap-4'>
                 <WalletStatsCard user={user} loading={userLoading} />
 
-                {showSubscriptionPanel && (
-                  <SubscriptionPlansCard
-                    topupInfo={topupInfo}
-                    onAvailabilityChange={handleSubscriptionAvailabilityChange}
-                  />
-                )}
-                {/* Hidden SubscriptionPlansCard to detect availability on mount */}
-                {!showSubscriptionPanel && (
-                  <div className='hidden'>
-                    <SubscriptionPlansCard
-                      topupInfo={topupInfo}
-                      onAvailabilityChange={handleSubscriptionAvailabilityChange}
-                    />
-                  </div>
-                )}
+                <SubscriptionPlansCard
+                  topupInfo={topupInfo}
+                  onAvailabilityChange={handleSubscriptionAvailabilityChange}
+                />
 
                 <AffiliateRewardsCard
                   user={user}
