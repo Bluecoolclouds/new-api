@@ -398,7 +398,7 @@ function QuickActionItem(props: { action: QuickAction }) {
         <span className='truncate text-sm font-medium'>
           {props.action.title}
         </span>
-        <span className='text-muted-foreground text-xs leading-relaxed'>
+        <span className='text-muted-foreground line-clamp-2 text-xs leading-snug'>
           {props.action.description}
         </span>
       </span>
@@ -770,11 +770,6 @@ export function OverviewDashboard() {
                   {showApiInfoPanel && (
                     <CardStaggerItem>
                       <ApiInfoPanel />
-                    </CardStaggerItem>
-                  )}
-                  {showAnnouncementsPanel && (
-                    <CardStaggerItem>
-                      <AnnouncementsPanel />
                     </CardStaggerItem>
                   )}
                   {showFAQPanel && (
