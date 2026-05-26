@@ -1,5 +1,6 @@
 import { Link } from '@tanstack/react-router'
-import { Copy, ExternalLink, KeyRound, MoreHorizontal, Plus } from 'lucide-react'
+import { Check, Copy, ExternalLink, KeyRound, MoreHorizontal, Plus } from 'lucide-react'
+import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { formatQuota } from '@/lib/format'
 import { copyToClipboard } from '@/lib/copy-to-clipboard'
@@ -35,6 +36,37 @@ function StatusDot({ status }: { status: number }) {
     return <span className='bg-success size-1.5 rounded-full shrink-0' />
   }
   return <span className='bg-destructive size-1.5 rounded-full shrink-0' />
+}
+
+function CopyKeyButton({ apiKey }: { apiKey: ApiKey }) {
+  const [copied, setCopied] = useState(false)
+
+  const handleCopy = async (e: React.MouseEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    if (!apiKey.key) return
+    await copyToClipboard(apiKey.key)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 1500)
+  }
+
+  return (
+    <button
+      onClick={handleCopy}
+      className='group/key flex items-center gap-1 rounded px-1 -mx-1 transition-colors hover:bg-muted/60 cursor-pointer'
+      title='Копировать ключ'
+    >
+      <span className='text-muted-foreground font-mono text-[11px] transition-colors group-hover/key:text-foreground'>
+        {formatKeyExcerpt(apiKey.key)}
+      </span>
+      <span className='text-muted-foreground/50 group-hover/key:text-muted-foreground shrink-0 transition-colors'>
+        {copied
+          ? <Check className='size-2.5 text-success' />
+          : <Copy className='size-2.5' />
+        }
+      </span>
+    </button>
+  )
 }
 
 function KeyRowMenu({ apiKey }: { apiKey: ApiKey }) {
@@ -113,6 +145,18 @@ export function ApiKeysMiniPanel({ keys, loading }: ApiKeysMiniPanelProps) {
         </div>
       }
     >
+      {/* Column headers */}
+      <div className='text-muted-foreground/70 border-b px-4 pb-1.5 pt-2 sm:px-5'>
+        <div className='grid items-center gap-3 text-[10px] font-medium uppercase tracking-wider'
+          style={{ gridTemplateColumns: 'minmax(0,1fr) minmax(0,10rem) minmax(0,7rem) auto' }}
+        >
+          <span>{t('Name')}</span>
+          <span>{t('Key')}</span>
+          <span className='text-right'>{t('Budget')}</span>
+          <span />
+        </div>
+      </div>
+
       <div className='divide-y'>
         {displayKeys.map((key) => {
           const budget = formatBudget(key)
@@ -120,50 +164,55 @@ export function ApiKeysMiniPanel({ keys, loading }: ApiKeysMiniPanelProps) {
             <Link
               key={key.id}
               to='/keys'
-              className='hover:bg-muted/30 flex items-center gap-3 px-4 py-3 transition-colors sm:px-5'
+              className='hover:bg-muted/30 flex items-center gap-3 px-4 py-2.5 transition-colors sm:px-5'
             >
-              {/* Icon */}
-              <span className='bg-muted flex size-7 shrink-0 items-center justify-center rounded-md'>
-                <KeyRound className='size-3.5' />
-              </span>
-
-              {/* Name + key excerpt */}
-              <span className='flex min-w-0 flex-1 flex-col gap-0.5'>
-                <span className='flex items-center gap-1.5'>
-                  <StatusDot status={key.status ?? 0} />
-                  <span className='truncate text-xs font-medium'>
-                    {key.name || t('Unnamed key')}
+              <div
+                className='grid w-full items-center gap-3'
+                style={{ gridTemplateColumns: 'minmax(0,1fr) minmax(0,10rem) minmax(0,7rem) auto' }}
+              >
+                {/* Name */}
+                <span className='flex min-w-0 items-center gap-2'>
+                  <span className='bg-muted flex size-6 shrink-0 items-center justify-center rounded-md'>
+                    <KeyRound className='size-3' />
                   </span>
-                  {key.group && (
-                    <Badge
-                      variant='secondary'
-                      className='hidden sm:inline-flex shrink-0 px-1.5 py-0 text-[10px]'
-                    >
-                      {key.group}
-                    </Badge>
+                  <span className='flex min-w-0 items-center gap-1.5'>
+                    <StatusDot status={key.status ?? 0} />
+                    <span className='truncate text-xs font-medium'>
+                      {key.name || t('Unnamed key')}
+                    </span>
+                    {key.group && (
+                      <Badge
+                        variant='secondary'
+                        className='hidden lg:inline-flex shrink-0 px-1.5 py-0 text-[10px]'
+                      >
+                        {key.group}
+                      </Badge>
+                    )}
+                  </span>
+                </span>
+
+                {/* Key (click to copy) */}
+                <span onClick={(e) => e.preventDefault()}>
+                  <CopyKeyButton apiKey={key} />
+                </span>
+
+                {/* Budget */}
+                <span className='flex min-w-0 flex-col items-end gap-0'>
+                  <span className='text-sm font-semibold tabular-nums'>
+                    {budget.remaining}
+                  </span>
+                  {!key.unlimited_quota && (
+                    <span className='text-muted-foreground text-[11px] tabular-nums'>
+                      / {budget.total}
+                    </span>
                   )}
                 </span>
-                <span className='text-muted-foreground truncate font-mono text-[11px]'>
-                  {formatKeyExcerpt(key.key)}
-                </span>
-              </span>
 
-              {/* Budget */}
-              <span className='flex shrink-0 flex-col items-end gap-0'>
-                <span className='text-xs font-medium tabular-nums'>
-                  {budget.remaining}
+                {/* Menu */}
+                <span onClick={(e) => e.preventDefault()}>
+                  <KeyRowMenu apiKey={key} />
                 </span>
-                {!key.unlimited_quota && (
-                  <span className='text-muted-foreground text-[11px] tabular-nums'>
-                    / {budget.total}
-                  </span>
-                )}
-              </span>
-
-              {/* Menu */}
-              <span onClick={(e) => e.preventDefault()}>
-                <KeyRowMenu apiKey={key} />
-              </span>
+              </div>
             </Link>
           )
         })}
