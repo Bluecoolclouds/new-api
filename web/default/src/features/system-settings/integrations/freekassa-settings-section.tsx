@@ -32,6 +32,7 @@ import {
   FormMessage,
 } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
+import { Switch } from '@/components/ui/switch'
 import { SettingsForm } from '../components/settings-form-layout'
 import { SettingsPageActionsPortal } from '../components/settings-page-context'
 import { useUpdateOption } from '../hooks/use-update-option'
@@ -45,6 +46,8 @@ const freeKassaSchema = z.object({
   FreeKassaMinTopUp: z.coerce.number().min(0),
   FreeKassaReturnURL: z.string(),
   FreeKassaPaymentSystemId: z.string(),
+  FreeKassaCBRMarkup: z.coerce.number(),
+  FreeKassaCBRAutoSync: z.boolean(),
 })
 
 export type FreeKassaSettingsValues = z.infer<typeof freeKassaSchema>
@@ -78,6 +81,52 @@ export function FreeKassaSettingsSection({ defaultValues }: Props) {
   }, [defaultsSignature, form])
 
   const [saving, setSaving] = React.useState(false)
+  const [cbrFetching, setCbrFetching] = React.useState(false)
+  const [cbrApplying, setCbrApplying] = React.useState(false)
+  const [liveRate, setLiveRate] = React.useState<number | null>(null)
+  const [fetchedAt, setFetchedAt] = React.useState<number | null>(null)
+
+  const fetchCBRRate = async () => {
+    setCbrFetching(true)
+    try {
+      const res = await fetch('/api/option/cbr-rate', { credentials: 'include' })
+      const data = await res.json()
+      if (data.success) {
+        setLiveRate(data.rate)
+        setFetchedAt(data.fetchedAt)
+        toast.success(t('CBR rate fetched: ') + data.rate.toFixed(4) + ' ₽/$')
+      } else {
+        toast.error(data.message || t('Failed to fetch CBR rate'))
+      }
+    } catch {
+      toast.error(t('Failed to fetch CBR rate'))
+    } finally {
+      setCbrFetching(false)
+    }
+  }
+
+  const applyCBRRate = async () => {
+    setCbrApplying(true)
+    try {
+      const res = await fetch('/api/option/cbr-rate/apply', {
+        method: 'POST',
+        credentials: 'include',
+      })
+      const data = await res.json()
+      if (data.success) {
+        setLiveRate(data.rate)
+        form.setValue('FreeKassaUnitPrice', data.unitPrice)
+        initialRef.current = { ...initialRef.current, FreeKassaUnitPrice: data.unitPrice }
+        toast.success(data.message || t('CBR rate applied'))
+      } else {
+        toast.error(data.message || t('Failed to apply CBR rate'))
+      }
+    } catch {
+      toast.error(t('Failed to apply CBR rate'))
+    } finally {
+      setCbrApplying(false)
+    }
+  }
 
   const handleSave = async () => {
     const valid = await form.trigger()
@@ -101,6 +150,10 @@ export function FreeKassaSettingsSection({ defaultValues }: Props) {
     }
     if (values.FreeKassaUnitPrice !== initial.FreeKassaUnitPrice) {
       updates.push({ key: 'FreeKassaUnitPrice', value: values.FreeKassaUnitPrice })
+      updates.push({
+        key: 'general_setting.custom_currency_exchange_rate',
+        value: values.FreeKassaUnitPrice,
+      })
     }
     if (values.FreeKassaMinTopUp !== initial.FreeKassaMinTopUp) {
       updates.push({ key: 'FreeKassaMinTopUp', value: values.FreeKassaMinTopUp })
@@ -110,6 +163,12 @@ export function FreeKassaSettingsSection({ defaultValues }: Props) {
     }
     if (values.FreeKassaPaymentSystemId !== initial.FreeKassaPaymentSystemId) {
       updates.push({ key: 'FreeKassaPaymentSystemId', value: values.FreeKassaPaymentSystemId })
+    }
+    if (values.FreeKassaCBRMarkup !== initial.FreeKassaCBRMarkup) {
+      updates.push({ key: 'FreeKassaCBRMarkup', value: values.FreeKassaCBRMarkup })
+    }
+    if (values.FreeKassaCBRAutoSync !== initial.FreeKassaCBRAutoSync) {
+      updates.push({ key: 'FreeKassaCBRAutoSync', value: String(values.FreeKassaCBRAutoSync) })
     }
 
     if (updates.length === 0) {
@@ -132,6 +191,12 @@ export function FreeKassaSettingsSection({ defaultValues }: Props) {
       setSaving(false)
     }
   }
+
+  const cbrMarkup = form.watch('FreeKassaCBRMarkup')
+  const computedUnitPrice =
+    liveRate !== null
+      ? Math.ceil(liveRate) + (Number(cbrMarkup) || 0)
+      : null
 
   return (
     <div className='space-y-4 pt-4'>
@@ -179,6 +244,58 @@ export function FreeKassaSettingsSection({ defaultValues }: Props) {
             </a>
           </li>
         </ul>
+      </div>
+
+      <div className='rounded-md border border-amber-200 bg-amber-50 p-4 dark:border-amber-800 dark:bg-amber-950'>
+        <p className='mb-2 text-sm font-medium text-amber-900 dark:text-amber-100'>
+          {t('CBR USD/RUB Rate (Bank of Russia)')}
+        </p>
+        <p className='mb-3 text-xs text-amber-700 dark:text-amber-300'>
+          {t(
+            'Fetch the official USD/RUB exchange rate from the Bank of Russia. Apply it to automatically set the unit price and keep the wallet display rate in sync.'
+          )}
+        </p>
+
+        {liveRate !== null && (
+          <div className='mb-3 rounded bg-amber-100 px-3 py-2 text-sm dark:bg-amber-900'>
+            <span className='font-medium'>{t('Live rate: ')}</span>
+            <span className='font-mono'>{liveRate.toFixed(4)} ₽/$</span>
+            {computedUnitPrice !== null && (
+              <span className='ml-3 text-xs text-amber-700 dark:text-amber-400'>
+                → {t('sell price: ')}
+                <span className='font-mono font-medium'>{computedUnitPrice.toFixed(2)} ₽/$</span>
+                {' '}
+                <span className='opacity-70'>{t('(CBR + markup)')}</span>
+              </span>
+            )}
+            {fetchedAt !== null && (
+              <span className='ml-3 text-xs opacity-60'>
+                {new Date(fetchedAt * 1000).toLocaleTimeString()}
+              </span>
+            )}
+          </div>
+        )}
+
+        <div className='flex flex-wrap gap-2'>
+          <Button
+            type='button'
+            variant='outline'
+            size='sm'
+            onClick={fetchCBRRate}
+            disabled={cbrFetching}
+          >
+            {cbrFetching ? t('Fetching...') : t('Fetch live rate')}
+          </Button>
+          <Button
+            type='button'
+            size='sm'
+            onClick={applyCBRRate}
+            disabled={cbrApplying}
+            className='bg-amber-600 hover:bg-amber-700 text-white'
+          >
+            {cbrApplying ? t('Applying...') : t('Fetch & Apply to unit price')}
+          </Button>
+        </div>
       </div>
 
       <Form {...form}>
@@ -261,28 +378,83 @@ export function FreeKassaSettingsSection({ defaultValues }: Props) {
             )}
           />
 
-          <FormField
-            control={form.control}
-            name='FreeKassaUnitPrice'
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>{t('Unit Price (currency per $1 quota)')}</FormLabel>
-                <FormControl>
-                  <Input
-                    type='number'
-                    min={0}
-                    step='0.01'
-                    placeholder='90'
-                    {...field}
-                  />
-                </FormControl>
-                <p className='text-muted-foreground text-xs'>
-                  {t('How much currency the user pays per $1 of quota. E.g. 90 means ₽90 = $1 quota.')}
-                </p>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+          <div className='rounded-md border p-3 space-y-3 bg-muted/30'>
+            <p className='text-xs font-medium text-muted-foreground uppercase tracking-wide'>
+              {t('Rate Configuration')}
+            </p>
+
+            <FormField
+              control={form.control}
+              name='FreeKassaCBRMarkup'
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>{t('CBR Markup (₽, added to live CBR rate)')}</FormLabel>
+                  <FormControl>
+                    <Input
+                      type='number'
+                      step='0.01'
+                      placeholder='0'
+                      {...field}
+                    />
+                  </FormControl>
+                  <p className='text-muted-foreground text-xs'>
+                    {t(
+                      'Your sell price = ceil(live CBR rate) + this markup. E.g. if CBR = 82.5 and markup = 0, unit price = 83. Use negative values to sell below CBR.'
+                    )}
+                  </p>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name='FreeKassaCBRAutoSync'
+              render={({ field }) => (
+                <FormItem className='flex flex-row items-center justify-between'>
+                  <div>
+                    <FormLabel>{t('Auto-sync rate every 6 hours')}</FormLabel>
+                    <p className='text-muted-foreground text-xs'>
+                      {t(
+                        'Automatically fetch the CBR rate and update the unit price every 6 hours. Both FreeKassa unit price and wallet display rate will be kept in sync.'
+                      )}
+                    </p>
+                  </div>
+                  <FormControl>
+                    <Switch
+                      checked={field.value}
+                      onCheckedChange={field.onChange}
+                    />
+                  </FormControl>
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name='FreeKassaUnitPrice'
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>{t('Unit Price (₽ per $1 quota)')}</FormLabel>
+                  <FormControl>
+                    <Input
+                      type='number'
+                      min={0}
+                      step='0.01'
+                      placeholder='90'
+                      {...field}
+                    />
+                  </FormControl>
+                  <p className='text-muted-foreground text-xs'>
+                    {t(
+                      'How many ₽ the user pays per $1 of quota. Must match the wallet display rate — saving this field will automatically update both. Use "Fetch & Apply" above to set from CBR.'
+                    )}
+                  </p>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
 
           <FormField
             control={form.control}
