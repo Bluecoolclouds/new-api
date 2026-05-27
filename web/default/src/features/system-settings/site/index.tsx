@@ -27,7 +27,7 @@ import {
 const defaultSiteSettings: SiteSettings = {
   'theme.frontend': 'default',
   Notice: '',
-  SystemName: 'APINET',
+  SystemName: 'APINET.CLOUD',
   Logo: '',
   Footer: '',
   About: '',

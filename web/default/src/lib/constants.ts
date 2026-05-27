@@ -21,7 +21,7 @@ For commercial licensing, please contact support@quantumnous.com
  */
 
 // System Configuration Defaults
-export const DEFAULT_SYSTEM_NAME = 'APINET'
+export const DEFAULT_SYSTEM_NAME = 'APINET.CLOUD'
 export const DEFAULT_LOGO = '/logo.png'
 
 // LocalStorage Keys
