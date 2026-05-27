@@ -5,7 +5,7 @@ import { Dialog as DialogPrimitive } from '@base-ui/react/dialog'
 import { useStatus } from '@/hooks/use-status'
 import { useSystemConfig } from '@/hooks/use-system-config'
 import { Button } from '@/components/ui/button'
-import { Dialog, DialogPortal, DialogTrigger } from '@/components/ui/dialog'
+import { Dialog, DialogOverlay, DialogPortal, DialogTrigger } from '@/components/ui/dialog'
 import {
   useTopupInfo,
   usePayment,
@@ -239,7 +239,7 @@ export function RechargeDialog(props: { triggerClassName?: string }) {
         }
       />
       <DialogPortal>
-        {/* no DialogOverlay — no backdrop/dimming */}
+        <DialogOverlay className='bg-black/50 supports-backdrop-filter:backdrop-blur-sm' />
         <DialogPrimitive.Popup
           aria-label={t('Add Funds')}
           className='data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95 fixed top-1/2 left-1/2 z-50 flex max-h-[calc(100dvh-2rem)] w-full max-w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 flex-col rounded-xl duration-100 outline-none sm:max-w-lg'
