@@ -16,13 +16,14 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 For commercial licensing, please contact support@quantumnous.com
 */
-import { useState, useEffect, useCallback, useMemo } from 'react'
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 import { getSelf } from '@/lib/api'
 import { useStatus } from '@/hooks/use-status'
 import { useSystemConfig } from '@/hooks/use-system-config'
 import { SectionPageLayout } from '@/components/layout'
 import { AffiliateRewardsCard } from './components/affiliate-rewards-card'
+import { RedemptionCodeCard } from './components/redemption-code-card'
 import { BillingHistoryDialog } from './components/dialogs/billing-history-dialog'
 import { CreemConfirmDialog } from './components/dialogs/creem-confirm-dialog'
 import { PaymentConfirmDialog } from './components/dialogs/payment-confirm-dialog'
@@ -154,12 +155,17 @@ export function Wallet(props: WalletProps) {
     calculatePaymentAmount(preset.value, getCurrentPaymentType())
   }
 
-  // Handle topup amount change
-  const handleTopupAmountChange = (amount: number) => {
+  const amountDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  // Handle topup amount change — debounced so slider doesn't flood the API
+  const handleTopupAmountChange = useCallback((amount: number) => {
     setTopupAmount(amount)
     setSelectedPreset(null)
-    calculatePaymentAmount(amount, getCurrentPaymentType())
-  }
+    if (amountDebounceRef.current) clearTimeout(amountDebounceRef.current)
+    amountDebounceRef.current = setTimeout(() => {
+      calculatePaymentAmount(amount, getCurrentPaymentType())
+    }, 400)
+  }, [calculatePaymentAmount, getCurrentPaymentType])
 
   // Handle payment method selection
   const handlePaymentMethodSelect = async (method: PaymentMethod) => {
@@ -250,6 +256,15 @@ export function Wallet(props: WalletProps) {
     return topupInfo?.discount?.[topupAmount] || DEFAULT_DISCOUNT_RATE
   }, [topupInfo, topupAmount])
 
+  // Handle method change without opening dialog — just recalculate summary
+  const handleMethodChange = useCallback(
+    async (method: PaymentMethod) => {
+      setSelectedPaymentMethod(method)
+      await calculatePaymentAmount(topupAmount, method.type)
+    },
+    [topupAmount, calculatePaymentAmount]
+  )
+
   const handleSubscriptionAvailabilityChange = useCallback(
     (available: boolean) => {
       setShowSubscriptionPanel(available)
@@ -263,16 +278,41 @@ export function Wallet(props: WalletProps) {
         <SectionPageLayout.Title>{t('Wallet')}</SectionPageLayout.Title>
         <SectionPageLayout.Content>
           <div className='mx-auto flex w-full max-w-7xl flex-col gap-4 sm:gap-5'>
-            <WalletStatsCard user={user} loading={userLoading} />
+            <div className='grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,512px)] lg:items-start'>
 
-            <div
-              className={
-                showSubscriptionPanel
-                  ? 'grid gap-4 xl:grid-cols-[minmax(0,1.05fr)_minmax(360px,0.95fr)] xl:items-start'
-                  : 'grid gap-4'
-              }
-            >
-              <div id='wallet-add-funds' className='scroll-mt-4'>
+              {/* ── Left column: stats + subscription + affiliate ── */}
+              <div className='flex flex-col gap-4'>
+                <WalletStatsCard user={user} loading={userLoading} />
+
+                {showSubscriptionPanel && (
+                  <SubscriptionPlansCard
+                    topupInfo={topupInfo}
+                    onAvailabilityChange={handleSubscriptionAvailabilityChange}
+                    userQuota={user?.quota}
+                    onPurchaseSuccess={fetchUser}
+                  />
+                )}
+
+                <AffiliateRewardsCard
+                  user={user}
+                  affiliateLink={affiliateLink}
+                  onTransfer={() => setTransferDialogOpen(true)}
+                  complianceConfirmed={
+                    topupInfo?.payment_compliance_confirmed !== false
+                  }
+                  loading={affiliateLoading}
+                />
+
+                <RedemptionCodeCard
+                  redemptionCode={redemptionCode}
+                  onRedemptionCodeChange={setRedemptionCode}
+                  onRedeem={handleRedeem}
+                  redeeming={redeeming}
+                />
+              </div>
+
+              {/* ── Right column: recharge form ── */}
+              <div id='wallet-add-funds' className='scroll-mt-4 max-w-lg mx-auto w-full'>
                 <RechargeFormCard
                   topupInfo={topupInfo}
                   presetAmounts={presetAmounts}
@@ -292,6 +332,11 @@ export function Wallet(props: WalletProps) {
                   loading={topupLoading}
                   priceRatio={(status?.price as number) || 1}
                   usdExchangeRate={effectiveUsdExchangeRate}
+                  rawUsdExchangeRate={
+                    (currency?.customCurrencyExchangeRate ?? 0) > 1
+                      ? currency!.customCurrencyExchangeRate!
+                      : currency?.usdExchangeRate || 1
+                  }
                   onOpenBilling={() => setBillingDialogOpen(true)}
                   creemProducts={topupInfo?.creem_products}
                   enableCreemTopup={topupInfo?.enable_creem_topup}
@@ -308,31 +353,12 @@ export function Wallet(props: WalletProps) {
                   freekassaCryptoEnabled={topupInfo?.freekassa_crypto_enabled}
                   freekassaUnitPrice={topupInfo?.freekassa_unit_price}
                   freekassaCbrRate={topupInfo?.freekassa_cbr_rate}
-                  rawUsdExchangeRate={
-                    (currency?.customCurrencyExchangeRate ?? 0) > 1
-                      ? currency!.customCurrencyExchangeRate!
-                      : currency?.usdExchangeRate || 1
-                  }
+                  onMethodChange={handleMethodChange}
+                  discountRate={getDiscountRate()}
                 />
               </div>
 
-              <SubscriptionPlansCard
-                topupInfo={topupInfo}
-                onAvailabilityChange={handleSubscriptionAvailabilityChange}
-                userQuota={user?.quota}
-                onPurchaseSuccess={fetchUser}
-              />
             </div>
-
-            <AffiliateRewardsCard
-              user={user}
-              affiliateLink={affiliateLink}
-              onTransfer={() => setTransferDialogOpen(true)}
-              complianceConfirmed={
-                topupInfo?.payment_compliance_confirmed !== false
-              }
-              loading={affiliateLoading}
-            />
           </div>
         </SectionPageLayout.Content>
       </SectionPageLayout>
