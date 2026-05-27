@@ -1,1 +1,2 @@
 - [Custom APINET components](custom-apinet-components.md) — key custom files/features that must survive upstream merges; includes RedemptionCodeCard, wallet layout, FreeKassa, branding
+- [Go embed frontend rebuild](go-embed-rebuild.md) — frontend CSS/JS changes require BOTH `npm run build` AND `go build` to take effect; the binary embeds assets at compile time
