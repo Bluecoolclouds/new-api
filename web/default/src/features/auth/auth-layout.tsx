@@ -44,16 +44,13 @@ export function AuthLayout({ children }: AuthLayoutProps) {
         </div>
       </div>
 
-      {/* ── Right column: decorative photo panel ── */}
-      <div className='bg-muted relative hidden overflow-hidden md:block'>
-        {/* Replace the div below with an <img> when you have the photo */}
-        <div className='absolute inset-0 bg-gradient-to-br from-violet-500/80 via-purple-600/70 to-indigo-700/80' />
-        <div className='absolute inset-0 flex flex-col items-center justify-center p-12 text-white'>
-          <div className='max-w-md text-center'>
-            <h2 className='text-3xl font-bold tracking-tight'>APINET.CLOUD</h2>
-            <p className='text-white/70 mt-3 text-lg'>AI Application Infrastructure Foundation</p>
-          </div>
-        </div>
+      {/* ── Right column: photo panel ── */}
+      <div className='relative hidden overflow-hidden md:block'>
+        <img
+          src='/auth-bg.jpg'
+          alt=''
+          className='absolute inset-0 h-full w-full object-cover'
+        />
       </div>
     </div>
   )
