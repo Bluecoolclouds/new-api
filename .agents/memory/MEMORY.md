@@ -1,0 +1,1 @@
+- [Custom APINET components](custom-apinet-components.md) — key custom files/features that must survive upstream merges; includes RedemptionCodeCard, wallet layout, FreeKassa, branding
