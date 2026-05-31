@@ -1,0 +1,16 @@
+{
+  "name": "apinet-widget-bot",
+  "version": "1.0.0",
+  "description": "APINET support widget ↔ Telegram two-way bridge",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "node --watch index.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

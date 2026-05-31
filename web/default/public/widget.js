@@ -2,12 +2,27 @@
   'use strict';
 
   const cfg = window.APINET_WIDGET || {};
-  const API_BASE = cfg.baseUrl || 'https://apinet.cloud';
-  const API_TOKEN = cfg.token || '';
-  const MODEL = cfg.model || 'gemini-2.5-flash';
-  const TG_LINK = cfg.telegram || 'https://t.me/apinet_support';
+  const API_BASE  = cfg.baseUrl || 'https://apinet.cloud';
+  const API_TOKEN = cfg.token  || '';
+  const BOT_URL   = (cfg.botUrl || '').replace(/\/$/, '');
+  const MODEL     = cfg.model  || 'gemini-2.5-flash';
+  const TG_LINK   = cfg.telegram || 'https://t.me/apinet_support';
 
-  // Auto-detect language: site html[lang] → browser language → fallback ru
+  // true  → route through bot service (two-way with admin)
+  // false → call APINET directly (AI only, legacy mode)
+  const BOT_MODE = !!BOT_URL;
+
+  // Session ID persisted for the browser tab lifetime
+  const SESSION_ID = (function () {
+    let id = sessionStorage.getItem('aw_session');
+    if (!id) {
+      id = 'aw-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 8);
+      sessionStorage.setItem('aw_session', id);
+    }
+    return id;
+  })();
+
+  // Auto-detect language: cfg.lang → html[lang] → navigator.language → default ru
   function detectLang() {
     if (cfg.lang) return cfg.lang.startsWith('en') ? 'en' : 'ru';
     const siteLang = document.documentElement.lang || '';
@@ -24,11 +39,11 @@
       subtitle: 'Обычно отвечаем моментально',
       tgLabel: 'Связь в Telegram',
       placeholder: 'Напишите вопрос…',
-      tgHint: 'Сложный вопрос?',
-      tgHintLink: 'Написать в Telegram',
+      supportLabel: 'Поддержка',
       errorMsg: (code, tg) => `Ошибка ${code}. Попробуйте позже или напишите в [Telegram](${tg}).`,
       connectErr: (tg) => `Не удалось подключиться к серверу. Проверьте соединение или напишите в [Telegram](${tg}).`,
       noToken: '⚠️ Виджет не настроен — не указан API токен.\n\nДобавьте перед тегом `<script>`:\n```\nwindow.APINET_WIDGET = { token: "sk-..." };\n```',
+      noBotUrl: '⚠️ Виджет не настроен — не указан botUrl.\n\nДобавьте:\n```\nwindow.APINET_WIDGET = { botUrl: "https://your-bot.replit.app" };\n```',
       welcome: 'Привет! 👋 Я помогаю с вопросами по APINET.CLOUD.\n\nСпросите про:\n- Создание токена и пополнение баланса\n- Ошибки API (401, 403, 503…)\n- Настройку Claude Code\n- Доступные модели\n\nЧем могу помочь?',
       ariaOpen: 'Открыть чат поддержки',
       ariaClose: 'Закрыть',
@@ -39,11 +54,11 @@
       subtitle: 'Usually replies instantly',
       tgLabel: 'Contact via Telegram',
       placeholder: 'Type your question…',
-      tgHint: 'Need more help?',
-      tgHintLink: 'Write on Telegram',
+      supportLabel: 'Support',
       errorMsg: (code, tg) => `Error ${code}. Please try again or contact us on [Telegram](${tg}).`,
       connectErr: (tg) => `Could not connect to the server. Check your connection or reach us on [Telegram](${tg}).`,
-      noToken: '⚠️ Widget not configured — API token is missing.\n\nAdd before the `<script>` tag:\n```\nwindow.APINET_WIDGET = { token: "sk-..." };\n```',
+      noToken: '⚠️ Widget not configured — API token is missing.\n\nAdd before `<script>`:\n```\nwindow.APINET_WIDGET = { token: "sk-..." };\n```',
+      noBotUrl: '⚠️ Widget not configured — botUrl is missing.\n\nAdd:\n```\nwindow.APINET_WIDGET = { botUrl: "https://your-bot.replit.app" };\n```',
       welcome: 'Hi! 👋 I can help with APINET.CLOUD questions.\n\nAsk me about:\n- Creating tokens and topping up balance\n- API errors (401, 403, 503…)\n- Setting up Claude Code\n- Available models\n\nHow can I help?',
       ariaOpen: 'Open support chat',
       ariaClose: 'Close',
@@ -93,11 +108,12 @@ Base URL для API: https://apinet.cloud/v1
 Никогда не выдумывай функции которых нет. Если не знаешь — скажи честно.`
   );
 
-  const ICON_TG = `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8l-1.68 7.91c-.12.57-.46.71-.93.44l-2.58-1.9-1.24 1.2c-.14.14-.26.26-.52.26l.18-2.62 4.74-4.28c.21-.18-.04-.28-.32-.1L7.9 14.38 5.36 13.6c-.56-.17-.57-.56.12-.83l8.91-3.44c.47-.17.88.11.72.83z"/></svg>`;
-  const ICON_CHAT = `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/></svg>`;
+  const ICON_TG    = `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8l-1.68 7.91c-.12.57-.46.71-.93.44l-2.58-1.9-1.24 1.2c-.14.14-.26.26-.52.26l.18-2.62 4.74-4.28c.21-.18-.04-.28-.32-.1L7.9 14.38 5.36 13.6c-.56-.17-.57-.56.12-.83l8.91-3.44c.47-.17.88.11.72.83z"/></svg>`;
+  const ICON_CHAT  = `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/></svg>`;
   const ICON_CLOSE = `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>`;
-  const ICON_SEND = `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>`;
-  const ICON_BOT = `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a2 2 0 012 2c0 .74-.4 1.38-1 1.72V7h1a7 7 0 017 7H3a7 7 0 017-7h1V5.72A2 2 0 0112 2zM7.5 14a1.5 1.5 0 100 3 1.5 1.5 0 000-3zm9 0a1.5 1.5 0 100 3 1.5 1.5 0 000-3zm-4.5 3a1 1 0 100 2 1 1 0 000-2zm-5 3h12l-1 2H7l-1-2z"/></svg>`;
+  const ICON_SEND  = `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>`;
+  const ICON_BOT   = `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a2 2 0 012 2c0 .74-.4 1.38-1 1.72V7h1a7 7 0 017 7H3a7 7 0 017-7h1V5.72A2 2 0 0112 2zM7.5 14a1.5 1.5 0 100 3 1.5 1.5 0 000-3zm9 0a1.5 1.5 0 100 3 1.5 1.5 0 000-3zm-4.5 3a1 1 0 100 2 1 1 0 000-2zm-5 3h12l-1 2H7l-1-2z"/></svg>`;
+  const ICON_AGENT = `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14H9V8h2v8zm4 0h-2V8h2v8z"/></svg>`;
 
   const STYLES = `
     #apinet-widget-btn {
@@ -154,23 +170,27 @@ Base URL для API: https://apinet.cloud/v1
     .aw-messages::-webkit-scrollbar-track { background: transparent; }
     .aw-messages::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 4px; }
     .aw-msg { max-width: 88%; display: flex; flex-direction: column; gap: 3px; }
-    .aw-msg.user { align-self: flex-end; }
-    .aw-msg.bot  { align-self: flex-start; }
+    .aw-msg.user   { align-self: flex-end; }
+    .aw-msg.bot    { align-self: flex-start; }
+    .aw-msg.admin  { align-self: flex-start; }
+    .aw-msg-label  { font-size: 10px; font-weight: 600; color: #64748b; padding: 0 2px; letter-spacing: 0.03em; }
     .aw-bubble {
       padding: 9px 13px; border-radius: 14px; font-size: 13.5px; line-height: 1.5;
       word-break: break-word; white-space: pre-wrap;
     }
-    .aw-msg.user .aw-bubble { background: #2563eb; color: white; border-bottom-right-radius: 4px; }
-    .aw-msg.bot  .aw-bubble { background: #f1f5f9; color: #1e293b; border-bottom-left-radius: 4px; }
+    .aw-msg.user  .aw-bubble { background: #2563eb; color: white; border-bottom-right-radius: 4px; }
+    .aw-msg.bot   .aw-bubble { background: #f1f5f9; color: #1e293b; border-bottom-left-radius: 4px; }
+    .aw-msg.admin .aw-bubble { background: #ecfdf5; color: #064e3b; border-bottom-left-radius: 4px;
+      border: 1px solid #a7f3d0; }
     .aw-bubble a { color: #2563eb; }
-    .aw-msg.bot .aw-bubble code {
+    .aw-msg.bot .aw-bubble code, .aw-msg.admin .aw-bubble code {
       background: #e2e8f0; padding: 1px 5px; border-radius: 4px; font-size: 12px; font-family: monospace;
     }
-    .aw-msg.bot .aw-bubble pre {
+    .aw-msg.bot .aw-bubble pre, .aw-msg.admin .aw-bubble pre {
       background: #1e293b; color: #e2e8f0; padding: 10px 12px; border-radius: 8px; overflow-x: auto;
       font-size: 12px; margin: 6px 0; white-space: pre;
     }
-    .aw-msg.bot .aw-bubble pre code { background: none; padding: 0; color: inherit; }
+    .aw-msg.bot .aw-bubble pre code, .aw-msg.admin .aw-bubble pre code { background: none; padding: 0; color: inherit; }
     .aw-typing { display: flex; align-items: center; gap: 4px; padding: 10px 13px; }
     .aw-typing span { width: 7px; height: 7px; border-radius: 50%; background: #94a3b8;
       animation: aw-bounce 1.2s infinite; }
@@ -202,7 +222,7 @@ Base URL для API: https://apinet.cloud/v1
   `;
 
   function escapeHtml(s) {
-    return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
   }
 
   function renderMarkdown(text) {
@@ -257,31 +277,31 @@ Base URL для API: https://apinet.cloud/v1
     const messagesEl = panel.querySelector('#aw-messages');
     const inputEl    = panel.querySelector('#aw-input');
     const sendBtn    = panel.querySelector('#aw-send');
-    let isOpen = false;
-    let isStreaming = false;
-    const history = [];
+    let isOpen      = false;
+    let isStreaming  = false;
+    const history   = [];
+    let pollTimer   = null;
 
-    function addBotMessage(text) {
+    function addMessage(text, role) {
       const msg = document.createElement('div');
-      msg.className = 'aw-msg bot';
+      msg.className = `aw-msg ${role}`;
+      if (role === 'admin') {
+        const label = document.createElement('div');
+        label.className = 'aw-msg-label';
+        label.textContent = t.supportLabel;
+        msg.appendChild(label);
+      }
       const bubble = document.createElement('div');
       bubble.className = 'aw-bubble';
-      bubble.innerHTML = renderMarkdown(text);
+      if (role === 'user') {
+        bubble.textContent = text;
+      } else {
+        bubble.innerHTML = renderMarkdown(text);
+      }
       msg.appendChild(bubble);
       messagesEl.appendChild(msg);
       scrollBottom();
       return bubble;
-    }
-
-    function addUserMessage(text) {
-      const msg = document.createElement('div');
-      msg.className = 'aw-msg user';
-      const bubble = document.createElement('div');
-      bubble.className = 'aw-bubble';
-      bubble.textContent = text;
-      msg.appendChild(bubble);
-      messagesEl.appendChild(msg);
-      scrollBottom();
     }
 
     function addTyping() {
@@ -292,27 +312,85 @@ Base URL для API: https://apinet.cloud/v1
       scrollBottom();
     }
 
-    function removeTyping() { const t = document.getElementById('aw-typing'); if (t) t.remove(); }
+    function removeTyping() { const el = document.getElementById('aw-typing'); if (el) el.remove(); }
     function scrollBottom() { messagesEl.scrollTop = messagesEl.scrollHeight; }
+
+    // ── Bot mode: poll for admin replies ────────────────────────────────────
+    function startPolling() {
+      if (!BOT_MODE || pollTimer) return;
+      pollTimer = setInterval(async () => {
+        try {
+          const res = await fetch(`${BOT_URL}/widget/poll?session=${encodeURIComponent(SESSION_ID)}`);
+          if (!res.ok) return;
+          const data = await res.json();
+          if (data.reply) {
+            addMessage(data.reply, 'admin');
+          }
+        } catch {}
+      }, 3000);
+    }
+
+    function stopPolling() {
+      if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
+    }
 
     function togglePanel() {
       isOpen = !isOpen;
       panel.classList.toggle('open', isOpen);
       btn.innerHTML = isOpen ? ICON_CLOSE : ICON_CHAT;
       if (isOpen) {
-        if (messagesEl.children.length === 0) addBotMessage(t.welcome);
+        if (messagesEl.children.length === 0) addMessage(t.welcome, 'bot');
         setTimeout(() => inputEl.focus(), 220);
+        if (BOT_MODE) startPolling();
+      } else {
+        stopPolling();
       }
     }
 
-    async function sendMessage(text) {
-      if (!text.trim() || isStreaming) return;
+    // ── Send via BOT (proxy + Telegram logging) ──────────────────────────────
+    async function sendViaBotMode(text) {
+      if (!BOT_URL) { addMessage(t.noBotUrl, 'bot'); return; }
+      isStreaming = true;
+      sendBtn.disabled = true;
+      addMessage(text, 'user');
+      history.push({ role: 'user', content: text });
+      addTyping();
+      try {
+        const resp = await fetch(`${BOT_URL}/widget/message`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ sessionId: SESSION_ID, message: text, lang: LANG }),
+        });
+        removeTyping();
+        if (!resp.ok) {
+          const err = await resp.json().catch(() => ({}));
+          addMessage(t.errorMsg(err?.error || resp.status, TG_LINK), 'bot');
+          history.pop(); return;
+        }
+        const data = await resp.json();
+        if (data.reply) {
+          addMessage(data.reply, 'bot');
+          history.push({ role: 'assistant', content: data.reply });
+        }
+      } catch {
+        removeTyping();
+        addMessage(t.connectErr(TG_LINK), 'bot');
+        history.pop();
+      } finally {
+        isStreaming = false;
+        sendBtn.disabled = false;
+        scrollBottom();
+      }
+    }
+
+    // ── Send via direct APINET API (streaming) ───────────────────────────────
+    async function sendViaDirectMode(text) {
       if (!API_TOKEN || API_TOKEN === 'WIDGET_TOKEN_PLACEHOLDER') {
-        addBotMessage(t.noToken); return;
+        addMessage(t.noToken, 'bot'); return;
       }
       isStreaming = true;
       sendBtn.disabled = true;
-      addUserMessage(text);
+      addMessage(text, 'user');
       history.push({ role: 'user', content: text });
       addTyping();
       try {
@@ -328,11 +406,11 @@ Base URL для API: https://apinet.cloud/v1
         if (!resp.ok) {
           const err = await resp.json().catch(() => ({}));
           removeTyping();
-          addBotMessage(t.errorMsg(err?.error?.code || resp.status, TG_LINK));
+          addMessage(t.errorMsg(err?.error?.code || resp.status, TG_LINK), 'bot');
           history.pop(); return;
         }
         removeTyping();
-        const bubble = addBotMessage('');
+        const bubble = addMessage('', 'bot');
         let fullText = '';
         const reader = resp.body.getReader();
         const decoder = new TextDecoder();
@@ -341,10 +419,10 @@ Base URL для API: https://apinet.cloud/v1
           if (done) break;
           for (const line of decoder.decode(value, { stream: true }).split('\n')) {
             if (!line.startsWith('data: ')) continue;
-            const data = line.slice(6).trim();
-            if (data === '[DONE]') break;
+            const raw = line.slice(6).trim();
+            if (raw === '[DONE]') break;
             try {
-              const delta = JSON.parse(data)?.choices?.[0]?.delta?.content;
+              const delta = JSON.parse(raw)?.choices?.[0]?.delta?.content;
               if (delta) { fullText += delta; bubble.innerHTML = renderMarkdown(fullText); scrollBottom(); }
             } catch {}
           }
@@ -352,13 +430,19 @@ Base URL для API: https://apinet.cloud/v1
         if (fullText) history.push({ role: 'assistant', content: fullText });
       } catch {
         removeTyping();
-        addBotMessage(t.connectErr(TG_LINK));
+        addMessage(t.connectErr(TG_LINK), 'bot');
         history.pop();
       } finally {
         isStreaming = false;
         sendBtn.disabled = false;
         scrollBottom();
       }
+    }
+
+    function sendMessage(text) {
+      if (!text.trim() || isStreaming) return;
+      if (BOT_MODE) sendViaBotMode(text);
+      else          sendViaDirectMode(text);
     }
 
     inputEl.addEventListener('input', function () {
