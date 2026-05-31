@@ -42,3 +42,33 @@ id = "U7cHFP2vDc1EdbFwuMgow"
 uri = "file://.local/all_pricing_combined.json"
 type = "unspecified"
 title = "6. all_pricing_combined.json — всё вместе"
+
+[[outputs]]
+id = "objIq7SjCrAxktdLMVE0u"
+uri = "file://.local/1_model_ratio_FIXED.json"
+type = "unspecified"
+title = "1. Коэффициент модели — FIXED"
+
+[[outputs]]
+id = "NDyESRjYaWsv5thdf-mXt"
+uri = "file://.local/2_completion_ratio_FIXED.json"
+type = "unspecified"
+title = "2. Коэффициент завершения — FIXED"
+
+[[outputs]]
+id = "Y02jqCbE99YmOr_c7I5hZ"
+uri = "file://.local/3_cache_ratio_FIXED.json"
+type = "unspecified"
+title = "3. Кэш промптов — без изменений"
+
+[[outputs]]
+id = "Mvwc6DXygPGFvX8kSuhnT"
+uri = "file://.local/4_create_cache_ratio_FIXED.json"
+type = "unspecified"
+title = "4. Создать кэш — без изменений"
+
+[[outputs]]
+id = "4YRHcjogEpkU4r05n1alP"
+uri = "file://.local/5_model_price_FIXED.json"
+type = "unspecified"
+title = "5. Фиксированная цена — без изменений"
