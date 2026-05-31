@@ -1,0 +1,8 @@
+uploads = []
+generated = []
+
+[[outputs]]
+id = "A0kRVO7R7UNaRgE07Lz4I"
+uri = "file://.local/apinet_ratios.json"
+type = "unspecified"
+title = "apinet_ratios.json — все цены (DeepSeek исправлен)"
