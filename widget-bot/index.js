@@ -4,6 +4,8 @@ const express = require('express');
 const https = require('https');
 const http = require('http');
 const crypto = require('crypto');
+const path = require('path');
+const Database = require('better-sqlite3');
 
 // ── Config ────────────────────────────────────────────────────────────────────
 const BOT_TOKEN        = process.env.TELEGRAM_BOT_TOKEN || '';
@@ -17,6 +19,7 @@ const MODEL            = process.env.WIDGET_MODEL || 'gemini-2.5-flash';
 const PORT             = parseInt(process.env.PORT || '3000', 10);
 const CORS_ORIGIN      = process.env.WIDGET_CORS_ORIGIN || '*';
 const WEBHOOK_SECRET   = process.env.WEBHOOK_SECRET || 'apinet_widget_hook';
+const DB_PATH          = process.env.SESSIONS_DB_PATH || path.join(__dirname, 'sessions.db');
 
 // Validate required config
 const missingVars = [];
@@ -28,12 +31,80 @@ if (missingVars.length) {
   console.warn('[warn] Bot will start but functionality may be limited.');
 }
 
-// ── In-memory session store ────────────────────────────────────────────────────
+// ── SQLite persistent session store ──────────────────────────────────────────
+const db = new Database(DB_PATH);
+
+db.exec(`
+  CREATE TABLE IF NOT EXISTS sessions (
+    session_id  TEXT PRIMARY KEY,
+    thread_id   TEXT,
+    messages    TEXT NOT NULL DEFAULT '[]',
+    pending_reply TEXT,
+    lang        TEXT NOT NULL DEFAULT 'ru',
+    created_at  INTEGER NOT NULL
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_thread_id ON sessions(thread_id);
+`);
+
+const stmts = {
+  upsert: db.prepare(`
+    INSERT INTO sessions (session_id, thread_id, messages, pending_reply, lang, created_at)
+    VALUES (@session_id, @thread_id, @messages, @pending_reply, @lang, @created_at)
+    ON CONFLICT(session_id) DO UPDATE SET
+      thread_id     = excluded.thread_id,
+      messages      = excluded.messages,
+      pending_reply = excluded.pending_reply,
+      lang          = excluded.lang
+  `),
+  getById:       db.prepare('SELECT * FROM sessions WHERE session_id = ?'),
+  getByThread:   db.prepare('SELECT * FROM sessions WHERE thread_id = ?'),
+  deleteOld:     db.prepare('DELETE FROM sessions WHERE created_at < ?'),
+  all:           db.prepare('SELECT * FROM sessions'),
+};
+
+function rowToSess(row) {
+  return {
+    threadId:     row.thread_id || null,
+    messages:     JSON.parse(row.messages || '[]'),
+    pendingReply: row.pending_reply || null,
+    lang:         row.lang || 'ru',
+    createdAt:    row.created_at,
+  };
+}
+
+function persistSess(sessionId, sess) {
+  stmts.upsert.run({
+    session_id:    sessionId,
+    thread_id:     sess.threadId || null,
+    messages:      JSON.stringify(sess.messages),
+    pending_reply: sess.pendingReply || null,
+    lang:          sess.lang,
+    created_at:    sess.createdAt,
+  });
+}
+
+// ── In-memory session cache (restored from DB on startup) ─────────────────────
 // sessions[sessionId] = { threadId, messages[], pendingReply, lang, createdAt }
 const sessions = new Map();
 
-// topicToSession[message_thread_id] → sessionId (for routing admin replies)
+// topicToSession[thread_id] → sessionId (for routing admin replies)
 const topicToSession = new Map();
+
+// Restore all sessions from DB
+(function loadSessions() {
+  const rows = stmts.all.all();
+  const cutoff = Date.now() - 24 * 60 * 60 * 1000;
+  let restored = 0;
+  for (const row of rows) {
+    if (row.created_at < cutoff) continue;
+    const sess = rowToSess(row);
+    sessions.set(row.session_id, sess);
+    if (sess.threadId) topicToSession.set(String(sess.threadId), row.session_id);
+    restored++;
+  }
+  console.log(`[db] Restored ${restored} active session(s) from ${DB_PATH}`);
+})();
 
 // Clean up sessions older than 24h every hour
 setInterval(() => {
@@ -44,6 +115,7 @@ setInterval(() => {
       sessions.delete(id);
     }
   }
+  stmts.deleteOld.run(cutoff);
 }, 60 * 60 * 1000);
 
 // ── Telegram Bot API helper ────────────────────────────────────────────────────
@@ -209,11 +281,18 @@ app.post('/widget/message', async (req, res) => {
     return res.status(400).json({ error: 'message too long' });
   }
 
-  // Get or create session
+  // Get or create session (check DB if not in memory cache)
   let sess = sessions.get(sessionId);
   if (!sess) {
-    sess = { threadId: null, messages: [], pendingReply: null, lang, createdAt: Date.now() };
-    sessions.set(sessionId, sess);
+    const row = stmts.getById.get(sessionId);
+    if (row) {
+      sess = rowToSess(row);
+      sessions.set(sessionId, sess);
+      if (sess.threadId) topicToSession.set(String(sess.threadId), sessionId);
+    } else {
+      sess = { threadId: null, messages: [], pendingReply: null, lang, createdAt: Date.now() };
+      sessions.set(sessionId, sess);
+    }
   }
 
   // Build message history
@@ -264,6 +343,9 @@ app.post('/widget/message', async (req, res) => {
     }
   }
 
+  // Persist updated session to DB
+  persistSess(sessionId, sess);
+
   res.json({ reply: aiReply, sessionId });
 });
 
@@ -277,7 +359,10 @@ app.get('/widget/poll', (req, res) => {
   if (!sess) return res.json({ reply: null });
 
   const reply = sess.pendingReply || null;
-  sess.pendingReply = null;
+  if (reply) {
+    sess.pendingReply = null;
+    persistSess(session, sess);
+  }
   res.json({ reply });
 });
 
@@ -302,8 +387,18 @@ app.post(`/telegram/webhook/${WEBHOOK_SECRET}`, (req, res) => {
     return;
   }
 
-  // Map topic → session
-  const sessionId = topicToSession.get(String(threadId));
+  // Map topic → session (check DB if not in memory)
+  let sessionId = topicToSession.get(String(threadId));
+  if (!sessionId) {
+    const row = stmts.getByThread.get(String(threadId));
+    if (row) {
+      sessionId = row.session_id;
+      const sess = rowToSess(row);
+      sessions.set(sessionId, sess);
+      topicToSession.set(String(threadId), sessionId);
+    }
+  }
+
   if (!sessionId) {
     console.log(`[tg] no session for thread ${threadId}`);
     return;
@@ -315,6 +410,7 @@ app.post(`/telegram/webhook/${WEBHOOK_SECRET}`, (req, res) => {
   // Store admin reply for widget to pick up via poll
   sess.pendingReply = text;
   sess.messages.push({ role: 'assistant', content: `[Admin] ${text}` });
+  persistSess(sessionId, sess);
 
   console.log(`[admin] reply for session ${sessionId.slice(0, 8)}: ${text.slice(0, 60)}`);
 });
@@ -333,6 +429,7 @@ app.get('/health', (_req, res) => {
 app.listen(PORT, () => {
   console.log(`[bot] Widget bridge listening on port ${PORT}`);
   console.log(`[bot] Telegram webhook path: /telegram/webhook/${WEBHOOK_SECRET}`);
+  console.log(`[bot] Sessions DB: ${DB_PATH}`);
   if (ADMIN_IDS.size === 0) {
     console.warn('[bot] ADMIN_IDS is not set — all Telegram replies will be rejected. Set ADMIN_IDS to enable admin replies.');
   } else {
