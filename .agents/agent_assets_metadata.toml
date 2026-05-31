@@ -6,3 +6,39 @@ id = "A0kRVO7R7UNaRgE07Lz4I"
 uri = "file://.local/apinet_ratios.json"
 type = "unspecified"
 title = "apinet_ratios.json — все цены (DeepSeek исправлен)"
+
+[[outputs]]
+id = "qM3PMyZMgpPZx2ERtolF9"
+uri = "file://.local/model_ratio.json"
+type = "unspecified"
+title = "1. model_ratio.json — 378 моделей (входные токены)"
+
+[[outputs]]
+id = "lqJL6I0-FlWGG5b999T0a"
+uri = "file://.local/completion_ratio.json"
+type = "unspecified"
+title = "2. completion_ratio.json — 337 моделей (выходные токены)"
+
+[[outputs]]
+id = "mP7RlRvBeoZAD7Phusa5I"
+uri = "file://.local/cache_ratio.json"
+type = "unspecified"
+title = "3. cache_ratio.json — 57 моделей (cache hit)"
+
+[[outputs]]
+id = "M5kK6nioZX0bA1EnmM9Qn"
+uri = "file://.local/create_cache_ratio.json"
+type = "unspecified"
+title = "4. create_cache_ratio.json — 24 модели (создание кэша)"
+
+[[outputs]]
+id = "y8LY9uj7QSYowEF1N9Ziq"
+uri = "file://.local/model_price.json"
+type = "unspecified"
+title = "5. model_price.json — 157 моделей (фиксированная цена)"
+
+[[outputs]]
+id = "U7cHFP2vDc1EdbFwuMgow"
+uri = "file://.local/all_pricing_combined.json"
+type = "unspecified"
+title = "6. all_pricing_combined.json — всё вместе"
