@@ -296,8 +296,8 @@ app.post(`/telegram/webhook/${WEBHOOK_SECRET}`, (req, res) => {
 
   if (!text || !threadId) return;
 
-  // Check admin whitelist
-  if (ADMIN_IDS.size > 0 && !ADMIN_IDS.has(senderId)) {
+  // Check admin whitelist — fail-closed: reject ALL if ADMIN_IDS is empty
+  if (!ADMIN_IDS.has(senderId)) {
     console.log(`[tg] ignored reply from non-admin ${senderId}`);
     return;
   }
@@ -333,7 +333,11 @@ app.get('/health', (_req, res) => {
 app.listen(PORT, () => {
   console.log(`[bot] Widget bridge listening on port ${PORT}`);
   console.log(`[bot] Telegram webhook path: /telegram/webhook/${WEBHOOK_SECRET}`);
-  console.log(`[bot] Admin IDs: ${ADMIN_IDS.size > 0 ? [...ADMIN_IDS].join(', ') : '(all blocked — set ADMIN_IDS)'}`);
+  if (ADMIN_IDS.size === 0) {
+    console.warn('[bot] ADMIN_IDS is not set — all Telegram replies will be rejected. Set ADMIN_IDS to enable admin replies.');
+  } else {
+    console.log(`[bot] Admin IDs: ${[...ADMIN_IDS].join(', ')}`);
+  }
   if (!BOT_TOKEN) console.warn('[bot] TELEGRAM_BOT_TOKEN not set — Telegram integration disabled');
   if (!WIDGET_TOKEN) console.warn('[bot] WIDGET_TOKEN not set — AI calls will fail');
 
