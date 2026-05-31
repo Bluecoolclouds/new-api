@@ -28,10 +28,13 @@ import {
   Circle,
   CreditCard,
   FileText,
+  Gift,
   KeyRound,
   ListChecks,
   RadioTower,
+  Send,
   ShieldCheck,
+  Sparkles,
   TerminalSquare,
   Timer,
   type LucideIcon,
@@ -53,6 +56,7 @@ import {
 import { fetchTokenKey, getApiKeys } from '@/features/keys/api'
 import type { ApiKey } from '@/features/keys/types'
 import { getUserQuotaDates } from '@/features/dashboard/api'
+import { useStatus } from '@/hooks/use-status'
 import {
   useApiInfo,
   useDashboardContentVisibility,
@@ -174,6 +178,41 @@ function buildCurlCommand(args: {
     `  -H "Authorization: Bearer ${args.apiKey}" \\`,
     `  -d '{"model":"${args.model}","messages":[{"role":"user","content":"Say hello in one sentence."}]}'`,
   ].join('\n')
+}
+
+function TelegramBotBanner({ botName }: { botName: string }) {
+  if (!botName) return null
+  return (
+    <a href={`https://t.me/${botName}`} target='_blank' rel='noopener noreferrer' className='group block'>
+      <div className='relative overflow-hidden rounded-2xl border border-sky-200/60 shadow-xs transition-shadow hover:shadow-md dark:border-sky-700/40'
+        style={{ background: 'linear-gradient(135deg, #e0f7ff 0%, #bae8fd 30%, #7dd3f7 65%, #38b6f0 100%)' }}
+      >
+        <div className='pointer-events-none absolute -top-6 -right-4 size-40 rounded-full bg-white/55 blur-2xl' />
+        <div className='pointer-events-none absolute top-2 left-1/3 size-28 rounded-full bg-white/40 blur-2xl' />
+        <div className='relative flex flex-wrap items-center justify-between gap-3 px-4 py-3.5 sm:px-5'>
+          <div className='flex items-center gap-3'>
+            <span className='flex size-9 shrink-0 items-center justify-center rounded-xl bg-white/60 shadow-xs backdrop-blur-sm'>
+              <Send className='size-4 text-sky-600' />
+            </span>
+            <div className='flex flex-col gap-0.5'>
+              <div className='flex items-center gap-2'>
+                <span className='text-sm font-semibold text-sky-900'>Бот с ИИ</span>
+                <span className='flex items-center gap-1 rounded-full bg-white/60 px-2 py-0.5 text-[10px] font-medium text-sky-700'>
+                  <Sparkles className='size-2.5' /> Чат · Изображения
+                </span>
+              </div>
+              <p className='text-xs text-sky-800/80'>
+                Общайся с нейросетями прямо в Telegram
+              </p>
+            </div>
+          </div>
+          <span className='flex items-center gap-1.5 rounded-xl bg-white/55 px-3 py-1.5 text-xs font-semibold text-sky-700 shadow-xs backdrop-blur-sm transition-colors group-hover:bg-white/80'>
+            @{botName} <ArrowRight className='size-3' />
+          </span>
+        </div>
+      </div>
+    </a>
+  )
 }
 
 function SetupGuideBackdrop(props: { compact?: boolean }) {
@@ -408,6 +447,8 @@ function QuickActionItem(props: { action: QuickAction }) {
 
 export function OverviewDashboard() {
   const { t } = useTranslation()
+  const { status } = useStatus()
+  const telegramBotName = (status?.telegram_bot_name as string) ?? ''
   const user = useAuthStore((state) => state.auth.user)
   const { items: apiInfoItems } = useApiInfo()
   const {
@@ -790,6 +831,13 @@ export function OverviewDashboard() {
 
         {/* ── Right sidebar (22rem) ── */}
         <div className='flex flex-col gap-4'>
+          {telegramBotName && (
+            <CardStaggerContainer>
+              <CardStaggerItem>
+                <TelegramBotBanner botName={telegramBotName} />
+              </CardStaggerItem>
+            </CardStaggerContainer>
+          )}
           <CardStaggerContainer>
             <CardStaggerItem>
               <QuickActionsSidebar actions={visibleQuickActions} />

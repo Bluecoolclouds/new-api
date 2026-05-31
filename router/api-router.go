@@ -49,6 +49,9 @@ func SetApiRouter(router *gin.Engine) {
                 apiRouter.POST("/oauth/wechat/bind", middleware.CriticalRateLimit(), controller.WeChatBind)
                 apiRouter.GET("/oauth/telegram/login", middleware.CriticalRateLimit(), controller.TelegramLogin)
                 apiRouter.GET("/oauth/telegram/bind", middleware.CriticalRateLimit(), controller.TelegramBind)
+                apiRouter.POST("/auth/tgbot/init", middleware.CriticalRateLimit(), controller.TgBotInitSession)
+                apiRouter.POST("/auth/tgbot/confirm", controller.TgBotConfirmSession)
+                apiRouter.GET("/auth/tgbot/poll", controller.TgBotPollSession)
                 // Standard OAuth providers (GitHub, Discord, OIDC, LinuxDO) - unified route
                 apiRouter.GET("/oauth/:provider", middleware.CriticalRateLimit(), controller.HandleOAuth)
                 apiRouter.GET("/ratio_config", middleware.CriticalRateLimit(), controller.GetRatioConfig)
@@ -178,6 +181,9 @@ func SetApiRouter(router *gin.Engine) {
                 }
 
                 // Subscription payment callbacks (no auth)
+                // FreeKassa payment callback (no auth)
+                apiRouter.POST("/user/freekassa/notify", controller.FreeKassaNotify)
+                apiRouter.GET("/user/freekassa/notify", controller.FreeKassaNotify)
                 apiRouter.POST("/subscription/epay/notify", controller.SubscriptionEpayNotify)
                 apiRouter.GET("/subscription/epay/notify", controller.SubscriptionEpayNotify)
                 apiRouter.GET("/subscription/epay/return", controller.SubscriptionEpayReturn)

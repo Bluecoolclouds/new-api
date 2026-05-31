@@ -28,6 +28,7 @@ const { vitePluginSemi } = pkg;
 export default defineConfig({
   resolve: {
     alias: {
+      "@douyinfe/semi-ui/dist/css/semi.css": path.resolve(__dirname, "./node_modules/@douyinfe/semi-ui/dist/css/semi.css"),
       '@': path.resolve(__dirname, './src'),
     },
   },

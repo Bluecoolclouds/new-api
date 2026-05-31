@@ -185,8 +185,8 @@ export function useOAuthLogin(status: SystemStatus | null) {
     }
   }
 
-  const handleTelegramLogin = () => {
-    toast.info(t('Telegram login requires widget integration; coming soon'))
+  const handleTelegramLogin = (onOpen?: () => void) => {
+    if (onOpen) { onOpen() }
   }
 
   const handleCustomOAuthLogin = async (provider: CustomOAuthProviderInfo) => {

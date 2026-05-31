@@ -241,8 +241,27 @@ const RegisterForm = () => {
         );
         const { success, message } = res.data;
         if (success) {
-          navigate('/login');
-          showSuccess('注册成功！');
+          // Auto-login after registration
+          try {
+            const loginRes = await API.post(`/api/user/login?turnstile=${turnstileToken}`, {
+              username: inputs.username,
+              password: inputs.password,
+            });
+            const { success: loginSuccess, data: loginData } = loginRes.data;
+            if (loginSuccess) {
+              userDispatch({ type: 'login', payload: loginData });
+              setUserData(loginData);
+              updateAPI();
+              showSuccess('注册成功！');
+              navigate('/');
+            } else {
+              showSuccess('注册成功！');
+              navigate('/login');
+            }
+          } catch {
+            showSuccess('注册成功！');
+            navigate('/login');
+          }
         } else {
           showError(message);
         }

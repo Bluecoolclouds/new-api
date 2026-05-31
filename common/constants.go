@@ -140,6 +140,7 @@ var TurnstileSecretKey = ""
 
 var TelegramBotToken = ""
 var TelegramBotName = ""
+var TelegramBotSecret = ""
 
 var QuotaForNewUser = 0
 var QuotaForInviter = 0

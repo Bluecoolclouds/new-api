@@ -154,6 +154,10 @@ func Register(c *gin.Context) {
 		common.ApiErrorI18n(c, i18n.MsgUserInputInvalid, map[string]any{"Error": err.Error()})
 		return
 	}
+	if !isPasswordComplex(user.Password) {
+		common.ApiErrorMsg(c, "Password must contain at least one uppercase letter, one digit, and one special character")
+		return
+	}
 	if common.EmailVerificationEnabled {
 		if user.Email == "" || user.VerificationCode == "" {
 			common.ApiErrorI18n(c, i18n.MsgUserEmailVerificationRequired)
@@ -1293,4 +1297,21 @@ func UpdateUserSetting(c *gin.Context) {
 	}
 
 	common.ApiSuccessI18n(c, i18n.MsgSettingSaved, nil)
+}
+
+// isPasswordComplex checks that password contains at least one uppercase letter,
+// one digit, and one special character.
+func isPasswordComplex(password string) bool {
+	var hasUpper, hasDigit, hasSpecial bool
+	for _, ch := range password {
+		switch {
+		case ch >= 'A' && ch <= 'Z':
+			hasUpper = true
+		case ch >= '0' && ch <= '9':
+			hasDigit = true
+		case !((ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z') || (ch >= '0' && ch <= '9')):
+			hasSpecial = true
+		}
+	}
+	return hasUpper && hasDigit && hasSpecial
 }

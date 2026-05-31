@@ -17,7 +17,9 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 For commercial licensing, please contact support@quantumnous.com
 */
 import type { ReactNode } from 'react'
+import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { Send } from 'lucide-react'
 import {
   IconDiscord,
   IconGithub,
@@ -27,6 +29,7 @@ import {
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { useOAuthLogin } from '../hooks/use-oauth-login'
+import { TelegramLoginDialog } from './telegram-login-dialog'
 import type { SystemStatus } from '../types'
 
 type OAuthProvidersProps = {
@@ -53,6 +56,7 @@ export function OAuthProviders({
   isWeChatLoading = false,
 }: OAuthProvidersProps) {
   const { t } = useTranslation()
+  const [telegramDialogOpen, setTelegramDialogOpen] = useState(false)
   const {
     isLoading,
     githubButtonText,
@@ -117,7 +121,8 @@ export function OAuthProviders({
     providerButtons.push({
       key: 'telegram',
       label: t('Continue with Telegram'),
-      onClick: handleTelegramLogin,
+      onClick: () => handleTelegramLogin(() => setTelegramDialogOpen(true)),
+      icon: <Send className='h-4 w-4 text-blue-500' />,
     })
   }
 
@@ -136,35 +141,45 @@ export function OAuthProviders({
   if (providerButtons.length === 0) return null
 
   return (
-    <div className={cn('space-y-3', className)}>
-      <div className='relative'>
-        <div className='absolute inset-0 flex items-center'>
-          <span className='w-full border-t' />
+    <>
+      <div className={cn('space-y-3', className)}>
+        <div className='relative'>
+          <div className='absolute inset-0 flex items-center'>
+            <span className='w-full border-t' />
+          </div>
+          <div className='relative flex justify-center text-xs uppercase'>
+            <span className='bg-background text-muted-foreground px-2'>
+              {t('Or continue with')}
+            </span>
+          </div>
         </div>
-        <div className='relative flex justify-center text-xs uppercase'>
-          <span className='bg-background text-muted-foreground px-2'>
-            {t('Or continue with')}
-          </span>
+
+        <div className='flex flex-col gap-2'>
+          {providerButtons.map(
+            ({ key, label, onClick, icon, disabled: extraDisabled }) => (
+              <Button
+                key={key}
+                variant='outline'
+                type='button'
+                disabled={disabled || isLoading || extraDisabled}
+                onClick={onClick}
+                className='h-11 w-full justify-center gap-2 rounded-lg'
+              >
+                {icon}
+                {label}
+              </Button>
+            )
+          )}
         </div>
       </div>
 
-      <div className='flex flex-col gap-2'>
-        {providerButtons.map(
-          ({ key, label, onClick, icon, disabled: extraDisabled }) => (
-            <Button
-              key={key}
-              variant='outline'
-              type='button'
-              disabled={disabled || isLoading || extraDisabled}
-              onClick={onClick}
-              className='h-11 w-full justify-center gap-2 rounded-lg'
-            >
-              {icon}
-              {label}
-            </Button>
-          )
-        )}
-      </div>
-    </div>
+      {status?.telegram_oauth && (
+        <TelegramLoginDialog
+          open={telegramDialogOpen}
+          onOpenChange={setTelegramDialogOpen}
+          botName={status.telegram_bot_name ?? ''}
+        />
+      )}
+    </>
   )
 }

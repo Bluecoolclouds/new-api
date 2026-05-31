@@ -93,10 +93,10 @@ export function BotProtectionSection({
             render={({ field }) => (
               <SettingsSwitchItem>
                 <SettingsSwitchContent>
-                  <FormLabel>{t('Enable Turnstile')}</FormLabel>
+                  <FormLabel>{t('Enable hCaptcha')}</FormLabel>
                   <FormDescription>
                     {t(
-                      'Protect login and registration with Cloudflare Turnstile'
+                      'Protect login and registration with hCaptcha'
                     )}
                   </FormDescription>
                 </SettingsSwitchContent>
@@ -118,7 +118,7 @@ export function BotProtectionSection({
                 <FormLabel>{t('Site Key')}</FormLabel>
                 <FormControl>
                   <Input
-                    placeholder={t('Your Turnstile site key')}
+                    placeholder={t('Your hCaptcha site key')}
                     autoComplete='off'
                     {...field}
                   />
@@ -137,7 +137,7 @@ export function BotProtectionSection({
                 <FormControl>
                   <Input
                     type='password'
-                    placeholder={t('Your Turnstile secret key')}
+                    placeholder={t('Your hCaptcha secret key')}
                     autoComplete='new-password'
                     {...field}
                   />

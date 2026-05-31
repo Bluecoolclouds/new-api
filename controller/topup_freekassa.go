@@ -1,12 +1,19 @@
 package controller
 
 import (
+        "bytes"
+        "crypto/hmac"
         "crypto/md5"
+        "crypto/sha256"
+        "encoding/hex"
+        "encoding/json"
         "fmt"
+        "io"
         "net/http"
         "net/url"
         "strconv"
-        "strings"
+        "sort"
+	"strings"
         "time"
 
         "github.com/QuantumNous/new-api/common"
@@ -93,6 +100,134 @@ func freeKassaSign1(merchantId, amount, secretWord1, currency, orderId string) s
 func freeKassaSign2(merchantId, amount, secretWord2, orderId string) string {
         raw := fmt.Sprintf("%s:%s:%s:%s", merchantId, amount, secretWord2, orderId)
         return fmt.Sprintf("%x", md5.Sum([]byte(raw)))
+}
+
+// freeKassaApiSign computes HMAC-SHA256 signature for FreeKassa API v2.
+// Per docs: sort all request fields by key alphabetically, join values with |, HMAC-SHA256 with API key.
+func freeKassaApiSign(fields map[string]string, apiKey string) string {
+        keys := make([]string, 0, len(fields))
+        for k := range fields {
+                keys = append(keys, k)
+        }
+        sort.Strings(keys)
+        vals := make([]string, 0, len(keys))
+        for _, k := range keys {
+                vals = append(vals, fields[k])
+        }
+        msg := strings.Join(vals, "|")
+        h := hmac.New(sha256.New, []byte(apiKey))
+        h.Write([]byte(msg))
+        return hex.EncodeToString(h.Sum(nil))
+}
+
+type freeKassaApiOrderRequest struct {
+        ShopId     int    `json:"shopId"`
+        Nonce      int64  `json:"nonce"`
+        PaymentId  string `json:"paymentId"`
+        I          int    `json:"i"`
+        Email      string `json:"email"`
+        Ip         string `json:"ip"`
+        Amount     string `json:"amount"`
+        Currency   string `json:"currency"`
+        Signature  string `json:"signature"`
+        SuccessURL string `json:"success_url,omitempty"`
+        FailureURL string `json:"failure_url,omitempty"`
+}
+
+type freeKassaApiOrderResponse struct {
+        Type      string `json:"type"`
+        OrderId   int    `json:"orderId"`
+        OrderHash string `json:"orderHash"`
+        Location  string `json:"location"`
+        Message   string `json:"message"`
+}
+
+// requestFreeKassaPayViaAPI creates an order via FreeKassa API v2 and returns the payment URL.
+func requestFreeKassaPayViaAPI(c *gin.Context, shopId int, apiKey string, paymentSystemId int,
+        email string, ip string, amountStr string, currency string, tradeNo string) (string, error) {
+
+        nonce := time.Now().UnixNano()
+        fields := map[string]string{
+                "shopId":    fmt.Sprintf("%d", shopId),
+                "nonce":     fmt.Sprintf("%d", nonce),
+                "paymentId": tradeNo,
+                "i":         fmt.Sprintf("%d", paymentSystemId),
+                "email":     email,
+                "ip":        ip,
+                "amount":    amountStr,
+                "currency":  currency,
+        }
+
+        var successURL, failureURL string
+        if setting.FreeKassaReturnURL != "" {
+                successURL = strings.TrimRight(setting.FreeKassaReturnURL, "/") + "?status=success"
+                failureURL = strings.TrimRight(setting.FreeKassaReturnURL, "/") + "?status=failed"
+                fields["success_url"] = successURL
+                fields["failure_url"] = failureURL
+        }
+
+        sig := freeKassaApiSign(fields, apiKey)
+
+        reqBody := freeKassaApiOrderRequest{
+                ShopId:    shopId,
+                Nonce:     nonce,
+                PaymentId: tradeNo,
+                I:         paymentSystemId,
+                Email:     email,
+                Ip:        ip,
+                Amount:    amountStr,
+                Currency:  currency,
+                Signature: sig,
+        }
+
+        if successURL != "" {
+                reqBody.SuccessURL = successURL
+                reqBody.FailureURL = failureURL
+        }
+
+        body, err := json.Marshal(reqBody)
+        if err != nil {
+                return "", fmt.Errorf("marshal error: %w", err)
+        }
+
+        httpReq, err := http.NewRequestWithContext(c.Request.Context(), http.MethodPost,
+                "https://api.fk.life/v1/orders/create", bytes.NewReader(body))
+        if err != nil {
+                return "", fmt.Errorf("create request error: %w", err)
+        }
+        httpReq.Header.Set("Content-Type", "application/json")
+
+        client := &http.Client{Timeout: 15 * time.Second}
+        resp, err := client.Do(httpReq)
+        if err != nil {
+                return "", fmt.Errorf("http error: %w", err)
+        }
+        defer resp.Body.Close()
+
+        respBytes, err := io.ReadAll(resp.Body)
+        if err != nil {
+                return "", fmt.Errorf("read response error: %w", err)
+        }
+
+        var apiResp freeKassaApiOrderResponse
+        if err := json.Unmarshal(respBytes, &apiResp); err != nil {
+                return "", fmt.Errorf("unmarshal error: %w, body: %s", err, string(respBytes))
+        }
+
+        if apiResp.Type != "success" || apiResp.Location == "" {
+                return "", fmt.Errorf("freekassa api error: %s (body: %s)", apiResp.Message, string(respBytes))
+        }
+
+        return apiResp.Location, nil
+}
+
+// usesFreeKassaAPI returns true if the payment system ID requires FreeKassa API v2.
+func usesFreeKassaAPI(paymentSystemId string) bool {
+        switch paymentSystemId {
+        case "36", "44":
+                return true
+        }
+        return false
 }
 
 func RequestFreeKassaAmount(c *gin.Context) {
@@ -194,35 +329,63 @@ func RequestFreeKassaPay(c *gin.Context) {
                 currency = "RUB"
         }
         amountStr := strconv.FormatFloat(payMoney, 'f', 2, 64)
-        sign := freeKassaSign1(setting.FreeKassaMerchantId, amountStr, setting.FreeKassaSecretWord1, currency, tradeNo)
-
-        params := url.Values{}
-        params.Set("m", setting.FreeKassaMerchantId)
-        params.Set("oa", amountStr)
-        params.Set("currency", currency)
-        params.Set("o", tradeNo)
-        params.Set("s", sign)
-        params.Set("lang", "ru")
-
-        if email := getFreeKassaUserEmail(user); email != "" {
-                params.Set("em", email)
-        }
 
         paymentSystemId := resolvePaymentSystemId(req.PaymentMethod)
-        if paymentSystemId != "" {
-                params.Set("i", paymentSystemId)
+
+        var payLink string
+
+        if usesFreeKassaAPI(paymentSystemId) && setting.FreeKassaMerchantId != "" {
+                // Use FreeKassa API v2 for methods that require it (SBP id=44, card id=36)
+                shopId, err := strconv.Atoi(setting.FreeKassaMerchantId)
+                if err != nil {
+                        logger.LogError(c.Request.Context(), fmt.Sprintf("FreeKassa shopId parse error: %v", err))
+                        c.JSON(http.StatusOK, gin.H{"message": "error", "data": "Неверный ID магазина FreeKassa"})
+                        return
+                }
+                psId, _ := strconv.Atoi(paymentSystemId)
+                email := getFreeKassaUserEmail(user)
+                if email == "" {
+                        email = fmt.Sprintf("user%d@noemail.local", id)
+                }
+                ip := c.ClientIP()
+                link, apiErr := requestFreeKassaPayViaAPI(c, shopId, setting.FreeKassaApiKey, psId, email, ip, amountStr, currency, tradeNo)
+                if apiErr != nil {
+                        logger.LogError(c.Request.Context(), fmt.Sprintf("FreeKassa API error user_id=%d trade_no=%s error=%q", id, tradeNo, apiErr.Error()))
+                        c.JSON(http.StatusOK, gin.H{"message": "error", "data": "Ошибка создания платежа через FreeKassa API: " + apiErr.Error()})
+                        return
+                }
+                payLink = link
+        } else {
+                // Legacy widget for other payment methods
+                sign := freeKassaSign1(setting.FreeKassaMerchantId, amountStr, setting.FreeKassaSecretWord1, currency, tradeNo)
+
+                params := url.Values{}
+                params.Set("m", setting.FreeKassaMerchantId)
+                params.Set("oa", amountStr)
+                params.Set("currency", currency)
+                params.Set("o", tradeNo)
+                params.Set("s", sign)
+                params.Set("lang", "ru")
+
+                if email := getFreeKassaUserEmail(user); email != "" {
+                        params.Set("em", email)
+                }
+
+                if paymentSystemId != "" {
+                        params.Set("i", paymentSystemId)
+                }
+
+                if setting.FreeKassaReturnURL != "" {
+                        successURL := strings.TrimRight(setting.FreeKassaReturnURL, "/") + "?status=success"
+                        failureURL := strings.TrimRight(setting.FreeKassaReturnURL, "/") + "?status=failed"
+                        params.Set("success_url", successURL)
+                        params.Set("failure_url", failureURL)
+                }
+
+                payLink = freeKassaPayURL + "?" + params.Encode()
         }
 
-        if setting.FreeKassaReturnURL != "" {
-                successURL := strings.TrimRight(setting.FreeKassaReturnURL, "/") + "?status=success"
-                failureURL := strings.TrimRight(setting.FreeKassaReturnURL, "/") + "?status=failed"
-                params.Set("success_url", successURL)
-                params.Set("failure_url", failureURL)
-        }
-
-        payLink := freeKassaPayURL + "?" + params.Encode()
-
-        logger.LogInfo(c.Request.Context(), fmt.Sprintf("FreeKassa 充值订单创建成功 user_id=%d trade_no=%s amount=%d money=%.2f currency=%s", id, tradeNo, req.Amount, payMoney, currency))
+        logger.LogInfo(c.Request.Context(), fmt.Sprintf("FreeKassa 充值订单创建成功 user_id=%d trade_no=%s amount=%d money=%.2f currency=%s payment_system=%s", id, tradeNo, req.Amount, payMoney, currency, paymentSystemId))
         c.JSON(http.StatusOK, gin.H{
                 "message": "success",
                 "data": gin.H{

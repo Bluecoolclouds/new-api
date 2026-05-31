@@ -758,7 +758,7 @@ export function RechargeFormCard({
                   </div>
 
                   {/* Total + CTA */}
-                  <div className='flex items-center justify-between gap-4 px-4 py-3.5'>
+                  <div className='flex items-center justify-between gap-4 px-4 py-3.5 bg-muted/50'>
                     <div>
                       <p className='text-muted-foreground text-xs'>{t('Will be credited')}</p>
                       {calculating ? (

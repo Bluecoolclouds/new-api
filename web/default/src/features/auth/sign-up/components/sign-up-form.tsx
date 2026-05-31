@@ -46,7 +46,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { PasswordInput } from '@/components/password-input'
 import { Turnstile } from '@/components/turnstile'
-import { register, wechatLoginByCode } from '@/features/auth/api'
+import { register, login, wechatLoginByCode } from '@/features/auth/api'
 import { LegalConsent } from '@/features/auth/components/legal-consent'
 import { OAuthProviders } from '@/features/auth/components/oauth-providers'
 import { registerFormSchema } from '@/features/auth/constants'
@@ -173,8 +173,22 @@ export function SignUpForm({
       })
 
       if (res?.success) {
-        toast.success(t('Account created! Please sign in'))
-        redirectToLogin()
+        // Auto-login after registration
+        try {
+          const loginRes = await login({
+            username: data.username,
+            password: data.password,
+          })
+          if (loginRes?.success) {
+            handleLoginSuccess(loginRes)
+          } else {
+            toast.success(t("Account created! Please sign in"))
+            redirectToLogin()
+          }
+        } catch {
+          toast.success(t("Account created! Please sign in"))
+          redirectToLogin()
+        }
       } else {
         toast.error(res?.message || t('Failed to create account'))
       }
@@ -260,7 +274,7 @@ export function SignUpForm({
               <FormLabel>{t('Password')}</FormLabel>
               <FormControl>
                 <PasswordInput
-                  placeholder={t('Enter password (8-20 characters)')}
+                  placeholder={t('Enter password (8-72 characters)')}
                   {...field}
                 />
               </FormControl>

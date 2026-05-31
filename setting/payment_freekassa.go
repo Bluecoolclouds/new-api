@@ -15,3 +15,5 @@ var FreeKassaCBRAutoSync = false
 var FreeKassaCardPaymentSystemId = ""
 var FreeKassaCryptoPaymentSystemId = ""
 var FreeKassaFallbackEmail = ""
+
+var FreeKassaApiKey = ""

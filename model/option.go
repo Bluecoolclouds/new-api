@@ -127,6 +127,7 @@ func InitOptionMap() {
         common.OptionMap["FreeKassaCardPaymentSystemId"] = setting.FreeKassaCardPaymentSystemId
         common.OptionMap["FreeKassaCryptoPaymentSystemId"] = setting.FreeKassaCryptoPaymentSystemId
         common.OptionMap["FreeKassaFallbackEmail"] = setting.FreeKassaFallbackEmail
+	common.OptionMap["FreeKassaApiKey"] = setting.FreeKassaApiKey
         common.OptionMap["TopupGroupRatio"] = common.TopupGroupRatio2JSONString()
         common.OptionMap["Chats"] = setting.Chats2JsonString()
         common.OptionMap["AutoGroups"] = setting.AutoGroups2JsonString()
@@ -136,6 +137,7 @@ func InitOptionMap() {
         common.OptionMap["GitHubClientSecret"] = ""
         common.OptionMap["TelegramBotToken"] = ""
         common.OptionMap["TelegramBotName"] = ""
+	common.OptionMap["TelegramBotSecret"] = ""
         common.OptionMap["WeChatServerAddress"] = ""
         common.OptionMap["WeChatServerToken"] = ""
         common.OptionMap["WeChatAccountQRCodeImageURL"] = ""
@@ -501,6 +503,8 @@ func updateOptionMap(key string, value string) (err error) {
                 setting.FreeKassaCryptoPaymentSystemId = value
         case "FreeKassaFallbackEmail":
                 setting.FreeKassaFallbackEmail = value
+	case "FreeKassaApiKey":
+		setting.FreeKassaApiKey = value
         case "TopupGroupRatio":
                 err = common.UpdateTopupGroupRatioByJSONString(value)
         case "GitHubClientId":
@@ -529,6 +533,8 @@ func updateOptionMap(key string, value string) (err error) {
                 common.TelegramBotToken = value
         case "TelegramBotName":
                 common.TelegramBotName = value
+        case "TelegramBotSecret":
+                common.TelegramBotSecret = value
         case "TurnstileSiteKey":
                 common.TurnstileSiteKey = value
         case "TurnstileSecretKey":
