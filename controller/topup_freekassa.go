@@ -146,7 +146,7 @@ type freeKassaApiOrderResponse struct {
 func requestFreeKassaPayViaAPI(c *gin.Context, shopId int, apiKey string, paymentSystemId int,
         email string, ip string, amountStr string, currency string, tradeNo string) (string, error) {
 
-        nonce := time.Now().UnixMilli()
+        nonce := time.Now().UnixNano()
         fields := map[string]string{
                 "shopId":    fmt.Sprintf("%d", shopId),
                 "nonce":     fmt.Sprintf("%d", nonce),
