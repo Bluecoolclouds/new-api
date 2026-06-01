@@ -83,9 +83,27 @@ export function Stats() {
 
   return (
     <div className='relative z-10'>
+      {/* Counters strip */}
+      <div className='border-border/40 bg-muted/10 border-y'>
+        <div className='mx-auto max-w-6xl px-6 py-10 md:py-12'>
+          <div className='grid grid-cols-2 gap-8 md:grid-cols-4 md:gap-12'>
+            {counters.map((s, i) => (
+              <AnimateInView key={s.label} delay={i * 80} animation='fade-up' className='flex flex-col items-center text-center'>
+                <span className='text-2xl font-bold tracking-tight md:text-3xl'>
+                  <Counter end={s.end} suffix={s.suffix} decimals={s.decimals} />
+                </span>
+                <span className='text-muted-foreground mt-1.5 text-xs'>
+                  {s.label}
+                </span>
+              </AnimateInView>
+            ))}
+          </div>
+        </div>
+      </div>
+
       {/* Pricing highlights strip */}
       <AnimateInView animation='fade-up'>
-        <div className='border-border/40 bg-muted/5 border-y'>
+        <div className='border-border/40 bg-muted/5 border-b'>
           <div className='mx-auto max-w-6xl px-6 py-6'>
             <div className='mb-4 flex items-center gap-2'>
               <span className='text-muted-foreground text-[10px] font-bold tracking-[0.15em] uppercase'>
@@ -119,24 +137,6 @@ export function Stats() {
           </div>
         </div>
       </AnimateInView>
-
-      {/* Counters strip */}
-      <div className='border-border/40 bg-muted/10 border-b'>
-        <div className='mx-auto max-w-6xl px-6 py-10 md:py-12'>
-          <div className='grid grid-cols-2 gap-8 md:grid-cols-4 md:gap-12'>
-            {counters.map((s, i) => (
-              <AnimateInView key={s.label} delay={i * 80} animation='fade-up' className='flex flex-col items-center text-center'>
-                <span className='text-2xl font-bold tracking-tight md:text-3xl'>
-                  <Counter end={s.end} suffix={s.suffix} decimals={s.decimals} />
-                </span>
-                <span className='text-muted-foreground mt-1.5 text-xs'>
-                  {s.label}
-                </span>
-              </AnimateInView>
-            ))}
-          </div>
-        </div>
-      </div>
     </div>
   )
 }
