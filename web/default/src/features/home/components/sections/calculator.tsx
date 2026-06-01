@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link } from '@tanstack/react-router'
-import { ArrowRight } from 'lucide-react'
+import { ArrowRight, Sparkles } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { Button } from '@/components/ui/button'
 import { AnimateInView } from '@/components/animate-in-view'
@@ -81,28 +81,35 @@ const VOLUMES = [
   { label: '1B', value: 1000, desc: 'энтерпрайз' },
 ]
 
-const PROVIDER_COLORS: Record<string, string> = {
-  Google: 'text-blue-400',
-  OpenAI: 'text-emerald-400',
-  xAI: 'text-purple-400',
-  DeepSeek: 'text-cyan-400',
+const PROVIDER_DOT: Record<string, string> = {
+  Google:   'bg-blue-400',
+  OpenAI:   'bg-emerald-400',
+  xAI:      'bg-purple-400',
+  DeepSeek: 'bg-cyan-400',
 }
+
+// 300 RUB top-up → $10 credit bonus
+// at ~75 RUB/$: 300 RUB ≈ $4 paid → get $10 → bonus multiplier = 10/4 = 2.5×
+const BONUS_MULTIPLIER = 2.5
 
 export function Calculator() {
   const { t } = useTranslation()
   const [selectedModel, setSelectedModel] = useState(0)
   const [selectedVolume, setSelectedVolume] = useState(1)
+  const [bonusEnabled, setBonusEnabled] = useState(true)
 
-  const model = MODELS[selectedModel]
+  const model  = MODELS[selectedModel]
   const volume = VOLUMES[selectedVolume].value
 
   const blendedApinet = (model.inputApinet + model.outputApinet) / 2
-  const blendedRetail = (model.inputRetail + model.outputRetail) / 2
+  const blendedRetail = (model.inputRetail  + model.outputRetail)  / 2
 
-  const apinetCost = (blendedApinet * volume) / 1000
-  const retailCost = (blendedRetail * volume) / 1000
-  const saved = retailCost - apinetCost
-  const discount = retailCost > 0 ? Math.round((saved / retailCost) * 100) : 0
+  const effectiveApinet = bonusEnabled ? blendedApinet / BONUS_MULTIPLIER : blendedApinet
+
+  const apinetCost  = (effectiveApinet * volume) / 1000
+  const retailCost  = (blendedRetail   * volume) / 1000
+  const saved       = retailCost - apinetCost
+  const discount    = retailCost > 0 ? Math.round((saved / retailCost) * 100) : 0
 
   const fmt = (n: number) =>
     n >= 1000
@@ -112,63 +119,73 @@ export function Calculator() {
         : `$${n.toFixed(3)}`
 
   return (
-    <section className='relative z-10 overflow-hidden px-6 py-24 md:py-32'
-      style={{ background: 'oklch(0.09 0.015 250)' }}
-    >
-      {/* Ambient glow orbs */}
+    <section className='border-border/40 relative z-10 overflow-hidden border-t px-6 py-24 md:py-32'>
+      {/* Subtle light gradient mesh */}
       <div
         aria-hidden
-        className='pointer-events-none absolute inset-0 -z-10'
+        className='pointer-events-none absolute inset-0 -z-10 opacity-30 dark:opacity-[0.08]'
         style={{
           background: [
-            'radial-gradient(ellipse 55% 40% at 20% 60%, oklch(0.45 0.18 270 / 22%) 0%, transparent 70%)',
-            'radial-gradient(ellipse 45% 35% at 80% 30%, oklch(0.55 0.20 200 / 18%) 0%, transparent 70%)',
-            'radial-gradient(ellipse 60% 50% at 50% 110%, oklch(0.40 0.15 250 / 25%) 0%, transparent 60%)',
+            'radial-gradient(ellipse 55% 45% at 15% 70%, oklch(0.72 0.12 250 / 60%) 0%, transparent 70%)',
+            'radial-gradient(ellipse 45% 40% at 85% 25%, oklch(0.68 0.10 200 / 50%) 0%, transparent 70%)',
           ].join(', '),
-        }}
-      />
-
-      {/* Large soft glow behind card */}
-      <div
-        aria-hidden
-        className='pointer-events-none absolute top-1/2 left-1/2 -z-10 -translate-x-1/2 -translate-y-1/2'
-        style={{
-          width: '900px',
-          height: '500px',
-          background: 'radial-gradient(ellipse at center, oklch(0.50 0.20 260 / 14%) 0%, transparent 70%)',
-          filter: 'blur(40px)',
         }}
       />
 
       <div className='mx-auto max-w-6xl'>
         <AnimateInView className='mb-16 text-center md:mb-20'>
-          <p className='mb-3 text-xs font-medium tracking-widest uppercase text-white/40'>
+          <p className='text-muted-foreground mb-3 text-xs font-medium tracking-widest uppercase'>
             {t('Calculator')}
           </p>
-          <h2 className='text-2xl font-bold tracking-tight text-white md:text-3xl'>
+          <h2 className='text-2xl font-bold tracking-tight md:text-3xl'>
             {t('How much will you save')}
           </h2>
-          <p className='mx-auto mt-3 max-w-md text-sm text-white/50'>
+          <p className='text-muted-foreground mx-auto mt-3 max-w-md text-sm'>
             {t('Compare APINET prices with direct provider rates')}
           </p>
         </AnimateInView>
 
-        <AnimateInView animation='fade-up' delay={100}>
-          {/* Card with ring glow */}
-          <div
-            className='relative overflow-hidden rounded-2xl'
-            style={{
-              background: 'oklch(0.13 0.018 250)',
-              border: '1px solid oklch(0.28 0.04 250 / 60%)',
-              boxShadow: '0 0 0 1px oklch(0.35 0.10 260 / 20%), 0 32px 80px -16px oklch(0.10 0.02 250 / 80%), 0 0 60px -10px oklch(0.45 0.18 260 / 15%)',
-            }}
+        {/* Bonus banner */}
+        <AnimateInView delay={50}>
+          <button
+            onClick={() => setBonusEnabled(!bonusEnabled)}
+            className={`group mx-auto mb-8 flex w-fit items-center gap-3 rounded-2xl border px-5 py-3 transition-all duration-200 ${
+              bonusEnabled
+                ? 'border-amber-400/40 bg-amber-400/8 shadow-sm shadow-amber-400/10'
+                : 'border-border/40 bg-muted/10 opacity-60'
+            }`}
           >
+            <Sparkles className={`size-4 shrink-0 transition-colors ${bonusEnabled ? 'text-amber-500' : 'text-muted-foreground'}`} />
+            <div className='text-left'>
+              <span className={`text-xs font-semibold ${bonusEnabled ? 'text-amber-600 dark:text-amber-400' : 'text-muted-foreground'}`}>
+                {t('Top-up bonus: 300₽ → $10 credit')}
+              </span>
+              <span className='text-muted-foreground ml-2 text-xs'>
+                {bonusEnabled
+                  ? t('(effective 2.5× cheaper — click to disable)')
+                  : t('(click to enable)')}
+              </span>
+            </div>
+            <div className={`ml-auto flex size-9 shrink-0 items-center justify-center rounded-xl border text-xs font-bold transition-all ${
+              bonusEnabled
+                ? 'border-amber-400/40 bg-amber-400/15 text-amber-600 dark:text-amber-400'
+                : 'border-border/40 bg-muted/20 text-muted-foreground'
+            }`}>
+              2.5×
+            </div>
+          </button>
+        </AnimateInView>
+
+        <AnimateInView animation='fade-up' delay={100}>
+          <div className='border-border/40 bg-background overflow-hidden rounded-2xl border shadow-xl shadow-black/5'>
             <div className='grid gap-0 lg:grid-cols-2'>
-              {/* Left: controls */}
-              <div className='space-y-7 p-8' style={{ borderRight: '1px solid oklch(0.22 0.03 250 / 60%)' }}>
+
+              {/* ── Left: controls ── */}
+              <div className='border-border/30 space-y-7 p-8 lg:border-r'>
+
                 {/* Model selector */}
                 <div>
-                  <label className='mb-3 block text-[10px] font-bold tracking-[0.15em] uppercase text-white/40'>
+                  <label className='text-muted-foreground mb-3 block text-[10px] font-bold tracking-[0.15em] uppercase'>
                     {t('Model')}
                   </label>
                   <div className='grid grid-cols-2 gap-2'>
@@ -176,27 +193,18 @@ export function Calculator() {
                       <button
                         key={m.label}
                         onClick={() => setSelectedModel(i)}
-                        className='rounded-lg px-3 py-2.5 text-left text-xs transition-all duration-150'
-                        style={
+                        className={`rounded-xl border px-3 py-2.5 text-left text-xs transition-all duration-150 ${
                           selectedModel === i
-                            ? {
-                                background: 'oklch(0.25 0.06 260 / 60%)',
-                                border: '1px solid oklch(0.55 0.18 260 / 50%)',
-                                color: 'oklch(0.82 0.10 220)',
-                              }
-                            : {
-                                background: 'oklch(0.17 0.02 250 / 70%)',
-                                border: '1px solid oklch(0.28 0.03 250 / 50%)',
-                                color: 'oklch(0.65 0.02 250)',
-                              }
-                        }
+                            ? 'border-blue-500/40 bg-blue-500/8 ring-1 ring-blue-500/20'
+                            : 'border-border/40 bg-muted/20 hover:border-border hover:bg-muted/40'
+                        }`}
                       >
-                        <div className='font-semibold text-white/80'>{m.name}</div>
-                        <div className={`mt-0.5 text-[10px] font-mono ${PROVIDER_COLORS[m.provider] ?? 'text-white/40'}`}>
-                          {m.note ?? m.label}
+                        <div className='flex items-center gap-1.5'>
+                          <span className={`size-1.5 shrink-0 rounded-full ${PROVIDER_DOT[m.provider] ?? 'bg-muted-foreground'}`} />
+                          <span className='font-semibold text-foreground/90'>{m.name}</span>
                         </div>
-                        <div className='mt-1 font-mono text-[10px] text-white/35'>
-                          in ${m.inputApinet} · out ${m.outputApinet}
+                        <div className='text-muted-foreground/60 mt-1 font-mono text-[10px]'>
+                          {m.note ? m.note : `in $${m.inputApinet} · out $${m.outputApinet}`}
                         </div>
                       </button>
                     ))}
@@ -205,7 +213,7 @@ export function Calculator() {
 
                 {/* Volume selector */}
                 <div>
-                  <label className='mb-3 block text-[10px] font-bold tracking-[0.15em] uppercase text-white/40'>
+                  <label className='text-muted-foreground mb-3 block text-[10px] font-bold tracking-[0.15em] uppercase'>
                     {t('Tokens per month')}
                   </label>
                   <div className='grid grid-cols-4 gap-2'>
@@ -213,103 +221,97 @@ export function Calculator() {
                       <button
                         key={v.label}
                         onClick={() => setSelectedVolume(i)}
-                        className='rounded-lg px-2 py-2.5 text-center text-xs transition-all duration-150'
-                        style={
+                        className={`rounded-xl border px-2 py-2.5 text-center text-xs transition-all duration-150 ${
                           selectedVolume === i
-                            ? {
-                                background: 'oklch(0.25 0.06 260 / 60%)',
-                                border: '1px solid oklch(0.55 0.18 260 / 50%)',
-                              }
-                            : {
-                                background: 'oklch(0.17 0.02 250 / 70%)',
-                                border: '1px solid oklch(0.28 0.03 250 / 50%)',
-                              }
-                        }
+                            ? 'border-blue-500/40 bg-blue-500/8 ring-1 ring-blue-500/20'
+                            : 'border-border/40 bg-muted/20 hover:border-border hover:bg-muted/40'
+                        }`}
                       >
-                        <div className='font-semibold text-white/80'>{v.label}</div>
-                        <div className='mt-0.5 text-[10px] text-white/35'>{v.desc}</div>
+                        <div className='font-semibold'>{v.label}</div>
+                        <div className='text-muted-foreground/60 mt-0.5 text-[10px]'>{v.desc}</div>
                       </button>
                     ))}
                   </div>
                 </div>
 
-                {/* Rate comparison */}
-                <div
-                  className='space-y-3 rounded-xl p-4'
-                  style={{ background: 'oklch(0.17 0.02 250 / 60%)', border: '1px solid oklch(0.25 0.03 250 / 50%)' }}
-                >
+                {/* Rate info */}
+                <div className='border-border/30 bg-muted/10 space-y-2.5 rounded-xl border p-4'>
                   <div className='flex items-center justify-between text-xs'>
-                    <span className='text-white/40'>{t('APINET rate')} (in/out)</span>
-                    <span className='font-mono font-semibold text-emerald-400'>
+                    <span className='text-muted-foreground'>{t('APINET rate')} (in/out)</span>
+                    <span className='font-mono font-semibold text-blue-600 dark:text-blue-400'>
                       ${model.inputApinet} / ${model.outputApinet} /1M
                     </span>
                   </div>
-                  <div className='h-px' style={{ background: 'oklch(0.25 0.03 250 / 40%)' }} />
+                  {bonusEnabled && (
+                    <div className='flex items-center justify-between text-xs'>
+                      <span className='text-muted-foreground'>{t('With bonus 2.5×')}</span>
+                      <span className='font-mono font-semibold text-emerald-600 dark:text-emerald-400'>
+                        ${(model.inputApinet / BONUS_MULTIPLIER).toFixed(3)} / ${(model.outputApinet / BONUS_MULTIPLIER).toFixed(3)} /1M
+                      </span>
+                    </div>
+                  )}
+                  <div className='bg-border/40 h-px' />
                   <div className='flex items-center justify-between text-xs'>
-                    <span className='text-white/40'>{t('Retail rate')} (in/out)</span>
-                    <span className='font-mono text-white/30 line-through'>
+                    <span className='text-muted-foreground'>{t('Retail rate')} (in/out)</span>
+                    <span className='text-muted-foreground font-mono line-through'>
                       ${model.inputRetail} / ${model.outputRetail} /1M
                     </span>
                   </div>
                 </div>
               </div>
 
-              {/* Right: result */}
+              {/* ── Right: result ── */}
               <div className='flex flex-col justify-center p-8 text-center'>
-                {/* Big savings number */}
+
+                {/* Savings % */}
                 <div className='mb-8'>
                   {discount > 0 ? (
                     <>
-                      <div
-                        className='text-5xl font-bold tracking-tight tabular-nums md:text-6xl'
-                        style={{
-                          background: 'linear-gradient(135deg, oklch(0.75 0.18 165), oklch(0.72 0.16 200))',
-                          WebkitBackgroundClip: 'text',
-                          WebkitTextFillColor: 'transparent',
-                          backgroundClip: 'text',
-                        }}
-                      >
+                      <div className='bg-gradient-to-r from-emerald-500 to-teal-500 bg-clip-text text-5xl font-bold tracking-tight text-transparent tabular-nums md:text-6xl'>
                         -{discount}%
                       </div>
-                      <div className='mt-2 text-sm text-white/40'>
+                      <div className='text-muted-foreground mt-2 text-sm'>
                         {t('savings vs direct')}
+                        {bonusEnabled && (
+                          <span className='ml-1.5 inline-flex items-center gap-1 rounded-full bg-amber-400/15 px-2 py-0.5 text-[10px] font-semibold text-amber-600 dark:text-amber-400'>
+                            <Sparkles className='size-2.5' />
+                            {t('with bonus')}
+                          </span>
+                        )}
                       </div>
                     </>
                   ) : (
                     <>
-                      <div className='text-4xl font-bold text-white/30'>≈</div>
-                      <div className='mt-2 text-sm text-white/40'>
-                        {t('similar price')}
-                      </div>
+                      <div className='text-muted-foreground text-4xl font-bold'>≈</div>
+                      <div className='text-muted-foreground mt-2 text-sm'>{t('similar price')}</div>
                     </>
                   )}
                 </div>
 
                 {/* Cost breakdown */}
-                <div
-                  className='mb-8 space-y-4 rounded-xl p-5'
-                  style={{ background: 'oklch(0.17 0.02 250 / 60%)', border: '1px solid oklch(0.25 0.03 250 / 50%)' }}
-                >
+                <div className='border-border/30 bg-muted/10 mb-8 space-y-4 rounded-xl border p-5'>
                   <div>
-                    <div className='mb-1 text-xs text-white/40'>{t('You pay with APINET')}</div>
-                    <div className='text-2xl font-bold tabular-nums text-white'>
+                    <div className='text-muted-foreground mb-1 text-xs'>{t('You pay with APINET')}</div>
+                    <div className='text-2xl font-bold tabular-nums'>
                       {fmt(apinetCost)}
-                      <span className='ml-1 text-sm font-normal text-white/40'>/{t('month')}</span>
+                      <span className='text-muted-foreground ml-1 text-sm font-normal'>/{t('month')}</span>
                     </div>
+                    {bonusEnabled && (
+                      <div className='text-muted-foreground mt-0.5 text-xs'>
+                        {t('after top-up 300₽ bonus')}
+                      </div>
+                    )}
                   </div>
-                  <div className='h-px' style={{ background: 'oklch(0.25 0.03 250 / 40%)' }} />
+                  <div className='bg-border/40 h-px' />
                   <div className='flex items-center justify-between'>
                     <div>
-                      <div className='mb-0.5 text-xs text-white/40'>{t('Direct cost')}</div>
-                      <div className='text-base tabular-nums text-white/25 line-through'>
+                      <div className='text-muted-foreground mb-0.5 text-xs'>{t('Direct cost')}</div>
+                      <div className='text-muted-foreground text-base tabular-nums line-through'>
                         {fmt(retailCost)}
                       </div>
                     </div>
                     {saved > 0 && (
-                      <div
-                        className='rounded-lg px-3 py-1.5 text-sm font-semibold text-emerald-400'
-                        style={{ background: 'oklch(0.30 0.10 165 / 25%)', border: '1px solid oklch(0.45 0.15 165 / 30%)' }}
-                      >
+                      <div className='rounded-xl border border-emerald-500/20 bg-emerald-500/8 px-3 py-1.5 text-sm font-semibold text-emerald-600 dark:text-emerald-400'>
                         {t('Save')} {fmt(saved)}
                       </div>
                     )}
@@ -317,13 +319,13 @@ export function Calculator() {
                 </div>
 
                 <Button
-                  className='group w-full rounded-lg'
+                  className='group w-full rounded-xl'
                   render={<Link to='/sign-up' />}
                 >
                   {t('Start saving now')}
                   <ArrowRight className='ml-1.5 size-4 transition-transform duration-200 group-hover:translate-x-0.5' />
                 </Button>
-                <p className='mt-3 text-xs text-white/30'>
+                <p className='text-muted-foreground mt-3 text-xs'>
                   {t('No card required · Cancel anytime')}
                 </p>
               </div>
