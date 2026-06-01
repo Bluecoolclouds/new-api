@@ -73,7 +73,7 @@ function getMethodSubtitle(type: string, t: (key: string) => string): string {
     waffo: t('Waffo Pay'),
     waffo_pancake: t('Waffo'),
     creem: t('Creem'),
-    heleket: t('Crypto (USDT / BTC / ETH)'),
+    heleket: t('Cryptocurrency'),
   }
   return map[type] || ''
 }
@@ -342,7 +342,7 @@ export function RechargeFormCard({
 
     if (enableHeleketTopup) {
       methods.push({
-        method: { type: 'heleket', name: t('Crypto') },
+        method: { type: 'heleket', name: 'Heleket' },
       })
     }
 
@@ -663,7 +663,11 @@ export function RechargeFormCard({
                                 ) : method.type === 'freekassa_crypto' ? (
                                   <Coins className='h-5 w-5 text-amber-500' />
                                 ) : method.type === 'heleket' ? (
-                                  <Coins className='h-5 w-5 text-orange-500' />
+                                  <img
+                                    src='/images/heleket-logo.svg'
+                                    alt='Heleket'
+                                    className='h-5 w-5 object-contain'
+                                  />
                                 ) : (
                                   getPaymentIcon(
                                     method.type.startsWith('waffo-') ? 'waffo' : method.type,

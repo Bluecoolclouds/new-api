@@ -200,7 +200,7 @@ export function HeleketSettingsSection({ defaultValues }: Props) {
                 <FormItem>
                   <FormLabel>{t('Unit Price (credits per $1)')}</FormLabel>
                   <FormControl>
-                    <Input {...field} type='number' placeholder='500000' />
+                    <Input {...field} type='number' placeholder='1' />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -214,7 +214,7 @@ export function HeleketSettingsSection({ defaultValues }: Props) {
                 <FormItem>
                   <FormLabel>{t('Minimum Top-Up (credits)')}</FormLabel>
                   <FormControl>
-                    <Input {...field} type='number' placeholder='500000' />
+                    <Input {...field} type='number' placeholder='1' />
                   </FormControl>
                   <FormMessage />
                 </FormItem>

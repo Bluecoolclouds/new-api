@@ -16,7 +16,6 @@ import (
         "github.com/QuantumNous/new-api/logger"
         "github.com/QuantumNous/new-api/model"
         "github.com/QuantumNous/new-api/setting"
-        "github.com/QuantumNous/new-api/setting/operation_setting"
         system_setting "github.com/QuantumNous/new-api/setting/system_setting"
 
         "github.com/gin-gonic/gin"
@@ -44,18 +43,14 @@ func heleketWebhookSign(uuid, orderID, status, apiKey string) string {
 
 func getHeleketMinTopup() int64 {
         minTopup := setting.HeleketMinTopUp
-        if operation_setting.GetQuotaDisplayType() == operation_setting.QuotaDisplayTypeTokens {
-                minTopup = minTopup * int(common.QuotaPerUnit)
+        if minTopup <= 0 {
+                minTopup = 1
         }
         return int64(minTopup)
 }
 
 func getHeleketPayMoney(amount int64, group string) float64 {
         dAmount := decimal.NewFromInt(amount)
-        if operation_setting.GetQuotaDisplayType() == operation_setting.QuotaDisplayTypeTokens {
-                dQuotaPerUnit := decimal.NewFromFloat(common.QuotaPerUnit)
-                dAmount = dAmount.Div(dQuotaPerUnit)
-        }
 
         topupGroupRatio := common.GetTopupGroupRatio(group)
         if topupGroupRatio == 0 {
@@ -64,11 +59,11 @@ func getHeleketPayMoney(amount int64, group string) float64 {
 
         unitPrice := setting.HeleketUnitPrice
         if unitPrice <= 0 {
-                unitPrice = 500000
+                unitPrice = 1.0
         }
 
         money := dAmount.
-                Div(decimal.NewFromFloat(unitPrice)).
+                Mul(decimal.NewFromFloat(unitPrice)).
                 Mul(decimal.NewFromFloat(topupGroupRatio))
 
         return money.InexactFloat64()

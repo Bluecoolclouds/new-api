@@ -193,8 +193,8 @@ const BILLING_SECTIONS = [
           HeleketApiKey: settings.HeleketApiKey ?? '',
           HeleketMerchantUUID: settings.HeleketMerchantUUID ?? '',
           HeleketCurrency: settings.HeleketCurrency ?? 'USD',
-          HeleketUnitPrice: settings.HeleketUnitPrice ?? 500000,
-          HeleketMinTopUp: settings.HeleketMinTopUp ?? 500000,
+          HeleketUnitPrice: settings.HeleketUnitPrice ?? 1,
+          HeleketMinTopUp: settings.HeleketMinTopUp ?? 1,
           HeleketReturnURL: settings.HeleketReturnURL ?? '',
         }}
         complianceDefaults={{
