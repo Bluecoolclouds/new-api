@@ -13,7 +13,7 @@ import (
         "net/url"
         "strconv"
         "sort"
-	"strings"
+        "strings"
         "time"
 
         "github.com/QuantumNous/new-api/common"
@@ -158,15 +158,13 @@ func requestFreeKassaPayViaAPI(c *gin.Context, shopId int, apiKey string, paymen
                 "currency":  currency,
         }
 
+        sig := freeKassaApiSign(fields, apiKey)
+
         var successURL, failureURL string
         if setting.FreeKassaReturnURL != "" {
                 successURL = strings.TrimRight(setting.FreeKassaReturnURL, "/") + "?status=success"
                 failureURL = strings.TrimRight(setting.FreeKassaReturnURL, "/") + "?status=failed"
-                fields["success_url"] = successURL
-                fields["failure_url"] = failureURL
         }
-
-        sig := freeKassaApiSign(fields, apiKey)
 
         reqBody := freeKassaApiOrderRequest{
                 ShopId:    shopId,
