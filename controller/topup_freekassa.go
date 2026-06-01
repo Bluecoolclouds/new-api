@@ -77,12 +77,7 @@ func getFreeKassaPayMoney(amount int64, group string) float64 {
                 topupGroupRatio = 1
         }
 
-        discount := 1.0
-        if ds, ok := operation_setting.GetPaymentSetting().AmountDiscount[int(amount)]; ok {
-                if ds > 0 {
-                        discount = ds
-                }
-        }
+        discount := getAmountDiscount(int(amount))
 
         payMoney := dAmount.
                 Mul(decimal.NewFromFloat(setting.FreeKassaUnitPrice)).

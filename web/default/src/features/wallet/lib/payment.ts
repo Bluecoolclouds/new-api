@@ -182,6 +182,26 @@ export function generatePresetAmounts(minAmount: number): PresetAmount[] {
 }
 
 /**
+ * Threshold-based discount lookup: returns the discount for the highest
+ * configured threshold that is <= amount. Returns 1.0 when no match.
+ */
+function getAmountDiscount(
+  amount: number,
+  discounts: Record<number, number>
+): number {
+  let bestThreshold = -1
+  let discount = 1.0
+  for (const [key, value] of Object.entries(discounts)) {
+    const threshold = Number(key)
+    if (threshold <= amount && threshold > bestThreshold && value > 0) {
+      bestThreshold = threshold
+      discount = value
+    }
+  }
+  return discount
+}
+
+/**
  * Merge custom preset amounts with discounts
  */
 export function mergePresetAmounts(
@@ -194,6 +214,6 @@ export function mergePresetAmounts(
 
   return amountOptions.map((amount) => ({
     value: amount,
-    discount: discounts[amount] || 1.0,
+    discount: getAmountDiscount(amount, discounts),
   }))
 }

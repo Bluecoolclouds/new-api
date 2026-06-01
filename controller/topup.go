@@ -194,6 +194,22 @@ func GetEpayClient() *epay.Client {
         return withUrl
 }
 
+// getAmountDiscount returns the discount multiplier for the given amount using
+// threshold-based lookup: finds the highest configured key that is <= amount.
+// Returns 1.0 (no discount) when no matching threshold exists.
+func getAmountDiscount(amount int) float64 {
+	discounts := operation_setting.GetPaymentSetting().AmountDiscount
+	bestThreshold := -1
+	discount := 1.0
+	for threshold, ds := range discounts {
+		if threshold <= amount && threshold > bestThreshold && ds > 0 {
+			bestThreshold = threshold
+			discount = ds
+		}
+	}
+	return discount
+}
+
 func getPayMoney(amount int64, group string) float64 {
         dAmount := decimal.NewFromInt(amount)
         // 充值金额以“展示类型”为准：
@@ -210,13 +226,7 @@ func getPayMoney(amount int64, group string) float64 {
 
         dTopupGroupRatio := decimal.NewFromFloat(topupGroupRatio)
         dPrice := decimal.NewFromFloat(operation_setting.Price)
-        // apply optional preset discount by the original request amount (if configured), default 1.0
-        discount := 1.0
-        if ds, ok := operation_setting.GetPaymentSetting().AmountDiscount[int(amount)]; ok {
-                if ds > 0 {
-                        discount = ds
-                }
-        }
+        discount := getAmountDiscount(int(amount))
         dDiscount := decimal.NewFromFloat(discount)
 
         payMoney := dAmount.Mul(dPrice).Mul(dTopupGroupRatio).Mul(dDiscount)
