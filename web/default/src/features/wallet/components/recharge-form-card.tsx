@@ -73,6 +73,7 @@ function getMethodSubtitle(type: string, t: (key: string) => string): string {
     waffo: t('Waffo Pay'),
     waffo_pancake: t('Waffo'),
     creem: t('Creem'),
+    heleket: t('Crypto (USDT / BTC / ETH)'),
   }
   return map[type] || ''
 }
@@ -207,6 +208,7 @@ interface RechargeFormCardProps {
   rawUsdExchangeRate?: number
   freekassaUnitPrice?: number
   freekassaCbrRate?: number
+  enableHeleketTopup?: boolean
 }
 
 // ============================================================================
@@ -249,6 +251,7 @@ export function RechargeFormCard({
   rawUsdExchangeRate = 1,
   freekassaUnitPrice = 0,
   freekassaCbrRate = 0,
+  enableHeleketTopup,
 }: RechargeFormCardProps) {
   const { t } = useTranslation()
 
@@ -301,7 +304,8 @@ export function RechargeFormCard({
     topupInfo?.enable_stripe_topup ||
     enableWaffoTopup ||
     enableWaffoPancakeTopup ||
-    enableFreeKassaTopup
+    enableFreeKassaTopup ||
+    enableHeleketTopup
   const hasAnyTopup = hasConfigurableTopup || enableCreemTopup
   const hasStandardPaymentMethods =
     Array.isArray(topupInfo?.pay_methods) && topupInfo.pay_methods.length > 0
@@ -336,8 +340,14 @@ export function RechargeFormCard({
       })
     }
 
+    if (enableHeleketTopup) {
+      methods.push({
+        method: { type: 'heleket', name: t('Crypto') },
+      })
+    }
+
     return methods
-  }, [enableFreeKassaTopup, freekassaCardEnabled, freekassaCryptoEnabled, t])
+  }, [enableFreeKassaTopup, freekassaCardEnabled, freekassaCryptoEnabled, enableHeleketTopup, t])
 
   const handleAmountChange = (value: string) => {
     setLocalAmount(value)
@@ -652,6 +662,8 @@ export function RechargeFormCard({
                                   <CreditCard className='h-5 w-5 text-blue-500' />
                                 ) : method.type === 'freekassa_crypto' ? (
                                   <Coins className='h-5 w-5 text-amber-500' />
+                                ) : method.type === 'heleket' ? (
+                                  <Coins className='h-5 w-5 text-orange-500' />
                                 ) : (
                                   getPaymentIcon(
                                     method.type.startsWith('waffo-') ? 'waffo' : method.type,

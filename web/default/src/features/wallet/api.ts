@@ -40,6 +40,8 @@ import type {
   WaffoPancakePaymentResponse,
   FreeKassaPaymentRequest,
   FreeKassaPaymentResponse,
+  HeleketPaymentRequest,
+  HeleketPaymentResponse,
 } from './types'
 
 // ============================================================================
@@ -189,6 +191,30 @@ export async function requestFreeKassaPayment(
   request: FreeKassaPaymentRequest
 ): Promise<FreeKassaPaymentResponse> {
   const res = await api.post('/api/user/freekassa/pay', request, {
+    skipBusinessError: true,
+  } as Record<string, unknown>)
+  return res.data
+}
+
+/**
+ * Calculate payment amount for Heleket payment
+ */
+export async function calculateHeleketAmount(
+  request: AmountRequest
+): Promise<AmountResponse> {
+  const res = await api.post('/api/user/heleket/amount', request, {
+    skipBusinessError: true,
+  } as Record<string, unknown>)
+  return res.data
+}
+
+/**
+ * Request Heleket crypto payment
+ */
+export async function requestHeleketPayment(
+  request: HeleketPaymentRequest
+): Promise<HeleketPaymentResponse> {
+  const res = await api.post('/api/user/heleket/pay', request, {
     skipBusinessError: true,
   } as Record<string, unknown>)
   return res.data

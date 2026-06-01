@@ -105,6 +105,18 @@ func isFreeKassaWebhookEnabled() bool {
         return isFreeKassaTopUpEnabled()
 }
 
+func isHeleketTopUpEnabled() bool {
+        if !isPaymentComplianceConfirmed() {
+                return false
+        }
+        return strings.TrimSpace(setting.HeleketApiKey) != "" &&
+                strings.TrimSpace(setting.HeleketMerchantUUID) != ""
+}
+
+func isHeleketWebhookEnabled() bool {
+        return isHeleketTopUpEnabled()
+}
+
 func isEpayTopUpEnabled() bool {
         if !isPaymentComplianceConfirmed() {
                 return false

@@ -127,7 +127,13 @@ func InitOptionMap() {
         common.OptionMap["FreeKassaCardPaymentSystemId"] = setting.FreeKassaCardPaymentSystemId
         common.OptionMap["FreeKassaCryptoPaymentSystemId"] = setting.FreeKassaCryptoPaymentSystemId
         common.OptionMap["FreeKassaFallbackEmail"] = setting.FreeKassaFallbackEmail
-	common.OptionMap["FreeKassaApiKey"] = setting.FreeKassaApiKey
+        common.OptionMap["FreeKassaApiKey"] = setting.FreeKassaApiKey
+        common.OptionMap["HeleketApiKey"] = setting.HeleketApiKey
+        common.OptionMap["HeleketMerchantUUID"] = setting.HeleketMerchantUUID
+        common.OptionMap["HeleketCurrency"] = setting.HeleketCurrency
+        common.OptionMap["HeleketUnitPrice"] = strconv.FormatFloat(setting.HeleketUnitPrice, 'f', -1, 64)
+        common.OptionMap["HeleketMinTopUp"] = strconv.Itoa(setting.HeleketMinTopUp)
+        common.OptionMap["HeleketReturnURL"] = setting.HeleketReturnURL
         common.OptionMap["TopupGroupRatio"] = common.TopupGroupRatio2JSONString()
         common.OptionMap["Chats"] = setting.Chats2JsonString()
         common.OptionMap["AutoGroups"] = setting.AutoGroups2JsonString()
@@ -137,7 +143,7 @@ func InitOptionMap() {
         common.OptionMap["GitHubClientSecret"] = ""
         common.OptionMap["TelegramBotToken"] = ""
         common.OptionMap["TelegramBotName"] = ""
-	common.OptionMap["TelegramBotSecret"] = ""
+        common.OptionMap["TelegramBotSecret"] = ""
         common.OptionMap["WeChatServerAddress"] = ""
         common.OptionMap["WeChatServerToken"] = ""
         common.OptionMap["WeChatAccountQRCodeImageURL"] = ""
@@ -503,8 +509,20 @@ func updateOptionMap(key string, value string) (err error) {
                 setting.FreeKassaCryptoPaymentSystemId = value
         case "FreeKassaFallbackEmail":
                 setting.FreeKassaFallbackEmail = value
-	case "FreeKassaApiKey":
-		setting.FreeKassaApiKey = value
+        case "FreeKassaApiKey":
+                setting.FreeKassaApiKey = value
+        case "HeleketApiKey":
+                setting.HeleketApiKey = value
+        case "HeleketMerchantUUID":
+                setting.HeleketMerchantUUID = value
+        case "HeleketCurrency":
+                setting.HeleketCurrency = value
+        case "HeleketUnitPrice":
+                setting.HeleketUnitPrice, _ = strconv.ParseFloat(value, 64)
+        case "HeleketMinTopUp":
+                setting.HeleketMinTopUp, _ = strconv.Atoi(value)
+        case "HeleketReturnURL":
+                setting.HeleketReturnURL = value
         case "TopupGroupRatio":
                 err = common.UpdateTopupGroupRatioByJSONString(value)
         case "GitHubClientId":

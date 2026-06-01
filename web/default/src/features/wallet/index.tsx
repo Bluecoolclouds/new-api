@@ -353,6 +353,7 @@ export function Wallet(props: WalletProps) {
                   freekassaCryptoEnabled={topupInfo?.freekassa_crypto_enabled}
                   freekassaUnitPrice={topupInfo?.freekassa_unit_price}
                   freekassaCbrRate={topupInfo?.freekassa_cbr_rate}
+                  enableHeleketTopup={topupInfo?.enable_heleket_topup}
                   onMethodChange={handleMethodChange}
                   discountRate={getDiscountRate()}
                 />

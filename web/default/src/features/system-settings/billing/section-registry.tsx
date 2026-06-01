@@ -189,6 +189,14 @@ const BILLING_SECTIONS = [
           FreeKassaCBRMarkup: settings.FreeKassaCBRMarkup ?? 0,
           FreeKassaCBRAutoSync: settings.FreeKassaCBRAutoSync ?? false,
         }}
+        heleketDefaultValues={{
+          HeleketApiKey: settings.HeleketApiKey ?? '',
+          HeleketMerchantUUID: settings.HeleketMerchantUUID ?? '',
+          HeleketCurrency: settings.HeleketCurrency ?? 'USD',
+          HeleketUnitPrice: settings.HeleketUnitPrice ?? 500000,
+          HeleketMinTopUp: settings.HeleketMinTopUp ?? 500000,
+          HeleketReturnURL: settings.HeleketReturnURL ?? '',
+        }}
         complianceDefaults={{
           confirmed: settings['payment_setting.compliance_confirmed'] ?? false,
           termsVersion:

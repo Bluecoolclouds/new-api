@@ -277,6 +277,12 @@ export type BillingSettings = {
   FreeKassaFallbackEmail: string
   FreeKassaCBRMarkup: number
   FreeKassaCBRAutoSync: boolean
+  HeleketApiKey: string
+  HeleketMerchantUUID: string
+  HeleketCurrency: string
+  HeleketUnitPrice: number
+  HeleketMinTopUp: number
+  HeleketReturnURL: string
   'checkin_setting.enabled': boolean
   'checkin_setting.min_quota': number
   'checkin_setting.max_quota': number

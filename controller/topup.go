@@ -115,6 +115,26 @@ func GetTopUpInfo(c *gin.Context) {
                 }
         }
 
+        // If Heleket is enabled, add it to pay methods
+        enableHeleket := isHeleketTopUpEnabled()
+        if enableHeleket {
+                hasHeleket := false
+                for _, method := range payMethods {
+                        if method["type"] == model.PaymentMethodHeleket {
+                                hasHeleket = true
+                                break
+                        }
+                }
+                if !hasHeleket {
+                        payMethods = append(payMethods, map[string]string{
+                                "name":      "Heleket (Crypto)",
+                                "type":      model.PaymentMethodHeleket,
+                                "color":     "#F7931A",
+                                "min_topup": strconv.Itoa(setting.HeleketMinTopUp),
+                        })
+                }
+        }
+
         data := gin.H{
                 "enable_online_topup":              isEpayTopUpEnabled(),
                 "enable_stripe_topup":              isStripeTopUpEnabled(),
@@ -122,6 +142,7 @@ func GetTopUpInfo(c *gin.Context) {
                 "enable_waffo_topup":               enableWaffo,
                 "enable_waffo_pancake_topup":       enableWaffoPancake,
                 "enable_freekassa_topup":           enableFreeKassa,
+                "enable_heleket_topup":             enableHeleket,
                 "enable_redemption":                complianceConfirmed,
                 "payment_compliance_confirmed":     complianceConfirmed,
                 "payment_compliance_terms_version": operation_setting.CurrentComplianceTermsVersion,
@@ -144,6 +165,8 @@ func GetTopUpInfo(c *gin.Context) {
                 "freekassa_cbr_rate":       lastCBRRate,
                 "freekassa_card_enabled":   enableFreeKassa,
                 "freekassa_crypto_enabled": enableFreeKassa,
+                "freekassa_min_topup":      setting.FreeKassaMinTopUp,
+                "heleket_min_topup":        setting.HeleketMinTopUp,
         }
         common.ApiSuccess(c, data)
 }

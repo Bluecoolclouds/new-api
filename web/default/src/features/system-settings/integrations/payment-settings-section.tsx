@@ -78,6 +78,10 @@ import {
   FreeKassaSettingsSection,
   type FreeKassaSettingsValues,
 } from './freekassa-settings-section'
+import {
+  HeleketSettingsSection,
+  type HeleketSettingsValues,
+} from './heleket-settings-section'
 
 const paymentSchema = z.object({
   PayAddress: z.string().refine((value) => {
@@ -163,6 +167,7 @@ type PaymentSettingsSectionProps = {
   waffoPancakeProvisionedStoreID?: string
   waffoPancakeProvisionedProductID?: string
   freeKassaDefaultValues: FreeKassaSettingsValues
+  heleketDefaultValues: HeleketSettingsValues
   complianceDefaults: PaymentComplianceDefaults
 }
 
@@ -173,6 +178,7 @@ export function PaymentSettingsSection({
   waffoPancakeProvisionedStoreID,
   waffoPancakeProvisionedProductID,
   freeKassaDefaultValues,
+  heleketDefaultValues,
   complianceDefaults,
 }: PaymentSettingsSectionProps) {
   const { t } = useTranslation()
@@ -1252,6 +1258,10 @@ export function PaymentSettingsSection({
       <Separator />
 
       <FreeKassaSettingsSection defaultValues={freeKassaDefaultValues} />
+
+      <Separator />
+
+      <HeleketSettingsSection defaultValues={heleketDefaultValues} />
       {/* eslint-enable react-hooks/refs */}
     </SettingsSection>
   )

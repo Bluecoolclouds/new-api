@@ -102,6 +102,21 @@ export interface FreeKassaPaymentRequest {
 export type FreeKassaPaymentResponse = ApiResponse<{ pay_link: string }>
 
 /**
+ * Heleket payment request
+ */
+export interface HeleketPaymentRequest {
+  /** Amount to top up (quota units) */
+  amount: number
+  /** Payment method identifier */
+  payment_method: 'heleket'
+}
+
+/**
+ * Heleket payment response
+ */
+export type HeleketPaymentResponse = ApiResponse<{ pay_link: string; order_id: string }>
+
+/**
  * Payment method configuration
  */
 export interface PaymentMethod {
@@ -177,6 +192,10 @@ export interface TopupInfo {
   freekassa_unit_price?: number
   /** Last fetched CBR USD/RUB rate */
   freekassa_cbr_rate?: number
+  /** Whether Heleket crypto topup is enabled */
+  enable_heleket_topup?: boolean
+  /** Minimum topup amount for Heleket */
+  heleket_min_topup?: number
   /** Whether redemption code usage is enabled */
   enable_redemption?: boolean
   /** Whether compliance confirmation has been completed */
