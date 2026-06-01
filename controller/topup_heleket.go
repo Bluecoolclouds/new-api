@@ -25,10 +25,10 @@ import (
 
 const heleketAPIBase = "https://api.heleket.com"
 
-// heleketSign computes the request signature: md5(base64(json_body) + ":" + api_key)
+// heleketSign computes the request signature: md5(base64(json_body) + api_key)
 func heleketSign(jsonBody []byte, apiKey string) string {
         encoded := base64.StdEncoding.EncodeToString(jsonBody)
-        raw := encoded + ":" + apiKey
+        raw := encoded + apiKey
         return fmt.Sprintf("%x", md5.Sum([]byte(raw)))
 }
 
