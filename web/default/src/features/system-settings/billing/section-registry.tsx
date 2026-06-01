@@ -175,6 +175,7 @@ const BILLING_SECTIONS = [
         waffoPancakeProvisionedProductID={settings.WaffoPancakeProductID ?? ''}
         freeKassaDefaultValues={{
           FreeKassaMerchantId: settings.FreeKassaMerchantId ?? '',
+          FreeKassaApiKey: settings.FreeKassaApiKey ?? '',
           FreeKassaSecretWord1: settings.FreeKassaSecretWord1 ?? '',
           FreeKassaSecretWord2: settings.FreeKassaSecretWord2 ?? '',
           FreeKassaCurrency: settings.FreeKassaCurrency ?? 'RUB',

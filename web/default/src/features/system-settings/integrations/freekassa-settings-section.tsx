@@ -40,6 +40,7 @@ import { useUpdateOption } from '../hooks/use-update-option'
 
 const freeKassaSchema = z.object({
   FreeKassaMerchantId: z.string().min(1, 'Merchant ID is required'),
+  FreeKassaApiKey: z.string(),
   FreeKassaSecretWord1: z.string(),
   FreeKassaSecretWord2: z.string(),
   FreeKassaCurrency: z.string().min(1, 'Currency is required'),
@@ -139,6 +140,9 @@ export function FreeKassaSettingsSection({ defaultValues }: Props) {
 
     if (values.FreeKassaMerchantId !== initial.FreeKassaMerchantId) {
       updates.push({ key: 'FreeKassaMerchantId', value: values.FreeKassaMerchantId })
+    }
+    if (values.FreeKassaApiKey && values.FreeKassaApiKey !== initial.FreeKassaApiKey) {
+      updates.push({ key: 'FreeKassaApiKey', value: values.FreeKassaApiKey })
     }
     if (values.FreeKassaSecretWord1 && values.FreeKassaSecretWord1 !== initial.FreeKassaSecretWord1) {
       updates.push({ key: 'FreeKassaSecretWord1', value: values.FreeKassaSecretWord1 })
@@ -327,6 +331,28 @@ export function FreeKassaSettingsSection({ defaultValues }: Props) {
                     {...field}
                   />
                 </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name='FreeKassaApiKey'
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>{t('API Key (for SBP / card payments via API v2)')}</FormLabel>
+                <FormControl>
+                  <Input
+                    type='password'
+                    placeholder={t('Leave blank to keep existing')}
+                    autoComplete='new-password'
+                    {...field}
+                  />
+                </FormControl>
+                <p className='text-muted-foreground text-xs'>
+                  {t('Required for SBP (id=44) and card (id=36) payments. Find it in FreeKassa → API → API Key.')}
+                </p>
                 <FormMessage />
               </FormItem>
             )}

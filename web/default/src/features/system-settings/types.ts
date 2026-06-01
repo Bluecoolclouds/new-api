@@ -264,6 +264,7 @@ export type BillingSettings = {
   WaffoPancakeStoreID: string
   WaffoPancakeProductID: string
   FreeKassaMerchantId: string
+  FreeKassaApiKey: string
   FreeKassaSecretWord1: string
   FreeKassaSecretWord2: string
   FreeKassaCurrency: string
