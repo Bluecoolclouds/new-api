@@ -4596,6 +4596,8 @@
     "no discount": "без скидки",
     "Save {{amount}}": "Экономия {{amount}}",
     "preset_pay_no_discount": "Оплата {{amount}}, без скидки",
-    "preset_pay_save": "Оплата {{amount}}, экономия {{savings}}"
+    "preset_pay_save": "Оплата {{amount}}, экономия {{savings}}",
+    "preset_pay_label": "Оплата {{amount}}",
+    "preset_save_label": "экономия {{savings}}"
   }
 }
