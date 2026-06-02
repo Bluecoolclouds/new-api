@@ -288,11 +288,31 @@ Base URL для API: https://apinet.cloud/v1
 
   function renderMarkdown(text) {
     let h = escapeHtml(text);
-    h = h.replace(/```(\w*)\n?([\s\S]*?)```/g, (_, _l, code) => `<pre><code>${code.trim()}</code></pre>`);
-    h = h.replace(/`([^`]+)`/g, '<code>$1</code>');
+    // Code blocks first (protect content inside)
+    const blocks = [];
+    h = h.replace(/```[\s\S]*?```/g, function (m) {
+      const code = m.replace(/^```\w*\n?/, '').replace(/```$/, '').trim();
+      blocks.push(`<pre><code>${code}</code></pre>`);
+      return '\x00BLOCK' + (blocks.length - 1) + '\x00';
+    });
+    // Inline code
+    const inlines = [];
+    h = h.replace(/`([^`]+)`/g, function (_, c) {
+      inlines.push(`<code>${c}</code>`);
+      return '\x00INLINE' + (inlines.length - 1) + '\x00';
+    });
+    // Headers: ###, ##, # → bold line
+    h = h.replace(/^#{1,3}\s+(.+)$/gm, '<strong>$1</strong>');
+    // Bold
     h = h.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+    // Bullet lists: lines starting with - or *
+    h = h.replace(/^[-*]\s+(.+)$/gm, '• $1');
+    // Links
     h = h.replace(/\[([^\]]+)\]\((https?:\/\/[^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>');
     h = h.replace(/(^|[\s(])(https?:\/\/[^\s<)"]+)/g, '$1<a href="$2" target="_blank" rel="noopener">$2</a>');
+    // Restore blocks
+    h = h.replace(/\x00INLINE(\d+)\x00/g, function (_, i) { return inlines[+i]; });
+    h = h.replace(/\x00BLOCK(\d+)\x00/g, function (_, i) { return blocks[+i]; });
     return h;
   }
 
