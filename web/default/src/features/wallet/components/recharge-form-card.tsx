@@ -779,12 +779,12 @@ export function RechargeFormCard({
 
                   {/* Savings row */}
                   {savingsDisplayAmount != null && savingsDisplayAmount > 0 && (
-                    <div className='flex items-center justify-between px-4 py-2 bg-emerald-50 dark:bg-emerald-950/20 border-t'>
+                    <div className='px-4 py-2 bg-emerald-50 dark:bg-emerald-950/20 border-t'>
                       <span className='text-xs text-emerald-700 dark:text-emerald-400 font-medium'>
-                        {t('Your savings')}
-                      </span>
-                      <span className='text-xs font-bold text-emerald-700 dark:text-emerald-400'>
-                        {displaySymbol}{savingsDisplayAmount}
+                        {t('Your savings')}:{' '}
+                        <span className='font-bold'>
+                          {displaySymbol}{savingsDisplayAmount}
+                        </span>
                       </span>
                     </div>
                   )}
