@@ -106,6 +106,10 @@ Tokens are created at: https://apinet.cloud/keys
 
 ESCALATION RULE: If the user's problem requires manual account access (balance corrections, bans, billing disputes, bugs), or the user explicitly asks for a human/operator, start your reply with the exact tag [[OPERATOR]] on its own line, then give a short message saying a human operator will assist them shortly.
 
+SUGGESTED ACTIONS: At the end of your reply, you may suggest 2-4 follow-up buttons by appending: [[ACTIONS: Label1 | Label2 | Label3]]
+Use this when the user might want to explore next steps, for example after answering about errors suggest: [[ACTIONS: Как создать токен? | Пополнить баланс | Другая ошибка]]
+Do NOT add [[ACTIONS]] if you used [[OPERATOR]].
+
 Never invent features that don't exist. Be honest when you don't know.`
     : `Ты агент технической поддержки сервиса APINET.CLOUD — LLM-шлюза, который предоставляет доступ к AI-моделям (OpenAI, Claude, Gemini, DeepSeek и др.) через единый OpenAI-совместимый API.
 
@@ -124,6 +128,10 @@ Base URL для API: https://apinet.cloud/v1
 Токены создаются на странице: https://apinet.cloud/keys
 
 ПРАВИЛО ЭСКАЛАЦИИ: Если проблема пользователя требует ручного доступа к аккаунту (корректировка баланса, баны, споры по оплате, ошибки платформы), или пользователь явно просит живого оператора/человека — начни ответ с тега [[OPERATOR]] на отдельной строке, затем напиши короткое сообщение что живой оператор скоро поможет.
+
+КНОПКИ: В конце ответа ты можешь предложить 2-4 варианта следующего шага, добавив в самом конце: [[ACTIONS: Вариант1 | Вариант2 | Вариант3]]
+Используй кнопки когда есть очевидные следующие шаги — например, после ответа про ошибку: [[ACTIONS: Как создать токен? | Пополнить баланс | Другая ошибка]]
+НЕ добавляй [[ACTIONS]] если уже использовал [[OPERATOR]].
 
 Никогда не выдумывай функции которых нет. Если не знаешь — скажи честно.`
   );
@@ -225,19 +233,18 @@ Base URL для API: https://apinet.cloud/v1
       width: 100% !important; text-align: left !important;
     }
     .aw-report-bar:hover { background: rgba(255,255,255,0.18) !important; }
-    .aw-chips {
-      padding: 8px 12px 4px !important; display: flex !important; flex-wrap: wrap !important;
-      gap: 6px !important; flex-shrink: 0 !important;
-      border-bottom: 1px solid #f1f5f9 !important; background: #ffffff !important;
+    .aw-actions {
+      display: flex !important; flex-wrap: wrap !important; gap: 6px !important;
+      margin-top: 6px !important; padding: 0 2px !important;
     }
-    .aw-chip {
-      background: #f1f5f9 !important; border: 1px solid #e2e8f0 !important;
-      border-radius: 20px !important; padding: 4px 11px !important;
-      font-size: 12px !important; color: #475569 !important; cursor: pointer !important;
-      transition: background 0.15s, color 0.15s, border-color 0.15s !important;
-      white-space: nowrap !important;
+    .aw-action-btn {
+      background: #eff6ff !important; border: 1.5px solid #bfdbfe !important;
+      border-radius: 16px !important; padding: 5px 12px !important;
+      font-size: 12px !important; color: #1d4ed8 !important; cursor: pointer !important;
+      transition: background 0.15s, border-color 0.15s, color 0.15s !important;
+      white-space: nowrap !important; font-weight: 500 !important;
     }
-    .aw-chip:hover { background: #2563eb !important; color: white !important; border-color: #2563eb !important; }
+    .aw-action-btn:hover { background: #2563eb !important; color: white !important; border-color: #2563eb !important; }
     .aw-messages {
       flex: 1 !important; overflow-y: auto !important; padding: 14px 12px !important;
       display: flex !important; flex-direction: column !important; gap: 10px !important;
@@ -419,7 +426,6 @@ Base URL для API: https://apinet.cloud/v1
         </a>
         <button class="aw-report-bar" id="aw-report-btn">${t.reportBtn}</button>
       </div>
-      <div class="aw-chips" id="aw-chips"></div>
       <div class="aw-messages" id="aw-messages"></div>
       <div class="aw-footer">
         <textarea class="aw-input" id="aw-input" placeholder="${t.placeholder}" rows="1" maxlength="2000"></textarea>
@@ -434,7 +440,6 @@ Base URL для API: https://apinet.cloud/v1
     const messagesEl = panel.querySelector('#aw-messages');
     const inputEl    = panel.querySelector('#aw-input');
     const sendBtn    = panel.querySelector('#aw-send');
-    const chipsEl    = panel.querySelector('#aw-chips');
     const reportBtn  = panel.querySelector('#aw-report-btn');
     let isOpen      = false;
     let isStreaming  = false;
@@ -455,25 +460,6 @@ Base URL для API: https://apinet.cloud/v1
       badge.style.display = 'none';
     }
 
-    // ── FAQ chips ────────────────────────────────────────────────────────────
-    function buildChips(chips) {
-      chipsEl.innerHTML = '';
-      chips.forEach(function (label) {
-        const chip = document.createElement('button');
-        chip.className = 'aw-chip';
-        chip.textContent = label;
-        chip.addEventListener('click', function () {
-          if (isStreaming) return;
-          inputEl.value = '';
-          sendMessage(label);
-          // Hide chips after use
-          chipsEl.style.display = 'none';
-        });
-        chipsEl.appendChild(chip);
-      });
-    }
-
-    buildChips(t.chips);
 
     // ── Rating row ───────────────────────────────────────────────────────────
     function addRating(msgEl) {
@@ -544,6 +530,25 @@ Base URL для API: https://apinet.cloud/v1
       return `https://t.me/${tgUsername}?text=${encodeURIComponent(text.slice(0, 4000))}`;
     }
 
+    // ── Action buttons under a message ───────────────────────────────────────
+    function addActions(parentEl, labels) {
+      if (!labels || !labels.length) return;
+      const wrap = document.createElement('div');
+      wrap.className = 'aw-actions';
+      labels.forEach(function(label) {
+        const btn = document.createElement('button');
+        btn.className = 'aw-action-btn';
+        btn.textContent = label.trim();
+        btn.addEventListener('click', function() {
+          wrap.remove();
+          sendMessage(label.trim());
+        });
+        wrap.appendChild(btn);
+      });
+      parentEl.appendChild(wrap);
+      scrollBottom();
+    }
+
     // ── Escalation card ───────────────────────────────────────────────────────
     function addEscalation(parentEl) {
       const card = document.createElement('div');
@@ -603,8 +608,9 @@ Base URL для API: https://apinet.cloud/v1
       if (isOpen) {
         clearUnread();
         if (messagesEl.children.length === 0) {
-          addMessage(t.welcome, 'bot', false);
-          clearUnread(); // welcome message doesn't count
+          const welcomeBubble = addMessage(t.welcome, 'bot', false);
+          addActions(welcomeBubble.parentElement, t.chips);
+          clearUnread();
         }
         setTimeout(() => inputEl.focus(), 220);
         if (BOT_MODE) startPolling();
@@ -698,13 +704,30 @@ Base URL для API: https://apinet.cloud/v1
         if (fullText) {
           // Detect [[OPERATOR]] escalation trigger
           const ESCALATE_TAG = '[[OPERATOR]]';
-          if (fullText.includes(ESCALATE_TAG)) {
-            const cleaned = fullText.replace(ESCALATE_TAG, '').replace(/^\n+/, '').trim();
-            bubble.innerHTML = renderMarkdown(cleaned);
-            history.push({ role: 'assistant', content: cleaned });
+          // Detect [[ACTIONS: label1 | label2 | ...]] suggested buttons
+          const ACTIONS_RE = /\[\[ACTIONS:\s*([^\]]+)\]\]/i;
+          let processed = fullText;
+          let hasOperator = false;
+          let actionLabels = null;
+
+          if (processed.includes(ESCALATE_TAG)) {
+            processed = processed.replace(ESCALATE_TAG, '').replace(/^\n+/, '').trim();
+            hasOperator = true;
+          }
+          const actionsMatch = processed.match(ACTIONS_RE);
+          if (actionsMatch) {
+            actionLabels = actionsMatch[1].split('|').map(s => s.trim()).filter(Boolean);
+            processed = processed.replace(ACTIONS_RE, '').replace(/\n{2,}$/, '').trimEnd();
+          }
+
+          bubble.innerHTML = renderMarkdown(processed);
+          history.push({ role: 'assistant', content: processed });
+
+          if (hasOperator) {
             addEscalation(msgEl);
+          } else if (actionLabels) {
+            addActions(msgEl, actionLabels);
           } else {
-            history.push({ role: 'assistant', content: fullText });
             addRating(msgEl);
           }
         }
@@ -721,8 +744,6 @@ Base URL для API: https://apinet.cloud/v1
 
     function sendMessage(text) {
       if (!text.trim() || isStreaming) return;
-      // Hide chips once user starts chatting
-      chipsEl.style.display = 'none';
       if (BOT_MODE) sendViaBotMode(text);
       else          sendViaDirectMode(text);
     }
@@ -730,10 +751,6 @@ Base URL для API: https://apinet.cloud/v1
     inputEl.addEventListener('input', function () {
       this.style.height = 'auto';
       this.style.height = Math.min(this.scrollHeight, 90) + 'px';
-      // Show chips again if input is cleared
-      if (!this.value.trim() && messagesEl.children.length <= 1) {
-        chipsEl.style.display = '';
-      }
     });
     inputEl.addEventListener('keydown', function (e) {
       if (e.key === 'Enter' && !e.shiftKey) {
