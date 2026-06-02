@@ -519,6 +519,28 @@ app.post(`/telegram/webhook/${WEBHOOK_SECRET}`, (req, res) => {
   console.log(`[admin] reply for session ${sessionId.slice(0, 8)}: ${text.slice(0, 60)}`);
 });
 
+// ── POST /widget/rate ──────────────────────────────────────────────────────────
+// Widget sends rating after a bot/admin reply (👍 / 👎)
+app.post('/widget/rate', async (req, res) => {
+  const { sessionId, rating } = req.body || {};
+  if (!sessionId || !rating) return res.status(400).json({ error: 'sessionId and rating required' });
+
+  const sess = sessions.get(sessionId);
+  if (!sess || !sess.threadId) return res.json({ ok: true });
+
+  const emoji = rating === 'good' ? '👍' : '👎';
+  const text = sess.lang === 'en'
+    ? `${emoji} User rated the last reply as: ${rating === 'good' ? 'helpful' : 'not helpful'}`
+    : `${emoji} Пользователь оценил последний ответ: ${rating === 'good' ? 'полезно' : 'не помогло'}`;
+
+  try {
+    await sendToTopic(sess.threadId, text);
+  } catch (err) {
+    console.warn('[tg] rate send error:', err.message);
+  }
+  res.json({ ok: true });
+});
+
 // ── GET /health ────────────────────────────────────────────────────────────────
 app.get('/health', (_req, res) => {
   res.json({

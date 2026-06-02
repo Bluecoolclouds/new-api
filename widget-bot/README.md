@@ -64,6 +64,7 @@ window.APINET_WIDGET = {
 |-------|------|----------|
 | POST | `/widget/message` | Принять сообщение из виджета |
 | GET | `/widget/poll?session=xxx` | Получить ответ администратора |
+| POST | `/widget/rate` | Получить оценку ответа (👍/👎) → форвардит в Telegram-тред |
 | POST | `/telegram/webhook/<secret>` | Вебхук для Telegram |
 | GET | `/health` | Статус бота |
 

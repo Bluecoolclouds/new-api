@@ -406,11 +406,18 @@ Base URL для API: https://apinet.cloud/v1
       badBtn.className = 'aw-rate-btn bad';
       badBtn.textContent = '👎 ' + t.rateBad;
 
-      function rate() {
+      function rate(value) {
         row.innerHTML = '<span class="aw-rate-thanks">' + t.rateThanks + '</span>';
+        if (BOT_MODE && BOT_URL) {
+          fetch(`${BOT_URL}/widget/rate`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ sessionId: SESSION_ID, rating: value }),
+          }).catch(function () {});
+        }
       }
-      goodBtn.addEventListener('click', rate);
-      badBtn.addEventListener('click', rate);
+      goodBtn.addEventListener('click', function () { rate('good'); });
+      badBtn.addEventListener('click', function () { rate('bad'); });
 
       row.appendChild(goodBtn);
       row.appendChild(badBtn);
