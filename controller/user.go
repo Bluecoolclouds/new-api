@@ -725,6 +725,11 @@ func UpdateSelf(c *gin.Context) {
 		return
 	}
 
+	if user.Username == "" {
+		if u, _ := model.GetUserById(c.GetInt("id"), false); u != nil {
+			user.Username = u.Username
+		}
+	}
 	if user.Password == "" {
 		user.Password = "$I_LOVE_U" // make Validator happy :)
 	}
@@ -745,7 +750,11 @@ func UpdateSelf(c *gin.Context) {
 	}
 	updatePassword, err := checkUpdatePassword(user.OriginalPassword, user.Password, cleanUser.Id)
 	if err != nil {
-		common.ApiError(c, err)
+		if err.Error() == "ErrOriginalPasswordWrong" {
+			common.ApiErrorI18n(c, i18n.MsgUserOriginalPasswordError)
+		} else {
+			common.ApiError(c, err)
+		}
 		return
 	}
 	if err := cleanUser.Update(updatePassword); err != nil {
@@ -770,7 +779,7 @@ func checkUpdatePassword(originalPassword string, newPassword string, userId int
 	// 密码不为空,需要验证原密码
 	// 支持第一次账号绑定时原密码为空的情况
 	if !common.ValidatePasswordAndHash(originalPassword, currentUser.Password) && currentUser.Password != "" {
-		err = fmt.Errorf("原密码错误")
+		err = errors.New("ErrOriginalPasswordWrong")
 		return
 	}
 	if newPassword == "" {
