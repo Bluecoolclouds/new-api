@@ -628,13 +628,13 @@ export function RechargeFormCard({
                                 </span>
                               </div>
                               {/* Payment info in local currency */}
-                              <div className='mt-1.5 truncate text-[11px] text-muted-foreground'>
+                              <div className='mt-1.5 text-[11px] leading-tight text-muted-foreground'>
                                 {hasPresetDiscount
-                                  ? t('Pay {{amount}}, Save {{savings}}', {
+                                  ? t('preset_pay_save', {
                                       amount: `${displaySymbol}${payAmt}`,
                                       savings: `${displaySymbol}${savingsAmt}`,
                                     })
-                                  : t('Pay {{amount}}, no discount', {
+                                  : t('preset_pay_no_discount', {
                                       amount: `${displaySymbol}${displayAmt}`,
                                     })}
                               </div>

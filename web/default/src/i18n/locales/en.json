@@ -4546,6 +4546,6 @@
   "Your savings": "Your savings",
   "no discount": "no discount",
   "Save {{amount}}": "Save {{amount}}",
-  "Pay {{amount}}, no discount": "Pay {{amount}}, no discount",
-  "Pay {{amount}}, Save {{savings}}": "Pay {{amount}}, Save {{savings}}"
+  "preset_pay_no_discount": "Pay {{amount}}, no discount",
+  "preset_pay_save": "Pay {{amount}}, Save {{savings}}"
 }
