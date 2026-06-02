@@ -125,7 +125,7 @@ Base URL для API: https://apinet.cloud/v1
       transition: transform 0.2s, box-shadow 0.2s;
     }
     #apinet-widget-btn:hover { transform: scale(1.08); box-shadow: 0 6px 26px rgba(37,99,235,0.55); }
-    #apinet-widget-btn svg { width: 26px; height: 26px; transition: opacity 0.2s; }
+    #apinet-widget-btn svg { width: 26px; height: 26px; transition: opacity 0.2s; color: white !important; fill: white !important; }
     #apinet-widget-panel {
       position: fixed; bottom: 92px; right: 24px; z-index: 999998;
       width: 360px; max-width: calc(100vw - 32px);

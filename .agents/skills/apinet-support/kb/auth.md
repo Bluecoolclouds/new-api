@@ -5,16 +5,18 @@ description: Login methods, OAuth providers (GitHub, Discord, Telegram, LinuxDO,
 
 # Authentication
 
+**Login:** https://apinet.cloud/login
+**Register:** https://apinet.cloud/register
+**Profile settings:** https://apinet.cloud/profile
+
 ## Login Methods
 
-APINET.CLOUD supports multiple ways to sign in:
-
 ### Username & Password
-- Standard login at `/login`
+- Standard login at https://apinet.cloud/login
 - Default root account: `root` / `123456` (change immediately after setup)
 
 ### OAuth (Social Login)
-Supported providers (admin must enable and configure each):
+Supported providers (admin must enable each at https://apinet.cloud/setting → OAuth):
 
 | Provider | Setup Required |
 |---|---|
@@ -26,57 +28,43 @@ Supported providers (admin must enable and configure each):
 | OIDC | Any OpenID Connect provider (Client ID + Secret + Issuer URL) |
 
 **"OAuth login not working"**
-1. Admin must enable the provider in System Settings → OAuth
-2. Callback URL must be set in the OAuth app to: `https://<your-domain>/oauth/<provider>/callback`
-3. Check that Client ID and Secret are correct in system settings
+1. Admin must enable the provider at https://apinet.cloud/setting → OAuth
+2. Callback URL must be set in the OAuth app to `https://apinet.cloud/oauth/callback`
+3. Check that Client ID and Secret are correct
+
+### Two-Factor Authentication (2FA / TOTP)
+1. Go to https://apinet.cloud/profile → Security
+2. Click **Enable 2FA**
+3. Scan the QR code with an authenticator app (Google Authenticator, Authy, etc.)
+4. Enter the 6-digit code to confirm
+
+**Lost 2FA access?**
+- Contact admin — they can reset 2FA at https://apinet.cloud/user → Edit user → Reset 2FA
 
 ### Passkeys (WebAuthn)
-- Password-free login using biometrics or security keys
-- Set up in: Profile → Security → Add Passkey
-- Requires HTTPS (works on Replit, not localhost without special config)
-
-## Two-Factor Authentication (2FA)
-
-### Setting Up TOTP
-1. Profile → Security → Enable 2FA
-2. Scan the QR code with an authenticator app (Google Authenticator, Authy, etc.)
-3. Enter the 6-digit code to confirm
-4. Save backup codes in a safe place
-
-### Backup Codes
-- Generated when 2FA is first enabled
-- Each code is single-use
-- If you lose your authenticator, use a backup code at login
-- Regenerate codes in: Profile → Security → Backup Codes
-
-### Lost 2FA Access (Admin reset)
-- Admin: Users → find the user → Edit → Disable 2FA
-- Root: can reset any user's 2FA from the admin panel
+1. Go to https://apinet.cloud/profile → Security → Passkeys
+2. Click **Add Passkey**
+3. Follow browser prompts (Face ID, Touch ID, hardware key, etc.)
 
 ## Session Issues
 
-### "Session expired" / Logged out frequently
-- Sessions are signed with `SESSION_SECRET`
-- If `SESSION_SECRET` changes (app restart without a fixed secret), all sessions are invalidated
-- **Fix (admin):** Set a fixed `SESSION_SECRET` environment variable
+**"Session expired" / keeps logging out**
+- Sessions expire after inactivity
+- If using multiple nodes: ensure `SESSION_SECRET` is the same on all nodes
+- Fix: log in again at https://apinet.cloud/login
 
-### Multi-node / Load balancer issues
-- Sessions may not work across multiple instances without a shared session store
-- **Fix:** Set `REDIS_CONN_STRING` to enable Redis-backed sessions, and use a consistent `SESSION_SECRET`
+**"Invalid credentials"**
+- Double-check username and password
+- Passwords are case-sensitive
+- If forgotten: ask admin to reset at https://apinet.cloud/user → Edit user
 
-### Can't log in after password change
-- Wait a moment — password changes take effect immediately
-- Clear browser cookies for the domain
-- Try a private/incognito window
+**Account disabled**
+- Admin has disabled the account
+- Contact admin to re-enable at https://apinet.cloud/user → toggle status
 
-## User Registration
+## Changing Password
 
-Whether new users can register is controlled by admin:
-- **System Settings → Operations → Registration**
-- Options: Open (anyone can register), Closed (invite only), Email verification required
-
-**"Registration is closed"**
-→ Ask an admin to create your account manually, or enable registration in settings.
-
-**Email verification not arriving**
-→ Admin may need to configure SMTP settings in System Settings → Email.
+1. Go to https://apinet.cloud/profile
+2. Click **Change Password**
+3. Enter current password + new password
+4. Save

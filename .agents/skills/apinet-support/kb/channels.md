@@ -1,75 +1,88 @@
 ---
-name: Channels
-description: Adding and managing upstream AI provider channels, channel errors, routing, automatic disabling, and supported providers.
+name: Channels (Upstream Providers)
+description: Adding and managing upstream AI provider channels, channel types, API key configuration, model mapping, priority/weight, auto-disable behavior, and channel testing.
 ---
 
 # Channels (Upstream Providers)
 
-Channels are connections to actual AI providers (OpenAI, Anthropic, etc.). APINET.CLOUD routes user requests through these channels.
+**Manage channels:** https://apinet.cloud/channel
 
-## Supported Providers
-
-| Provider | Models |
-|---|---|
-| OpenAI | GPT-4o, GPT-4, GPT-3.5, DALL-E, Whisper, TTS, o1/o3 |
-| Anthropic | Claude 3.5 Sonnet, Claude 3 Opus/Haiku, Claude 3.7 (thinking) |
-| Google | Gemini 1.5/2.0 Flash, Gemini Pro, Gemini Ultra |
-| DeepSeek | deepseek-chat, deepseek-reasoner |
-| Midjourney | Image generation via Midjourney Proxy |
-| Suno | Music generation |
-| AWS Bedrock | Claude, Titan, and other Bedrock models |
-| Ali/Qwen, Baidu/Wenxin, Tencent/Hunyuan | Chinese providers |
-| Mistral, Cohere, Jina | Other providers |
+Channels are the upstream AI providers (OpenAI, Anthropic, Google, etc.) that APINET.CLOUD routes requests to.
 
 ## Adding a Channel
 
-1. Go to **Channels** → **Add Channel**
-2. Select the **Type** (provider)
-3. Enter the **API Key** from your provider account
-4. Set the **Base URL** if needed (leave default for standard providers)
-5. Select **Models** this channel supports
-6. Set **Priority** and **Weight** for routing
-7. Click **Test** to verify the connection before saving
+1. Go to **https://apinet.cloud/channel**
+2. Click **Add Channel**
+3. Fill in:
+   - **Type** — select the provider (OpenAI, Anthropic, Google, Azure, etc.)
+   - **Name** — label for this channel
+   - **API Key** — the upstream provider's API key
+   - **Base URL** — override if using a proxy or custom endpoint
+   - **Models** — which models this channel supports
+   - **Groups** — which user groups can use this channel
+   - **Priority** — higher = preferred (default 0)
+   - **Weight** — for load balancing between same-priority channels
+4. Click **Submit**
+5. Test the channel: click **Test** button
 
-## Channel Status
+## Channel Types
 
-- 🟢 **Enabled** — active and receiving traffic
-- 🔴 **Disabled** — manually or automatically disabled
-- ⚠️ **Auto-disabled** — system disabled it due to repeated failures
+| Type | Notes |
+|---|---|
+| OpenAI | Standard OpenAI API |
+| Azure OpenAI | Requires endpoint URL + deployment names |
+| Anthropic | Claude models |
+| Google Gemini | Gemini models |
+| DeepSeek | DeepSeek models |
+| Mistral | Mistral models |
+| Midjourney | Image generation via proxy |
+| Custom / OpenAI-compatible | Any API that follows OpenAI format |
 
-### Auto-Disable Behavior
+## Channel Priority & Load Balancing
 
-The system automatically disables a channel when:
-- The upstream returns `401 Unauthorized` (invalid key)
-- The upstream returns repeated `500` errors
-- Response time consistently exceeds the configured limit
+- **Priority:** channels with higher priority are tried first
+- **Weight:** among same-priority channels, traffic is distributed by weight ratio
+- Example: two channels with weight 1 and 2 → first gets 33%, second gets 67% of traffic
 
-**To re-enable:** Channels → find the channel → click **Enable** (fix the underlying issue first)
+## Auto-Disable Behavior
 
-## Channel Errors
+Channels are automatically disabled when:
+- They return consecutive errors (configurable threshold)
+- API key is invalid (401 response)
+- Timeout threshold is exceeded repeatedly
 
-### "No available channel for model [name] in group [group]" (503)
-- No enabled channel supports the requested model for this user's group
-- **Fix options:**
-  1. Add a channel that supports the model
-  2. Add the model to an existing channel's supported model list
-  3. Check if user is in the right group
+**Re-enabling a disabled channel:**
+1. https://apinet.cloud/channel → find the channel
+2. Check the last error message
+3. Fix the issue (update key, check provider status)
+4. Click the status toggle to re-enable
 
-### "Channel invalid key" / 401 from upstream
-- The API key for this channel is wrong or expired
-- **Fix:** Channels → edit the channel → update the API key → Test → Save
+## Testing Channels
 
-### "Response time exceeded"
-- The upstream provider responded too slowly
-- **Fix:** Increase the timeout in channel settings, or use a different channel
+- **Single channel:** https://apinet.cloud/channel → click **Test** on a channel
+- **All channels:** select all → **Batch Test**
+- Test results show response time and success/failure
 
-### "Affinity channel is disabled"
-- A request targeted a specific channel (affinity routing) but that channel is now disabled
-- **Fix:** Re-enable the channel or remove the affinity targeting
+## Common Channel Issues
 
-## Routing Logic
+**Channel keeps getting disabled**
+1. https://apinet.cloud/channel → check last error
+2. `401` → update the API key
+3. Timeout → increase timeout setting or add a faster channel
+4. Check upstream provider status page
 
-- **Priority:** Higher priority channels are tried first
-- **Weight:** Channels with the same priority use weighted random selection
-- **Auto-retry:** On failure, the system automatically tries another channel (for retriable errors)
-- **Load balancing:** Multiple channels for the same model distribute traffic automatically
+**"No available channel for model X"**
+1. https://apinet.cloud/channel → verify a channel supports that model
+2. Check the channel's **Groups** setting — must include the user's group
+3. Check the channel is **Enabled**
+
+**Azure OpenAI setup**
+- Type: Azure OpenAI
+- Base URL: `https://<resource>.openai.azure.com/`
+- API Key: Azure API key
+- Models: map deployment names (e.g., `gpt-4o` → deployment `my-gpt4o`)
+
+## Monitoring Channel Health
+
+- https://apinet.cloud/channel — shows last test time and status for each channel
+- Enable failure notifications at https://apinet.cloud/setting → Monitoring

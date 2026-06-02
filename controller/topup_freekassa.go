@@ -13,7 +13,7 @@ import (
         "net/url"
         "strconv"
         "sort"
-        "strings"
+	"strings"
         "time"
 
         "github.com/QuantumNous/new-api/common"
@@ -29,27 +29,30 @@ import (
 const freeKassaPayURL = "https://pay.freekassa.net/"
 
 func resolvePaymentSystemId(paymentMethod string) string {
-        // Handle specific crypto sub-methods: freekassa_crypto_24, freekassa_crypto_15, etc.
-        if strings.HasPrefix(paymentMethod, "freekassa_crypto_") {
-                id := strings.TrimPrefix(paymentMethod, "freekassa_crypto_")
-                if id != "" {
-                        return id
-                }
-        }
-        switch paymentMethod {
-        case "freekassa_card":
-                if setting.FreeKassaCardPaymentSystemId != "" {
-                        return setting.FreeKassaCardPaymentSystemId
-                }
-                return "36"
-        case "freekassa_crypto":
-                if setting.FreeKassaCryptoPaymentSystemId != "" {
-                        return setting.FreeKassaCryptoPaymentSystemId
-                }
-                return setting.FreeKassaPaymentSystemId
-        default:
-                return setting.FreeKassaPaymentSystemId
-        }
+	// Handle specific crypto sub-methods: freekassa_crypto_24, freekassa_crypto_15, etc.
+	if strings.HasPrefix(paymentMethod, "freekassa_crypto_") {
+		id := strings.TrimPrefix(paymentMethod, "freekassa_crypto_")
+		if id != "" {
+			return id
+		}
+	}
+	switch paymentMethod {
+	case "freekassa":
+		// SBP (Система быстрых платежей) - payment system ID 44
+		return "44"
+	case "freekassa_card":
+		if setting.FreeKassaCardPaymentSystemId != "" {
+			return setting.FreeKassaCardPaymentSystemId
+		}
+		return "36"
+	case "freekassa_crypto":
+		if setting.FreeKassaCryptoPaymentSystemId != "" {
+			return setting.FreeKassaCryptoPaymentSystemId
+		}
+		return setting.FreeKassaPaymentSystemId
+	default:
+		return setting.FreeKassaPaymentSystemId
+	}
 }
 
 type FreeKassaPayRequest struct {
@@ -77,7 +80,12 @@ func getFreeKassaPayMoney(amount int64, group string) float64 {
                 topupGroupRatio = 1
         }
 
-        discount := getAmountDiscount(int(amount))
+        discount := 1.0
+        if ds, ok := operation_setting.GetPaymentSetting().AmountDiscount[int(amount)]; ok {
+                if ds > 0 {
+                        discount = ds
+                }
+        }
 
         payMoney := dAmount.
                 Mul(decimal.NewFromFloat(setting.FreeKassaUnitPrice)).
@@ -141,7 +149,7 @@ type freeKassaApiOrderResponse struct {
 func requestFreeKassaPayViaAPI(c *gin.Context, shopId int, apiKey string, paymentSystemId int,
         email string, ip string, amountStr string, currency string, tradeNo string) (string, error) {
 
-        nonce := time.Now().UnixNano()
+        nonce := int64(9210000000000000000) + time.Now().UnixNano() % 1000000000
         fields := map[string]string{
                 "shopId":    fmt.Sprintf("%d", shopId),
                 "nonce":     fmt.Sprintf("%d", nonce),
@@ -153,13 +161,16 @@ func requestFreeKassaPayViaAPI(c *gin.Context, shopId int, apiKey string, paymen
                 "currency":  currency,
         }
 
-        sig := freeKassaApiSign(fields, apiKey)
-
         var successURL, failureURL string
         if setting.FreeKassaReturnURL != "" {
                 successURL = strings.TrimRight(setting.FreeKassaReturnURL, "/") + "?status=success"
                 failureURL = strings.TrimRight(setting.FreeKassaReturnURL, "/") + "?status=failed"
+                // Include success_url and failure_url in signature (proxy requires it)
+                fields["success_url"] = successURL
+                fields["failure_url"] = failureURL
         }
+
+        sig := freeKassaApiSign(fields, apiKey)
 
         reqBody := freeKassaApiOrderRequest{
                 ShopId:    shopId,
@@ -184,11 +195,12 @@ func requestFreeKassaPayViaAPI(c *gin.Context, shopId int, apiKey string, paymen
         }
 
         httpReq, err := http.NewRequestWithContext(c.Request.Context(), http.MethodPost,
-                "https://api.fk.life/v1/orders/create", bytes.NewReader(body))
+                "http://109.120.178.39:8765/v1/orders/create", bytes.NewReader(body))
         if err != nil {
                 return "", fmt.Errorf("create request error: %w", err)
         }
         httpReq.Header.Set("Content-Type", "application/json")
+	httpReq.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
 
         client := &http.Client{Timeout: 15 * time.Second}
         resp, err := client.Do(httpReq)
@@ -217,7 +229,7 @@ func requestFreeKassaPayViaAPI(c *gin.Context, shopId int, apiKey string, paymen
 // usesFreeKassaAPI returns true if the payment system ID requires FreeKassa API v2.
 func usesFreeKassaAPI(paymentSystemId string) bool {
         switch paymentSystemId {
-        case "36", "44":
+        case "42", "44":
                 return true
         }
         return false
@@ -241,7 +253,7 @@ func RequestFreeKassaAmount(c *gin.Context) {
         }
         payMoney := getFreeKassaPayMoney(req.Amount, group)
         if payMoney <= 0.01 {
-                c.JSON(http.StatusOK, gin.H{"message": "error", "data": "充值金额过低"})
+                c.JSON(http.StatusOK, gin.H{"message": "error", "data": "Минимальная сумма пополнения 100 рублей"})
                 return
         }
         c.JSON(http.StatusOK, gin.H{"message": "success", "data": strconv.FormatFloat(payMoney, 'f', 2, 64)})
@@ -258,7 +270,7 @@ func getFreeKassaUserEmail(user *model.User) string {
 }
 
 func RequestFreeKassaPay(c *gin.Context) {
-        if !isFreeKassaTopUpEnabled() {
+	if !isFreeKassaTopUpEnabled() {
                 c.JSON(http.StatusOK, gin.H{"message": "error", "data": "当前管理员未配置 FreeKassa 支付信息"})
                 return
         }
@@ -287,8 +299,8 @@ func RequestFreeKassaPay(c *gin.Context) {
         }
 
         payMoney := getFreeKassaPayMoney(req.Amount, group)
-        if payMoney < 0.01 {
-                c.JSON(http.StatusOK, gin.H{"message": "error", "data": "充值金额过低"})
+        if payMoney < 100.0 {
+                c.JSON(http.StatusOK, gin.H{"message": "error", "data": "Минимальная сумма пополнения 100 рублей"})
                 return
         }
 

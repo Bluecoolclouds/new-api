@@ -5,6 +5,9 @@ description: HTTP error codes, error messages, rate limiting, channel auto-banni
 
 # Errors & Troubleshooting
 
+**Usage logs:** https://apinet.cloud/log
+**Playground (test requests):** https://apinet.cloud/playground
+
 ## HTTP Status Codes
 
 | Code | Meaning | Common Cause |
@@ -24,15 +27,15 @@ description: HTTP error codes, error messages, rate limiting, channel auto-banni
 
 **"insufficient_user_quota"**
 - User's balance is too low
-- Fix: Top up wallet or ask admin for quota
+- Fix: Top up at https://apinet.cloud/wallet or ask admin for quota
 
 **"Token has no access to any models"**
 - Token's model whitelist is set but no models match
-- Fix: Edit token → remove or update model restrictions
+- Fix: https://apinet.cloud/keys → Edit token → remove or update model restrictions
 
 **"No available channel for model X in group Y"**
 - No active channel supports this model for the user's group
-- Fix: Add/enable a channel, or check group assignment
+- Fix (admin): https://apinet.cloud/channel → add/enable a channel, or check group assignment
 
 ### Request Validation Errors
 
@@ -48,10 +51,6 @@ description: HTTP error codes, error messages, rate limiting, channel auto-banni
 - The `max_tokens` value is out of range
 - Fix: Use a reasonable value (e.g., 1–32768 depending on model)
 
-**"size must be one of 1024x1024, 1024x1792 or 1792x1024 for dall-e-3"**
-- Invalid image size for DALL-E 3
-- Fix: Use one of the listed sizes exactly
-
 **"please use 'x' instead of '×'"**
 - Used the Unicode multiplication sign × instead of letter x in a size parameter
 - Fix: Change `1024×1024` to `1024x1024`
@@ -64,17 +63,17 @@ description: HTTP error codes, error messages, rate limiting, channel auto-banni
 
 **"Current group load is saturated, please try again later"** (Midjourney)
 - The Midjourney channel is at capacity
-- Fix: Wait and retry; admin can add more Midjourney channels
+- Fix: Wait and retry; admin can add more Midjourney channels at https://apinet.cloud/channel
 
-### Channel Errors
+### Channel Errors (Admin)
 
 **"channel:no_available_key"**
 - All channels for the model are disabled/out of keys
-- Fix (admin): Re-enable channels or add new API keys
+- Fix: https://apinet.cloud/channel → re-enable channels or add new API keys
 
 **"channel:invalid_key"**
 - Upstream provider rejected the channel's API key
-- Fix (admin): Update the API key in the channel settings
+- Fix: https://apinet.cloud/channel → update the API key
 
 **"channel:response_time_exceeded"**
 - Upstream took too long to respond
@@ -82,44 +81,26 @@ description: HTTP error codes, error messages, rate limiting, channel auto-banni
 
 **"model_not_found"**
 - The requested model doesn't exist in any channel
-- Fix: Check model name spelling; use a model that's available
+- Fix: Check model name spelling; see available models at https://apinet.cloud/models
 
 ## Rate Limiting
 
-APINET.CLOUD supports multiple rate limit levels:
-
 | Level | Where Configured |
 |---|---|
-| Per-user RPM/RPD | User settings or group settings |
-| Per-token | Token settings |
-| Global | System Settings → Rate Limiting |
+| Per-user RPM/RPD | https://apinet.cloud/user → Edit user |
+| Per-token | https://apinet.cloud/keys → Edit token |
+| Global | https://apinet.cloud/setting → Rate Limiting |
 
 **Getting 429 errors?**
-1. Check if you're hitting a per-minute limit — wait 60 seconds and retry
+1. Wait 60 seconds and retry
 2. Ask admin to increase your rate limit
 3. Implement exponential backoff in your client code
 
 ## General Troubleshooting Steps
 
 1. **Check the error message** — it usually tells you exactly what's wrong
-2. **Check token status** — is it enabled, not expired, not quota-exceeded?
-3. **Check channel status** — are channels for the model enabled?
-4. **Check user balance** — is the quota > 0?
-5. **Check Usage Logs** — the log entry shows the exact error and quota consumed
-6. **Test in Playground** — use the built-in playground to isolate if it's an API client issue
-
-## Midjourney-Specific Issues
-
-**Task stuck in "In Progress"**
-- Midjourney tasks can take 1–3 minutes
-- If stuck over 10 minutes: the system will eventually auto-refund the quota
-
-**Image generation failed / refunded**
-- The upstream Midjourney Proxy reported a failure
-- Quota is automatically refunded for failed image tasks
-
-## Async Task Errors (Suno, Video generation)
-
-- These tasks lock quota upfront (`ForcePreConsume`)
-- If the task fails, quota is refunded when the final status is received
-- Check **Task** section in navigation for status and error details
+2. **Check token status** at https://apinet.cloud/keys — enabled, not expired, not quota-exceeded
+3. **Check channel status** at https://apinet.cloud/channel — channels for the model must be enabled
+4. **Check user balance** at https://apinet.cloud/wallet — quota must be > 0
+5. **Check Usage Logs** at https://apinet.cloud/log — shows exact error and quota consumed
+6. **Test in Playground** at https://apinet.cloud/playground — isolate if it's a client issue

@@ -5,6 +5,9 @@ description: First-time setup, the setup wizard, creating the root admin account
 
 # Onboarding & First Setup
 
+**Login page:** https://apinet.cloud/login
+**Register:** https://apinet.cloud/register
+
 ## Initial Setup Wizard
 
 On first launch the system shows a **4-step setup wizard**:
@@ -19,26 +22,26 @@ On first launch the system shows a **4-step setup wizard**:
 ### Common Issues During Setup
 
 **"System already initialized" but I can't log in**
-- The setup was completed before. Use the login page at `/login`.
-- Default credentials if unchanged: `root` / `123456` — change these immediately.
+- The setup was completed before. Use https://apinet.cloud/login
+- Default credentials if unchanged: `root` / `123456` — change these immediately
 
 **Wizard won't advance past step 1 (Database check)**
-- SQLite warning: "Make sure the file is persisted" — this is just a warning, click **Next**.
-- If using MySQL/PostgreSQL: set the `SQL_DSN` environment variable before starting.
+- SQLite warning: "Make sure the file is persisted" — this is just a warning, click **Next**
+- If using MySQL/PostgreSQL: set the `SQL_DSN` environment variable before starting
 
 **Lost root password**
-- If using SQLite: stop the app, delete `new_api.db`, restart — the wizard reappears.
-- If using an external DB: reset the password hash directly in the `users` table (bcrypt).
+- If using SQLite: stop the app, delete `new_api.db`, restart — the wizard reappears
+- If using an external DB: reset the password hash directly in the `users` table (bcrypt)
 
 ---
 
 ## After Setup: First Steps for Admins
 
-1. **Change the root password** — Profile icon → Settings
-2. **Add a channel** — Channels → Add Channel (add your OpenAI/Anthropic/etc. key)
-3. **Check models** — the system auto-fetches available models from channels
-4. **Create an API token** — Token → Add Token
-5. **Test in Playground** — built-in playground at the top navigation bar
+1. **Change the root password** — https://apinet.cloud/profile → Settings
+2. **Add a channel** — https://apinet.cloud/channel → Add Channel (add your OpenAI/Anthropic/etc. key)
+3. **Check models** — https://apinet.cloud/models — auto-fetched from channels
+4. **Create an API token** — https://apinet.cloud/keys → Add Token
+5. **Test in Playground** — https://apinet.cloud/playground
 
 ---
 
@@ -49,6 +52,4 @@ On first launch the system shows a **4-step setup wizard**:
 | `SQL_DSN` | Database connection string (leave empty for SQLite) |
 | `REDIS_CONN_STRING` | Redis URL for caching/rate-limiting |
 | `SESSION_SECRET` | Secret for session signing (important for multi-node) |
-| `PORT` | HTTP port (default 3000; set to 5000 on Replit) |
-
-> On Replit the app runs on port 5000 and is accessible through the Replit preview URL.
+| `PORT` | HTTP port (default 3000) |

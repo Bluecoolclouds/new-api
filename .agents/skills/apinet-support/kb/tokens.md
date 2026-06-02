@@ -5,11 +5,13 @@ description: Creating and managing API tokens (keys), quota limits, model restri
 
 # API Tokens (Keys)
 
+**Manage tokens:** https://apinet.cloud/keys
+
 Tokens are what users put in their API clients as the `Authorization: Bearer <token>` header. Each token can have fine-grained restrictions.
 
 ## Creating a Token
 
-1. Go to **Token** in the navigation
+1. Go to **https://apinet.cloud/keys**
 2. Click **Add Token**
 3. Configure:
    - **Name** — label for the token
@@ -30,34 +32,34 @@ sk-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 ### "Token has no access to any models"
 - The token has a model whitelist set, but the requested model isn't in it
-- **Fix:** Edit the token → remove model restrictions or add the model to the whitelist
+- **Fix:** https://apinet.cloud/keys → Edit token → remove model restrictions or add the model
 
 ### "Token is not allowed to use model: [name]"
 - Same as above, but for a specific model name
-- **Fix:** Edit the token → add the model to the allowed list
+- **Fix:** https://apinet.cloud/keys → Edit token → add the model to the allowed list
 
 ### "Insufficient user quota"
 - The token's quota limit is reached, or the account balance is 0
-- **Fix:** Top up the account wallet, or increase the token's quota limit
+- **Fix:** Top up at https://apinet.cloud/wallet, or increase the token's quota limit
 
 ### "Token expired"
 - The token's expiration date has passed
-- **Fix:** Create a new token or edit the existing one to extend expiry
+- **Fix:** https://apinet.cloud/keys → create a new token or edit existing one to extend expiry
 
 ### "Token is disabled"
 - An admin manually disabled the token
-- **Fix:** Re-enable in Token list → click the status toggle
+- **Fix:** https://apinet.cloud/keys → click the status toggle to re-enable
 
 ### Token not working at all (401 Unauthorized)
 1. Check the token is copied correctly (no extra spaces)
 2. Ensure the Authorization header format is: `Bearer sk-xxxxx`
-3. Check token status in the Token list — must be **Enabled**
+3. Check token status at https://apinet.cloud/keys — must be **Enabled**
 4. Verify the token hasn't expired
 
 ## API Endpoint
 
-The base URL for all API calls through APINET.CLOUD is:
+The base URL for all API calls through APINET.CLOUD:
 ```
-https://<your-domain>/v1
+https://apinet.cloud/v1
 ```
 Use this as the `base_url` in any OpenAI-compatible client.
