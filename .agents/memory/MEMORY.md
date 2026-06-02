@@ -1,4 +1,4 @@
-- [Custom APINET components](custom-apinet-components.md) — key custom files/features that must survive upstream merges; includes RedemptionCodeCard, wallet layout, FreeKassa, Heleket, branding
+- [Custom APINET components](custom-apinet-components.md) — key custom files/features that must survive upstream merges; includes RedemptionCodeCard, wallet layout, FreeKassa, Heleket, Pally, branding
 - [Go embed frontend rebuild](go-embed-rebuild.md) — frontend CSS/JS changes require BOTH `npm run build` AND `go build` to take effect; the binary embeds assets at compile time
 - [Payment gateway pattern](payment-gateway-pattern.md) — how to add a new payment method (Heleket as example); covers all files that must be touched across backend + frontend
 - [Heleket API sign formula](heleket-sign.md) — sign = md5(base64(body) + apiKey) with NO colon; amount in topup APIs is USD not credits; unitPrice multiplied not divided

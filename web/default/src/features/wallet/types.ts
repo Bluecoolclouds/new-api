@@ -117,6 +117,21 @@ export interface HeleketPaymentRequest {
 export type HeleketPaymentResponse = ApiResponse<{ pay_link: string; order_id: string }>
 
 /**
+ * Pally payment request
+ */
+export interface PallyPaymentRequest {
+  /** Amount to top up (quota units) */
+  amount: number
+  /** Payment method identifier */
+  payment_method: 'pally'
+}
+
+/**
+ * Pally payment response
+ */
+export type PallyPaymentResponse = ApiResponse<{ pay_link: string; order_id: string }>
+
+/**
  * Payment method configuration
  */
 export interface PaymentMethod {
@@ -196,6 +211,12 @@ export interface TopupInfo {
   enable_heleket_topup?: boolean
   /** Minimum topup amount for Heleket */
   heleket_min_topup?: number
+  /** Whether Pally topup is enabled */
+  enable_pally_topup?: boolean
+  /** Minimum topup amount for Pally */
+  pally_min_topup?: number
+  /** Pally unit price (₽ per credit) */
+  pally_unit_price?: number
   /** Whether redemption code usage is enabled */
   enable_redemption?: boolean
   /** Whether compliance confirmation has been completed */

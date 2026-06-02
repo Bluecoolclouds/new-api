@@ -197,6 +197,12 @@ const BILLING_SECTIONS = [
           HeleketMinTopUp: settings.HeleketMinTopUp ?? 1,
           HeleketReturnURL: settings.HeleketReturnURL ?? '',
         }}
+        pallyDefaultValues={{
+          PallyApiToken: settings.PallyApiToken ?? '',
+          PallyShopID: settings.PallyShopID ?? '',
+          PallyUnitPrice: settings.PallyUnitPrice ?? 0.0002,
+          PallyMinTopUp: settings.PallyMinTopUp ?? 50,
+        }}
         complianceDefaults={{
           confirmed: settings['payment_setting.compliance_confirmed'] ?? false,
           termsVersion:

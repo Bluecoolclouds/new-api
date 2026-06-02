@@ -40,6 +40,7 @@ export const PAYMENT_TYPES = {
   FREEKASSA_CARD: 'freekassa_card',
   FREEKASSA_CRYPTO: 'freekassa_crypto',
   HELEKET: 'heleket',
+  PALLY: 'pally',
 } as const
 
 /**
@@ -61,6 +62,7 @@ export const PAYMENT_ICON_COLORS = {
   [PAYMENT_TYPES.FREEKASSA_CARD]: '#3B82F6',
   [PAYMENT_TYPES.FREEKASSA_CRYPTO]: '#F59E0B',
   [PAYMENT_TYPES.HELEKET]: '#F7931A',
+  [PAYMENT_TYPES.PALLY]: '#6366F1',
 } as const
 
 /**

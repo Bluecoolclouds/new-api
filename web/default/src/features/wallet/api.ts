@@ -42,6 +42,8 @@ import type {
   FreeKassaPaymentResponse,
   HeleketPaymentRequest,
   HeleketPaymentResponse,
+  PallyPaymentRequest,
+  PallyPaymentResponse,
 } from './types'
 
 // ============================================================================
@@ -215,6 +217,30 @@ export async function requestHeleketPayment(
   request: HeleketPaymentRequest
 ): Promise<HeleketPaymentResponse> {
   const res = await api.post('/api/user/heleket/pay', request, {
+    skipBusinessError: true,
+  } as Record<string, unknown>)
+  return res.data
+}
+
+/**
+ * Calculate payment amount for Pally payment
+ */
+export async function calculatePallyAmount(
+  request: AmountRequest
+): Promise<AmountResponse> {
+  const res = await api.post('/api/user/pally/amount', request, {
+    skipBusinessError: true,
+  } as Record<string, unknown>)
+  return res.data
+}
+
+/**
+ * Request Pally payment
+ */
+export async function requestPallyPayment(
+  request: PallyPaymentRequest
+): Promise<PallyPaymentResponse> {
+  const res = await api.post('/api/user/pally/pay', request, {
     skipBusinessError: true,
   } as Record<string, unknown>)
   return res.data

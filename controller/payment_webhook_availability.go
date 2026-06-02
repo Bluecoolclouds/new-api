@@ -117,6 +117,18 @@ func isHeleketWebhookEnabled() bool {
         return isHeleketTopUpEnabled()
 }
 
+func isPallyTopUpEnabled() bool {
+        if !isPaymentComplianceConfirmed() {
+                return false
+        }
+        return strings.TrimSpace(setting.PallyApiToken) != "" &&
+                strings.TrimSpace(setting.PallyShopID) != ""
+}
+
+func isPallyWebhookEnabled() bool {
+        return isPallyTopUpEnabled()
+}
+
 func isEpayTopUpEnabled() bool {
         if !isPaymentComplianceConfirmed() {
                 return false

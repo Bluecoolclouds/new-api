@@ -63,6 +63,7 @@ func SetApiRouter(router *gin.Engine) {
                 // in Pancake's matching webhook slot; handler enforces env match.
                 apiRouter.POST("/waffo-pancake/webhook/:env", controller.WaffoPancakeWebhook)
                         apiRouter.POST("/heleket/webhook", controller.HeleketWebhook)
+                        apiRouter.POST("/pally/webhook", controller.PallyWebhook)
 
                 // Universal secure verification routes
                 apiRouter.POST("/verify", middleware.UserAuth(), middleware.CriticalRateLimit(), controller.UniversalVerify)
@@ -112,6 +113,8 @@ func SetApiRouter(router *gin.Engine) {
                                 selfRoute.POST("/freekassa/pay", middleware.CriticalRateLimit(), controller.RequestFreeKassaPay)
                                         selfRoute.POST("/heleket/amount", controller.RequestHeleketAmount)
                                         selfRoute.POST("/heleket/pay", middleware.CriticalRateLimit(), controller.RequestHeleketPay)
+                                        selfRoute.POST("/pally/amount", controller.RequestPallyAmount)
+                                        selfRoute.POST("/pally/pay", middleware.CriticalRateLimit(), controller.RequestPallyPay)
                                 selfRoute.POST("/aff_transfer", controller.TransferAffQuota)
                                 selfRoute.PUT("/setting", controller.UpdateUserSetting)
 

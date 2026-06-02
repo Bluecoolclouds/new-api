@@ -106,6 +106,13 @@ export function isHeleketPayment(paymentType: string): boolean {
 }
 
 /**
+ * Check if payment method is Pally (RUB gateway)
+ */
+export function isPallyPayment(paymentType: string): boolean {
+  return paymentType === PAYMENT_TYPES.PALLY
+}
+
+/**
  * Get default payment type from topup info
  */
 export function getDefaultPaymentType(topupInfo: TopupInfo | null): string {
@@ -167,6 +174,10 @@ export function getMinTopupAmount(topupInfo: TopupInfo | null): number {
 
   if (topupInfo.enable_heleket_topup) {
     return topupInfo.heleket_min_topup || DEFAULT_MIN_TOPUP
+  }
+
+  if (topupInfo.enable_pally_topup) {
+    return topupInfo.pally_min_topup || DEFAULT_MIN_TOPUP
   }
 
   return DEFAULT_MIN_TOPUP

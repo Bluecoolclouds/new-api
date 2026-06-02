@@ -25,10 +25,12 @@ import {
   calculateWaffoPancakeAmount,
   calculateFreeKassaAmount,
   calculateHeleketAmount,
+  calculatePallyAmount,
   requestPayment,
   requestStripePayment,
   requestFreeKassaPayment,
   requestHeleketPayment,
+  requestPallyPayment,
   isApiSuccess,
 } from '../api'
 import {
@@ -36,6 +38,7 @@ import {
   isWaffoPancakePayment,
   isFreeKassaPayment,
   isHeleketPayment,
+  isPallyPayment,
   submitPaymentForm,
 } from '../lib'
 
@@ -58,6 +61,7 @@ export function usePayment() {
         const isPancake = isWaffoPancakePayment(paymentType)
         const isFreeKassa = isFreeKassaPayment(paymentType)
         const isHeleket = isHeleketPayment(paymentType)
+        const isPally = isPallyPayment(paymentType)
         const response = isStripe
           ? await calculateStripeAmount({ amount: topupAmount })
           : isPancake
@@ -66,7 +70,9 @@ export function usePayment() {
               ? await calculateFreeKassaAmount({ amount: topupAmount })
               : isHeleket
                 ? await calculateHeleketAmount({ amount: topupAmount })
-                : await calculateAmount({ amount: topupAmount })
+                : isPally
+                  ? await calculatePallyAmount({ amount: topupAmount })
+                  : await calculateAmount({ amount: topupAmount })
 
         if (isApiSuccess(response) && response.data) {
           const calculatedAmount = parseFloat(response.data)
@@ -96,6 +102,7 @@ export function usePayment() {
         const isStripe = isStripePayment(paymentType)
         const isFreeKassa = isFreeKassaPayment(paymentType)
         const isHeleket = isHeleketPayment(paymentType)
+        const isPally = isPallyPayment(paymentType)
         const amount = Math.floor(topupAmount)
 
         // Handle FreeKassa payment
@@ -121,6 +128,24 @@ export function usePayment() {
           const response = await requestHeleketPayment({
             amount,
             payment_method: 'heleket',
+          })
+          if (!isApiSuccess(response)) {
+            toast.error(response.message || i18next.t('Payment request failed'))
+            return false
+          }
+          if (response.data?.pay_link) {
+            window.open(response.data.pay_link, '_blank')
+            toast.success(i18next.t('Redirecting to payment page...'))
+            return true
+          }
+          return false
+        }
+
+        // Handle Pally payment
+        if (isPally) {
+          const response = await requestPallyPayment({
+            amount,
+            payment_method: 'pally',
           })
           if (!isApiSuccess(response)) {
             toast.error(response.message || i18next.t('Payment request failed'))

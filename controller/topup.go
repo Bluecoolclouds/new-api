@@ -115,6 +115,26 @@ func GetTopUpInfo(c *gin.Context) {
                 }
         }
 
+        // If Pally is enabled, add it to pay methods
+        enablePally := isPallyTopUpEnabled()
+        if enablePally {
+                hasPally := false
+                for _, method := range payMethods {
+                        if method["type"] == model.PaymentMethodPally {
+                                hasPally = true
+                                break
+                        }
+                }
+                if !hasPally {
+                        payMethods = append(payMethods, map[string]string{
+                                "name":      "Pally (СБП / Карта)",
+                                "type":      model.PaymentMethodPally,
+                                "color":     "#6366F1",
+                                "min_topup": strconv.Itoa(setting.PallyMinTopUp),
+                        })
+                }
+        }
+
         // If Heleket is enabled, add it to pay methods
         enableHeleket := isHeleketTopUpEnabled()
         if enableHeleket {
@@ -167,6 +187,9 @@ func GetTopUpInfo(c *gin.Context) {
                 "freekassa_crypto_enabled": enableFreeKassa,
                 "freekassa_min_topup":      setting.FreeKassaMinTopUp,
                 "heleket_min_topup":        setting.HeleketMinTopUp,
+                "enable_pally_topup":        enablePally,
+                "pally_min_topup":           setting.PallyMinTopUp,
+                "pally_unit_price":          setting.PallyUnitPrice,
         }
         common.ApiSuccess(c, data)
 }
@@ -198,16 +221,16 @@ func GetEpayClient() *epay.Client {
 // threshold-based lookup: finds the highest configured key that is <= amount.
 // Returns 1.0 (no discount) when no matching threshold exists.
 func getAmountDiscount(amount int) float64 {
-	discounts := operation_setting.GetPaymentSetting().AmountDiscount
-	bestThreshold := -1
-	discount := 1.0
-	for threshold, ds := range discounts {
-		if threshold <= amount && threshold > bestThreshold && ds > 0 {
-			bestThreshold = threshold
-			discount = ds
-		}
-	}
-	return discount
+        discounts := operation_setting.GetPaymentSetting().AmountDiscount
+        bestThreshold := -1
+        discount := 1.0
+        for threshold, ds := range discounts {
+                if threshold <= amount && threshold > bestThreshold && ds > 0 {
+                        bestThreshold = threshold
+                        discount = ds
+                }
+        }
+        return discount
 }
 
 func getPayMoney(amount int64, group string) float64 {

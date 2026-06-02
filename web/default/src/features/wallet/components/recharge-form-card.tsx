@@ -74,6 +74,7 @@ function getMethodSubtitle(type: string, t: (key: string) => string): string {
     waffo_pancake: t('Waffo'),
     creem: t('Creem'),
     heleket: t('Cryptocurrency'),
+    pally: t('СБП / Карта (RUB)'),
   }
   return map[type] || ''
 }
@@ -209,6 +210,7 @@ interface RechargeFormCardProps {
   freekassaUnitPrice?: number
   freekassaCbrRate?: number
   enableHeleketTopup?: boolean
+  enablePallyTopup?: boolean
 }
 
 // ============================================================================
@@ -252,6 +254,7 @@ export function RechargeFormCard({
   freekassaUnitPrice = 0,
   freekassaCbrRate = 0,
   enableHeleketTopup,
+  enablePallyTopup,
 }: RechargeFormCardProps) {
   const { t } = useTranslation()
 
@@ -305,7 +308,8 @@ export function RechargeFormCard({
     enableWaffoTopup ||
     enableWaffoPancakeTopup ||
     enableFreeKassaTopup ||
-    enableHeleketTopup
+    enableHeleketTopup ||
+    enablePallyTopup
   const hasAnyTopup = hasConfigurableTopup || enableCreemTopup
   const hasStandardPaymentMethods =
     Array.isArray(topupInfo?.pay_methods) && topupInfo.pay_methods.length > 0
@@ -346,8 +350,14 @@ export function RechargeFormCard({
       })
     }
 
+    if (enablePallyTopup) {
+      methods.push({
+        method: { type: 'pally', name: 'Pally' },
+      })
+    }
+
     return methods
-  }, [enableFreeKassaTopup, freekassaCardEnabled, freekassaCryptoEnabled, enableHeleketTopup, t])
+  }, [enableFreeKassaTopup, freekassaCardEnabled, freekassaCryptoEnabled, enableHeleketTopup, enablePallyTopup, t])
 
   const handleAmountChange = (value: string) => {
     setLocalAmount(value)
@@ -708,6 +718,12 @@ export function RechargeFormCard({
                                   <img
                                     src='/images/heleket-logo.svg'
                                     alt='Heleket'
+                                    className='h-5 w-5 object-contain'
+                                  />
+                                ) : method.type === 'pally' ? (
+                                  <img
+                                    src='/images/sbp-logo.svg'
+                                    alt='Pally'
                                     className='h-5 w-5 object-contain'
                                   />
                                 ) : (
