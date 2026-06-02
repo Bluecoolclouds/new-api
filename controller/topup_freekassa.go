@@ -9,11 +9,12 @@ import (
         "encoding/json"
         "fmt"
         "io"
+        "math/rand"
         "net/http"
         "net/url"
         "strconv"
         "sort"
-	"strings"
+        "strings"
         "time"
 
         "github.com/QuantumNous/new-api/common"
@@ -29,30 +30,30 @@ import (
 const freeKassaPayURL = "https://pay.freekassa.net/"
 
 func resolvePaymentSystemId(paymentMethod string) string {
-	// Handle specific crypto sub-methods: freekassa_crypto_24, freekassa_crypto_15, etc.
-	if strings.HasPrefix(paymentMethod, "freekassa_crypto_") {
-		id := strings.TrimPrefix(paymentMethod, "freekassa_crypto_")
-		if id != "" {
-			return id
-		}
-	}
-	switch paymentMethod {
-	case "freekassa":
-		// SBP (Система быстрых платежей) - payment system ID 44
-		return "44"
-	case "freekassa_card":
-		if setting.FreeKassaCardPaymentSystemId != "" {
-			return setting.FreeKassaCardPaymentSystemId
-		}
-		return "36"
-	case "freekassa_crypto":
-		if setting.FreeKassaCryptoPaymentSystemId != "" {
-			return setting.FreeKassaCryptoPaymentSystemId
-		}
-		return setting.FreeKassaPaymentSystemId
-	default:
-		return setting.FreeKassaPaymentSystemId
-	}
+        // Handle specific crypto sub-methods: freekassa_crypto_24, freekassa_crypto_15, etc.
+        if strings.HasPrefix(paymentMethod, "freekassa_crypto_") {
+                id := strings.TrimPrefix(paymentMethod, "freekassa_crypto_")
+                if id != "" {
+                        return id
+                }
+        }
+        switch paymentMethod {
+        case "freekassa":
+                // SBP (Система быстрых платежей) - payment system ID 44
+                return "44"
+        case "freekassa_card":
+                if setting.FreeKassaCardPaymentSystemId != "" {
+                        return setting.FreeKassaCardPaymentSystemId
+                }
+                return "36"
+        case "freekassa_crypto":
+                if setting.FreeKassaCryptoPaymentSystemId != "" {
+                        return setting.FreeKassaCryptoPaymentSystemId
+                }
+                return setting.FreeKassaPaymentSystemId
+        default:
+                return setting.FreeKassaPaymentSystemId
+        }
 }
 
 type FreeKassaPayRequest struct {
@@ -144,7 +145,7 @@ type freeKassaApiOrderResponse struct {
 func requestFreeKassaPayViaAPI(c *gin.Context, shopId int, apiKey string, paymentSystemId int,
         email string, ip string, amountStr string, currency string, tradeNo string) (string, error) {
 
-        nonce := time.Now().UnixMilli()
+        nonce := time.Now().UnixMilli()*1000 + rand.Int63n(1000)
         fields := map[string]string{
                 "shopId":    fmt.Sprintf("%d", shopId),
                 "nonce":     fmt.Sprintf("%d", nonce),
@@ -192,7 +193,7 @@ func requestFreeKassaPayViaAPI(c *gin.Context, shopId int, apiKey string, paymen
                 return "", fmt.Errorf("create request error: %w", err)
         }
         httpReq.Header.Set("Content-Type", "application/json")
-	httpReq.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
+        httpReq.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
 
         client := &http.Client{Timeout: 15 * time.Second}
         resp, err := client.Do(httpReq)
@@ -262,7 +263,7 @@ func getFreeKassaUserEmail(user *model.User) string {
 }
 
 func RequestFreeKassaPay(c *gin.Context) {
-	if !isFreeKassaTopUpEnabled() {
+        if !isFreeKassaTopUpEnabled() {
                 c.JSON(http.StatusOK, gin.H{"message": "error", "data": "当前管理员未配置 FreeKassa 支付信息"})
                 return
         }
