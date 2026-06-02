@@ -44,7 +44,8 @@ export function WithdrawalActionDialog({
     }
     setLoading(true)
     try {
-      const res = await adminUpdateWithdrawal(record.id, action, note.trim())
+      const status = action === 'approve' ? 'approved' : 'rejected'
+      const res = await adminUpdateWithdrawal(record.id, status, note.trim())
       if (res.success) {
         toast.success(isApprove ? t('Withdrawal approved') : t('Withdrawal rejected'))
         setNote('')

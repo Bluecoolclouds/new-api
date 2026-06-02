@@ -7,6 +7,7 @@ import { DataTableColumnHeader } from '@/components/data-table'
 import { StatusBadge } from '@/components/status-badge'
 import { TableId } from '@/components/table-id'
 import { Button } from '@/components/ui/button'
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import type { WithdrawalRecord } from '@/features/wallet/api'
 import { WithdrawalActionDialog } from './withdrawal-action-dialog'
 
@@ -119,11 +120,22 @@ export function useWithdrawalsColumns(onRefresh: () => void): ColumnDef<Withdraw
       accessorKey: 'details',
       meta: { label: t('Details'), mobileHidden: true },
       header: t('Details'),
-      cell: ({ row }) => (
-        <span className='text-muted-foreground max-w-[200px] truncate text-sm font-mono block'>
-          {row.original.details}
-        </span>
-      ),
+      cell: ({ row }) => {
+        const details = row.original.details
+        if (!details) return <span className='text-muted-foreground text-xs'>—</span>
+        return (
+          <Popover>
+            <PopoverTrigger asChild>
+              <button className='text-muted-foreground hover:text-foreground max-w-[200px] truncate text-sm font-mono block text-left cursor-pointer underline-offset-2 hover:underline'>
+                {details}
+              </button>
+            </PopoverTrigger>
+            <PopoverContent className='max-w-sm break-all text-sm font-mono' align='start'>
+              {details}
+            </PopoverContent>
+          </Popover>
+        )
+      },
       size: 200,
     },
     {
