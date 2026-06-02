@@ -8,11 +8,8 @@
   const MODEL     = cfg.model  || 'gemini-2.5-flash';
   const TG_LINK   = cfg.telegram || 'https://t.me/apinet_support';
 
-  // true  → route through bot service (two-way with admin)
-  // false → call APINET directly (AI only, legacy mode)
   const BOT_MODE = !!BOT_URL;
 
-  // Session ID persisted for the browser tab lifetime
   const SESSION_ID = (function () {
     let id = sessionStorage.getItem('aw_session');
     if (!id) {
@@ -22,7 +19,6 @@
     return id;
   })();
 
-  // Auto-detect language: cfg.lang → html[lang] → navigator.language → default ru
   function detectLang() {
     if (cfg.lang) return cfg.lang.startsWith('en') ? 'en' : 'ru';
     const siteLang = document.documentElement.lang || '';
@@ -48,6 +44,13 @@
       ariaOpen: 'Открыть чат поддержки',
       ariaClose: 'Закрыть',
       ariaSend: 'Отправить',
+      reportBtn: '⚠️ Сообщить о проблеме',
+      reportTemplate: 'У меня проблема:\n- Приложение: \n- Код ошибки: \n- Текст ошибки: \n- Название API-ключа: ',
+      chips: ['Как создать API-ключ?', 'Ошибка 401', 'Пополнить баланс', 'Список моделей'],
+      rateGood: 'Полезно',
+      rateBad: 'Не помогло',
+      rateThanks: 'Спасибо за оценку!',
+      unread: 'непрочитанных',
     },
     en: {
       title: 'APINET Support',
@@ -63,6 +66,13 @@
       ariaOpen: 'Open support chat',
       ariaClose: 'Close',
       ariaSend: 'Send',
+      reportBtn: '⚠️ Report an issue',
+      reportTemplate: 'I have an issue:\n- App: \n- Error code: \n- Error message: \n- API key name: ',
+      chips: ['How to create an API key?', 'Error 401', 'Top up balance', 'Available models'],
+      rateGood: 'Helpful',
+      rateBad: 'Not helpful',
+      rateThanks: 'Thanks for your feedback!',
+      unread: 'unread',
     },
   };
   const t = T[LANG];
@@ -113,7 +123,6 @@ Base URL для API: https://apinet.cloud/v1
   const ICON_CLOSE = `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>`;
   const ICON_SEND  = `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>`;
   const ICON_BOT   = `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a2 2 0 012 2c0 .74-.4 1.38-1 1.72V7h1a7 7 0 017 7H3a7 7 0 017-7h1V5.72A2 2 0 0112 2zM7.5 14a1.5 1.5 0 100 3 1.5 1.5 0 000-3zm9 0a1.5 1.5 0 100 3 1.5 1.5 0 000-3zm-4.5 3a1 1 0 100 2 1 1 0 000-2zm-5 3h12l-1 2H7l-1-2z"/></svg>`;
-  const ICON_AGENT = `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14H9V8h2v8zm4 0h-2V8h2v8z"/></svg>`;
 
   const STYLES = `
     #apinet-widget-btn {
@@ -126,10 +135,24 @@ Base URL для API: https://apinet.cloud/v1
     }
     #apinet-widget-btn:hover { transform: scale(1.08); box-shadow: 0 6px 26px rgba(37,99,235,0.55); }
     #apinet-widget-btn svg { width: 26px; height: 26px; transition: opacity 0.2s; color: white !important; fill: white !important; }
+    #apinet-widget-badge {
+      position: absolute; top: -4px; right: -4px;
+      min-width: 20px; height: 20px; border-radius: 10px;
+      background: #ef4444; color: white; font-size: 11px; font-weight: 700;
+      display: flex; align-items: center; justify-content: center;
+      padding: 0 5px; border: 2px solid white;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      pointer-events: none; animation: aw-badge-pop 0.25s cubic-bezier(0.34,1.56,0.64,1);
+    }
+    #apinet-widget-btn-wrap {
+      position: fixed; bottom: 24px; right: 24px; z-index: 999999;
+      width: 56px; height: 56px;
+    }
+    @keyframes aw-badge-pop { from { transform: scale(0); } to { transform: scale(1); } }
     #apinet-widget-panel {
       position: fixed; bottom: 92px; right: 24px; z-index: 999998;
       width: 360px; max-width: calc(100vw - 32px);
-      height: 540px; max-height: calc(100vh - 120px);
+      height: 560px; max-height: calc(100vh - 120px);
       background: #ffffff; border-radius: 16px;
       box-shadow: 0 8px 40px rgba(0,0,0,0.18);
       display: flex; flex-direction: column; overflow: hidden;
@@ -158,7 +181,7 @@ Base URL для API: https://apinet.cloud/v1
     .aw-close:hover { background: rgba(255,255,255,0.15); color: white; }
     .aw-close svg { width: 18px; height: 18px; }
     .aw-tg-bar {
-      background: rgba(255,255,255,0.12); border-radius: 8px; margin: 0 0 10px;
+      background: rgba(255,255,255,0.12); border-radius: 8px; margin: 0 0 8px;
       display: flex; align-items: center; gap: 7px;
       padding: 7px 10px; text-decoration: none; cursor: pointer;
       transition: background 0.15s; border: 1px solid rgba(255,255,255,0.2);
@@ -166,6 +189,27 @@ Base URL для API: https://apinet.cloud/v1
     .aw-tg-bar:hover { background: rgba(255,255,255,0.2); }
     .aw-tg-bar svg { width: 16px; height: 16px; color: white; flex-shrink: 0; }
     .aw-tg-bar span { color: white; font-size: 12.5px; font-weight: 500; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
+    .aw-report-bar {
+      background: rgba(255,255,255,0.10); border-radius: 8px; margin: 0 0 10px;
+      display: flex; align-items: center; gap: 7px;
+      padding: 6px 10px; cursor: pointer;
+      transition: background 0.15s; border: 1px solid rgba(255,255,255,0.15);
+      color: rgba(255,255,255,0.9); font-size: 12px; font-weight: 500;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    }
+    .aw-report-bar:hover { background: rgba(255,255,255,0.18); }
+    .aw-chips {
+      padding: 8px 12px 4px; display: flex; flex-wrap: wrap; gap: 6px; flex-shrink: 0;
+      border-bottom: 1px solid #f1f5f9;
+    }
+    .aw-chip {
+      background: #f1f5f9; border: 1px solid #e2e8f0; border-radius: 20px;
+      padding: 4px 11px; font-size: 12px; color: #475569; cursor: pointer;
+      transition: background 0.15s, color 0.15s, border-color 0.15s;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      white-space: nowrap;
+    }
+    .aw-chip:hover { background: #2563eb; color: white; border-color: #2563eb; }
     .aw-messages {
       flex: 1; overflow-y: auto; padding: 14px 12px; display: flex; flex-direction: column; gap: 10px;
       scroll-behavior: smooth; background: #ffffff; color: #1e293b;
@@ -195,6 +239,19 @@ Base URL для API: https://apinet.cloud/v1
       font-size: 12px; margin: 6px 0; white-space: pre;
     }
     .aw-msg.bot .aw-bubble pre code, .aw-msg.admin .aw-bubble pre code { background: none; padding: 0; color: inherit; }
+    .aw-rating {
+      display: flex; align-items: center; gap: 6px; margin-top: 4px; padding: 0 2px;
+    }
+    .aw-rate-btn {
+      background: none; border: 1px solid #e2e8f0; border-radius: 6px;
+      padding: 2px 8px; font-size: 12px; cursor: pointer; color: #64748b;
+      transition: background 0.15s, border-color 0.15s, color 0.15s;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    }
+    .aw-rate-btn:hover { background: #f1f5f9; border-color: #cbd5e1; color: #1e293b; }
+    .aw-rate-btn.good:hover { background: #dcfce7; border-color: #86efac; color: #15803d; }
+    .aw-rate-btn.bad:hover  { background: #fee2e2; border-color: #fca5a5; color: #b91c1c; }
+    .aw-rate-thanks { font-size: 11px; color: #94a3b8; font-style: italic; }
     .aw-typing { display: flex; align-items: center; gap: 4px; padding: 10px 13px; }
     .aw-typing span { width: 7px; height: 7px; border-radius: 50%; background: #94a3b8;
       animation: aw-bounce 1.2s infinite; }
@@ -244,10 +301,22 @@ Base URL для API: https://apinet.cloud/v1
     style.textContent = STYLES;
     document.head.appendChild(style);
 
+    // ── Button wrapper (for badge positioning) ──────────────────────────────
+    const btnWrap = document.createElement('div');
+    btnWrap.id = 'apinet-widget-btn-wrap';
+    btnWrap.style.cssText = 'position:fixed;bottom:24px;right:24px;z-index:999999;width:56px;height:56px;';
+
     const btn = document.createElement('button');
     btn.id = 'apinet-widget-btn';
+    btn.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;';
     btn.setAttribute('aria-label', t.ariaOpen);
     btn.innerHTML = ICON_CHAT;
+    btnWrap.appendChild(btn);
+
+    const badge = document.createElement('div');
+    badge.id = 'apinet-widget-badge';
+    badge.style.display = 'none';
+    btnWrap.appendChild(badge);
 
     const panel = document.createElement('div');
     panel.id = 'apinet-widget-panel';
@@ -266,7 +335,9 @@ Base URL для API: https://apinet.cloud/v1
         <a class="aw-tg-bar" href="${TG_LINK}" target="_blank" rel="noopener">
           ${ICON_TG}<span>${t.tgLabel}</span>
         </a>
+        <button class="aw-report-bar" id="aw-report-btn">${t.reportBtn}</button>
       </div>
+      <div class="aw-chips" id="aw-chips"></div>
       <div class="aw-messages" id="aw-messages"></div>
       <div class="aw-footer">
         <textarea class="aw-input" id="aw-input" placeholder="${t.placeholder}" rows="1" maxlength="2000"></textarea>
@@ -275,18 +346,79 @@ Base URL для API: https://apinet.cloud/v1
       <div class="aw-powered">APINET.CLOUD · AI Support</div>
     `;
 
-    document.body.appendChild(btn);
+    document.body.appendChild(btnWrap);
     document.body.appendChild(panel);
 
     const messagesEl = panel.querySelector('#aw-messages');
     const inputEl    = panel.querySelector('#aw-input');
     const sendBtn    = panel.querySelector('#aw-send');
+    const chipsEl    = panel.querySelector('#aw-chips');
+    const reportBtn  = panel.querySelector('#aw-report-btn');
     let isOpen      = false;
     let isStreaming  = false;
     const history   = [];
     let pollTimer   = null;
+    let unreadCount = 0;
 
-    function addMessage(text, role) {
+    // ── Unread badge ─────────────────────────────────────────────────────────
+    function incrementUnread() {
+      if (isOpen) return;
+      unreadCount++;
+      badge.textContent = unreadCount > 9 ? '9+' : String(unreadCount);
+      badge.style.display = 'flex';
+    }
+
+    function clearUnread() {
+      unreadCount = 0;
+      badge.style.display = 'none';
+    }
+
+    // ── FAQ chips ────────────────────────────────────────────────────────────
+    function buildChips(chips) {
+      chipsEl.innerHTML = '';
+      chips.forEach(function (label) {
+        const chip = document.createElement('button');
+        chip.className = 'aw-chip';
+        chip.textContent = label;
+        chip.addEventListener('click', function () {
+          if (isStreaming) return;
+          inputEl.value = '';
+          sendMessage(label);
+          // Hide chips after use
+          chipsEl.style.display = 'none';
+        });
+        chipsEl.appendChild(chip);
+      });
+    }
+
+    buildChips(t.chips);
+
+    // ── Rating row ───────────────────────────────────────────────────────────
+    function addRating(msgEl) {
+      const row = document.createElement('div');
+      row.className = 'aw-rating';
+
+      const goodBtn = document.createElement('button');
+      goodBtn.className = 'aw-rate-btn good';
+      goodBtn.textContent = '👍 ' + t.rateGood;
+
+      const badBtn = document.createElement('button');
+      badBtn.className = 'aw-rate-btn bad';
+      badBtn.textContent = '👎 ' + t.rateBad;
+
+      function rate() {
+        row.innerHTML = '<span class="aw-rate-thanks">' + t.rateThanks + '</span>';
+      }
+      goodBtn.addEventListener('click', rate);
+      badBtn.addEventListener('click', rate);
+
+      row.appendChild(goodBtn);
+      row.appendChild(badBtn);
+      msgEl.appendChild(row);
+    }
+
+    // ── Messages ─────────────────────────────────────────────────────────────
+    function addMessage(text, role, withRating) {
       const msg = document.createElement('div');
       msg.className = `aw-msg ${role}`;
       if (role === 'admin') {
@@ -304,7 +436,11 @@ Base URL для API: https://apinet.cloud/v1
       }
       msg.appendChild(bubble);
       messagesEl.appendChild(msg);
+      if (withRating && (role === 'bot' || role === 'admin')) {
+        addRating(msg);
+      }
       scrollBottom();
+      if (role !== 'user') incrementUnread();
       return bubble;
     }
 
@@ -319,7 +455,17 @@ Base URL для API: https://apinet.cloud/v1
     function removeTyping() { const el = document.getElementById('aw-typing'); if (el) el.remove(); }
     function scrollBottom() { messagesEl.scrollTop = messagesEl.scrollHeight; }
 
-    // ── Bot mode: poll for admin replies ────────────────────────────────────
+    // ── Report button ─────────────────────────────────────────────────────────
+    reportBtn.addEventListener('click', function () {
+      inputEl.value = t.reportTemplate;
+      inputEl.style.height = 'auto';
+      inputEl.style.height = Math.min(inputEl.scrollHeight, 90) + 'px';
+      inputEl.focus();
+      // Put cursor at end
+      inputEl.selectionStart = inputEl.selectionEnd = inputEl.value.length;
+    });
+
+    // ── Bot mode: poll for admin replies ─────────────────────────────────────
     function startPolling() {
       if (!BOT_MODE || pollTimer) return;
       pollTimer = setInterval(async () => {
@@ -328,7 +474,7 @@ Base URL для API: https://apinet.cloud/v1
           if (!res.ok) return;
           const data = await res.json();
           if (data.reply) {
-            addMessage(data.reply, 'admin');
+            addMessage(data.reply, 'admin', true);
           }
         } catch {}
       }, 3000);
@@ -343,7 +489,11 @@ Base URL для API: https://apinet.cloud/v1
       panel.classList.toggle('open', isOpen);
       btn.innerHTML = isOpen ? ICON_CLOSE : ICON_CHAT;
       if (isOpen) {
-        if (messagesEl.children.length === 0) addMessage(t.welcome, 'bot');
+        clearUnread();
+        if (messagesEl.children.length === 0) {
+          addMessage(t.welcome, 'bot', false);
+          clearUnread(); // welcome message doesn't count
+        }
         setTimeout(() => inputEl.focus(), 220);
         if (BOT_MODE) startPolling();
       } else {
@@ -351,12 +501,12 @@ Base URL для API: https://apinet.cloud/v1
       }
     }
 
-    // ── Send via BOT (proxy + Telegram logging) ──────────────────────────────
+    // ── Send via BOT ──────────────────────────────────────────────────────────
     async function sendViaBotMode(text) {
-      if (!BOT_URL) { addMessage(t.noBotUrl, 'bot'); return; }
+      if (!BOT_URL) { addMessage(t.noBotUrl, 'bot', false); return; }
       isStreaming = true;
       sendBtn.disabled = true;
-      addMessage(text, 'user');
+      addMessage(text, 'user', false);
       history.push({ role: 'user', content: text });
       addTyping();
       try {
@@ -368,17 +518,17 @@ Base URL для API: https://apinet.cloud/v1
         removeTyping();
         if (!resp.ok) {
           const err = await resp.json().catch(() => ({}));
-          addMessage(t.errorMsg(err?.error || resp.status, TG_LINK), 'bot');
+          addMessage(t.errorMsg(err?.error || resp.status, TG_LINK), 'bot', false);
           history.pop(); return;
         }
         const data = await resp.json();
         if (data.reply) {
-          addMessage(data.reply, 'bot');
+          addMessage(data.reply, 'bot', true);
           history.push({ role: 'assistant', content: data.reply });
         }
       } catch {
         removeTyping();
-        addMessage(t.connectErr(TG_LINK), 'bot');
+        addMessage(t.connectErr(TG_LINK), 'bot', false);
         history.pop();
       } finally {
         isStreaming = false;
@@ -387,14 +537,14 @@ Base URL для API: https://apinet.cloud/v1
       }
     }
 
-    // ── Send via direct APINET API (streaming) ───────────────────────────────
+    // ── Send via direct APINET API (streaming) ────────────────────────────────
     async function sendViaDirectMode(text) {
       if (!API_TOKEN || API_TOKEN === 'WIDGET_TOKEN_PLACEHOLDER') {
-        addMessage(t.noToken, 'bot'); return;
+        addMessage(t.noToken, 'bot', false); return;
       }
       isStreaming = true;
       sendBtn.disabled = true;
-      addMessage(text, 'user');
+      addMessage(text, 'user', false);
       history.push({ role: 'user', content: text });
       addTyping();
       try {
@@ -410,11 +560,13 @@ Base URL для API: https://apinet.cloud/v1
         if (!resp.ok) {
           const err = await resp.json().catch(() => ({}));
           removeTyping();
-          addMessage(t.errorMsg(err?.error?.code || resp.status, TG_LINK), 'bot');
+          addMessage(t.errorMsg(err?.error?.code || resp.status, TG_LINK), 'bot', false);
           history.pop(); return;
         }
         removeTyping();
-        const bubble = addMessage('', 'bot');
+        const bubble = addMessage('', 'bot', false);
+        // Get the parent msg element to add rating after streaming
+        const msgEl = bubble.parentElement;
         let fullText = '';
         const reader = resp.body.getReader();
         const decoder = new TextDecoder();
@@ -431,10 +583,13 @@ Base URL для API: https://apinet.cloud/v1
             } catch {}
           }
         }
-        if (fullText) history.push({ role: 'assistant', content: fullText });
+        if (fullText) {
+          history.push({ role: 'assistant', content: fullText });
+          addRating(msgEl);
+        }
       } catch {
         removeTyping();
-        addMessage(t.connectErr(TG_LINK), 'bot');
+        addMessage(t.connectErr(TG_LINK), 'bot', false);
         history.pop();
       } finally {
         isStreaming = false;
@@ -445,6 +600,8 @@ Base URL для API: https://apinet.cloud/v1
 
     function sendMessage(text) {
       if (!text.trim() || isStreaming) return;
+      // Hide chips once user starts chatting
+      chipsEl.style.display = 'none';
       if (BOT_MODE) sendViaBotMode(text);
       else          sendViaDirectMode(text);
     }
@@ -452,6 +609,10 @@ Base URL для API: https://apinet.cloud/v1
     inputEl.addEventListener('input', function () {
       this.style.height = 'auto';
       this.style.height = Math.min(this.scrollHeight, 90) + 'px';
+      // Show chips again if input is cleared
+      if (!this.value.trim() && messagesEl.children.length <= 1) {
+        chipsEl.style.display = '';
+      }
     });
     inputEl.addEventListener('keydown', function (e) {
       if (e.key === 'Enter' && !e.shiftKey) {
