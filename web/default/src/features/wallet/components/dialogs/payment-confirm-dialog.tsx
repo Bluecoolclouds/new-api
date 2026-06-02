@@ -61,8 +61,8 @@ export function PaymentConfirmDialog({
 }: PaymentConfirmDialogProps) {
   const { t } = useTranslation()
   const hasDiscount = discountRate > 0 && discountRate < 1 && paymentAmount > 0
-  const originalAmount = hasDiscount ? paymentAmount / discountRate : 0
-  const discountAmount = hasDiscount ? originalAmount - paymentAmount : 0
+  const originalAmount = hasDiscount ? Math.round(paymentAmount / discountRate) : 0
+  const discountAmount = hasDiscount ? Math.round(originalAmount - paymentAmount) : 0
 
   return (
     <AlertDialog open={open} onOpenChange={onOpenChange}>

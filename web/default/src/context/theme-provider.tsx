@@ -29,7 +29,7 @@ import { getCookie, setCookie, removeCookie } from '@/lib/cookies'
 type Theme = 'dark' | 'light' | 'system'
 type ResolvedTheme = Exclude<Theme, 'system'>
 
-const DEFAULT_THEME = 'light'
+const DEFAULT_THEME = 'light'  // Force light theme
 const THEME_COOKIE_NAME = 'vite-ui-theme'
 const THEME_COOKIE_MAX_AGE = 60 * 60 * 24 * 365 // 1 year
 const THEMES = new Set<Theme>(['dark', 'light', 'system'])
@@ -70,6 +70,7 @@ function resolveTheme(theme: Theme): ResolvedTheme {
 }
 
 function getStoredTheme(storageKey: string, fallback: Theme): Theme {
+  return "light"  // Force light theme for widget
   const storedTheme = getCookie(storageKey) as Theme | undefined
   return storedTheme && THEMES.has(storedTheme) ? storedTheme : fallback
 }

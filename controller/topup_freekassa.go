@@ -80,12 +80,7 @@ func getFreeKassaPayMoney(amount int64, group string) float64 {
                 topupGroupRatio = 1
         }
 
-        discount := 1.0
-        if ds, ok := operation_setting.GetPaymentSetting().AmountDiscount[int(amount)]; ok {
-                if ds > 0 {
-                        discount = ds
-                }
-        }
+        discount := getAmountDiscount(int(amount))
 
         payMoney := dAmount.
                 Mul(decimal.NewFromFloat(setting.FreeKassaUnitPrice)).
@@ -149,7 +144,7 @@ type freeKassaApiOrderResponse struct {
 func requestFreeKassaPayViaAPI(c *gin.Context, shopId int, apiKey string, paymentSystemId int,
         email string, ip string, amountStr string, currency string, tradeNo string) (string, error) {
 
-        nonce := int64(9210000000000000000) + time.Now().UnixNano() % 1000000000
+        nonce := time.Now().UnixMilli()
         fields := map[string]string{
                 "shopId":    fmt.Sprintf("%d", shopId),
                 "nonce":     fmt.Sprintf("%d", nonce),
@@ -165,9 +160,6 @@ func requestFreeKassaPayViaAPI(c *gin.Context, shopId int, apiKey string, paymen
         if setting.FreeKassaReturnURL != "" {
                 successURL = strings.TrimRight(setting.FreeKassaReturnURL, "/") + "?status=success"
                 failureURL = strings.TrimRight(setting.FreeKassaReturnURL, "/") + "?status=failed"
-                // Include success_url and failure_url in signature (proxy requires it)
-                fields["success_url"] = successURL
-                fields["failure_url"] = failureURL
         }
 
         sig := freeKassaApiSign(fields, apiKey)
@@ -195,7 +187,7 @@ func requestFreeKassaPayViaAPI(c *gin.Context, shopId int, apiKey string, paymen
         }
 
         httpReq, err := http.NewRequestWithContext(c.Request.Context(), http.MethodPost,
-                "http://109.120.178.39:8765/v1/orders/create", bytes.NewReader(body))
+                "https://api.fk.life/v1/orders/create", bytes.NewReader(body))
         if err != nil {
                 return "", fmt.Errorf("create request error: %w", err)
         }

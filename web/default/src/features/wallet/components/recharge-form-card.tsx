@@ -431,7 +431,7 @@ export function RechargeFormCard({
 
   const equivalentAmount =
     discountRate < DEFAULT_DISCOUNT_RATE && paymentAmount > 0
-      ? paymentAmount / discountRate
+      ? Math.round(paymentAmount / discountRate)
       : null
 
   const totalCredits = topupAmount * QUOTA_PER_DOLLAR
@@ -772,6 +772,19 @@ export function RechargeFormCard({
                       </p>
                     </div>
                   </div>
+
+
+                  {/* Savings row */}
+                  {equivalentAmount != null && equivalentAmount > paymentAmount && (
+                    <div className='flex items-center justify-between px-4 py-2 bg-emerald-50 dark:bg-emerald-950/20 border-t'>
+                      <span className='text-xs text-emerald-700 dark:text-emerald-400 font-medium'>
+                        {t('Your savings')}
+                      </span>
+                      <span className='text-xs font-bold text-emerald-700 dark:text-emerald-400'>
+                        {displaySymbol}{Math.round(equivalentAmount - paymentAmount)}
+                      </span>
+                    </div>
+                  )}
 
                   {/* Total + CTA */}
                   <div className='flex items-center justify-between gap-4 px-4 py-3.5 bg-muted/50'>

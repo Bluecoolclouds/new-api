@@ -1981,7 +1981,6 @@
     "https://example.com/topup": "https://example.com/topup",
     "https://example.com/webhook": "https://example.com/webhook",
     "https://gateway.example.com": "https://gateway.example.com",
-    
     "https://gotify.example.com": "https://gotify.example.com",
     "https://pay.example.com": "https://pay.example.com",
     "https://provider.com/.well-known/openid-configuration": "https://provider.com/.well-known/openid-configuration",
@@ -4593,5 +4592,6 @@
     "Zoom": "Zoom"
   },
   "Selected": "Выбрано",
-  "Credits": "Кредитов"
+  "Credits": "Кредитов",
+  "Your savings": "Ваша выгода"
 }
