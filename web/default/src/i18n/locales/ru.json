@@ -4595,5 +4595,7 @@
   "Credits": "Кредитов",
   "Your savings": "Ваша выгода",
   "no discount": "без скидки",
-  "Save {{amount}}": "Экономия {{amount}}"
+  "Save {{amount}}": "Экономия {{amount}}",
+  "Pay {{amount}}, no discount": "Оплата {{amount}}, без скидки",
+  "Pay {{amount}}, Save {{savings}}": "Оплата {{amount}}, экономия {{savings}}"
 }

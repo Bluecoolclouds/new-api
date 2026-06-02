@@ -17,7 +17,7 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 For commercial licensing, please contact support@quantumnous.com
 */
 import { useState, useEffect, useMemo } from 'react'
-import { Gift, ExternalLink, Loader2, Receipt, WalletCards, ArrowRight, Zap, TrendingUp, CreditCard, Coins } from 'lucide-react'
+import { Gift, ExternalLink, Loader2, Receipt, WalletCards, ArrowRight, Zap, TrendingUp, CreditCard, Coins, DollarSign } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { cn } from '@/lib/utils'
 import { Alert, AlertDescription } from '@/components/ui/alert'
@@ -595,6 +595,11 @@ export function RechargeFormCard({
                           : 0
                         const isSelected = selectedPreset === preset.value
 
+                        // payAmt: what the user actually pays in local currency
+                        const payAmt = hasPresetDiscount
+                          ? Math.round(displayAmt * preset.discount!)
+                          : displayAmt
+
                         return (
                           <div key={preset.value} className='relative'>
                             {hasPresetDiscount && (
@@ -612,23 +617,26 @@ export function RechargeFormCard({
                                   : 'border-border hover:border-primary/40 hover:bg-muted/30'
                               )}
                             >
-                              <div
-                                className={cn(
-                                  'text-base font-bold tabular-nums',
-                                  isSelected
-                                    ? 'text-primary'
-                                    : 'text-foreground'
-                                )}
-                              >
-                                {displayAmt.toLocaleString()}
-                                {displaySymbol}
+                              {/* USD credits the user receives */}
+                              <div className={cn(
+                                'flex items-center gap-1.5 font-bold',
+                                isSelected ? 'text-primary' : 'text-foreground'
+                              )}>
+                                <DollarSign className='h-4 w-4 shrink-0' />
+                                <span className='text-base tabular-nums'>
+                                  {preset.value} USD
+                                </span>
                               </div>
-                              <div className='mt-1 truncate text-[11px] text-muted-foreground'>
+                              {/* Payment info in local currency */}
+                              <div className='mt-1.5 truncate text-[11px] text-muted-foreground'>
                                 {hasPresetDiscount
-                                  ? t('Save {{amount}}', {
-                                      amount: `${displaySymbol}${savingsAmt}`,
+                                  ? t('Pay {{amount}}, Save {{savings}}', {
+                                      amount: `${displaySymbol}${payAmt}`,
+                                      savings: `${displaySymbol}${savingsAmt}`,
                                     })
-                                  : t('no discount')}
+                                  : t('Pay {{amount}}, no discount', {
+                                      amount: `${displaySymbol}${displayAmt}`,
+                                    })}
                               </div>
                             </button>
                           </div>

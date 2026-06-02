@@ -386,7 +386,10 @@ export function Wallet(props: WalletProps) {
         displaySymbol={
           ((currency?.customCurrencyExchangeRate ?? 0) > 1 ||
             (currency?.usdExchangeRate ?? 1) > 1)
-            ? (currency?.customCurrencySymbol || '₽')
+            ? (currency?.customCurrencySymbol &&
+               currency.customCurrencySymbol !== '¤'
+                ? currency.customCurrencySymbol
+                : '₽')
             : '$'
         }
       />

@@ -4545,5 +4545,7 @@
   "Credits": "Credits",
   "Your savings": "Your savings",
   "no discount": "no discount",
-  "Save {{amount}}": "Save {{amount}}"
+  "Save {{amount}}": "Save {{amount}}",
+  "Pay {{amount}}, no discount": "Pay {{amount}}, no discount",
+  "Pay {{amount}}, Save {{savings}}": "Pay {{amount}}, Save {{savings}}"
 }
