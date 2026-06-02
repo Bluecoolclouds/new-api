@@ -26,7 +26,6 @@ import { AffiliateRewardsCard } from './components/affiliate-rewards-card'
 import { RedemptionCodeCard } from './components/redemption-code-card'
 import { BillingHistoryDialog } from './components/dialogs/billing-history-dialog'
 import { CreemConfirmDialog } from './components/dialogs/creem-confirm-dialog'
-import { PaymentConfirmDialog } from './components/dialogs/payment-confirm-dialog'
 import { TransferDialog } from './components/dialogs/transfer-dialog'
 import { RechargeFormCard } from './components/recharge-form-card'
 import { SubscriptionPlansCard } from './components/subscription-plans-card'
@@ -67,7 +66,6 @@ export function Wallet(props: WalletProps) {
   const [selectedPaymentMethod, setSelectedPaymentMethod] =
     useState<PaymentMethod>()
   const [paymentLoading, setPaymentLoading] = useState<string | null>(null)
-  const [confirmDialogOpen, setConfirmDialogOpen] = useState(false)
   const [transferDialogOpen, setTransferDialogOpen] = useState(false)
   const [billingDialogOpen, setBillingDialogOpen] = useState(false)
   const [redemptionCode, setRedemptionCode] = useState('')
@@ -168,38 +166,27 @@ export function Wallet(props: WalletProps) {
     }, 400)
   }, [calculatePaymentAmount, getCurrentPaymentType])
 
-  // Handle payment method selection
+  // Handle payment method selection — goes directly to payment without confirmation
   const handlePaymentMethodSelect = async (method: PaymentMethod) => {
     setSelectedPaymentMethod(method)
     setPaymentLoading(method.type)
 
     try {
-      // Validate minimum topup
       const minTopup = getMinTopupAmount(topupInfo)
-      if (topupAmount < minTopup) {
-        return
-      }
+      if (topupAmount < minTopup) return
 
-      // Calculate payment amount and show confirmation dialog
       await calculatePaymentAmount(topupAmount, method.type)
-      setConfirmDialogOpen(true)
+
+      const isPancake = isWaffoPancakePayment(method.type)
+      const success = isPancake
+        ? await processWaffoPancakePayment(topupAmount)
+        : await processPayment(topupAmount, method.type)
+
+      if (success) {
+        await fetchUser()
+      }
     } finally {
       setPaymentLoading(null)
-    }
-  }
-
-  // Handle payment confirmation
-  const handlePaymentConfirm = async () => {
-    if (!selectedPaymentMethod) return
-
-    const isPancake = isWaffoPancakePayment(selectedPaymentMethod.type)
-    const success = isPancake
-      ? await processWaffoPancakePayment(topupAmount)
-      : await processPayment(topupAmount, selectedPaymentMethod.type)
-
-    if (success) {
-      setConfirmDialogOpen(false)
-      await fetchUser()
     }
   }
 
@@ -368,31 +355,6 @@ export function Wallet(props: WalletProps) {
         </SectionPageLayout.Content>
       </SectionPageLayout>
 
-      <PaymentConfirmDialog
-        open={confirmDialogOpen}
-        onOpenChange={setConfirmDialogOpen}
-        onConfirm={handlePaymentConfirm}
-        topupAmount={topupAmount}
-        paymentAmount={paymentAmount}
-        paymentMethod={selectedPaymentMethod}
-        calculating={calculating}
-        processing={processing || pancakeProcessing}
-        discountRate={getDiscountRate()}
-        usdExchangeRate={
-          (currency?.customCurrencyExchangeRate ?? 0) > 1
-            ? currency!.customCurrencyExchangeRate!
-            : currency?.usdExchangeRate || 1
-        }
-        displaySymbol={
-          ((currency?.customCurrencyExchangeRate ?? 0) > 1 ||
-            (currency?.usdExchangeRate ?? 1) > 1)
-            ? (currency?.customCurrencySymbol &&
-               currency.customCurrencySymbol !== '¤'
-                ? currency.customCurrencySymbol
-                : '₽')
-            : '$'
-        }
-      />
 
       <TransferDialog
         open={transferDialogOpen}

@@ -18,7 +18,6 @@ import { getDefaultPaymentType, getMinTopupAmount, isWaffoPancakePayment, getAmo
 import { DEFAULT_DISCOUNT_RATE } from '../constants'
 import type { PaymentMethod, PresetAmount, CreemProduct } from '../types'
 import { RechargeFormCard } from './recharge-form-card'
-import { PaymentConfirmDialog } from './dialogs/payment-confirm-dialog'
 import { BillingHistoryDialog } from './dialogs/billing-history-dialog'
 import { CreemConfirmDialog } from './dialogs/creem-confirm-dialog'
 
@@ -46,7 +45,6 @@ function RechargeContent() {
   const [selectedPreset, setSelectedPreset] = useState<number | null>(null)
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<PaymentMethod>()
   const [paymentLoading, setPaymentLoading] = useState<string | null>(null)
-  const [confirmDialogOpen, setConfirmDialogOpen] = useState(false)
   const [billingDialogOpen, setBillingDialogOpen] = useState(false)
   const [redemptionCode, setRedemptionCode] = useState('')
   const [creemDialogOpen, setCreemDialogOpen] = useState(false)
@@ -93,19 +91,14 @@ function RechargeContent() {
       const minTopup = getMinTopupAmount(topupInfo)
       if (topupAmount < minTopup) return
       await calculatePaymentAmount(topupAmount, method.type)
-      setConfirmDialogOpen(true)
+
+      const isPancake = isWaffoPancakePayment(method.type)
+      await (isPancake
+        ? processWaffoPancakePayment(topupAmount)
+        : processPayment(topupAmount, method.type))
     } finally {
       setPaymentLoading(null)
     }
-  }
-
-  const handlePaymentConfirm = async () => {
-    if (!selectedPaymentMethod) return
-    const isPancake = isWaffoPancakePayment(selectedPaymentMethod.type)
-    const success = isPancake
-      ? await processWaffoPancakePayment(topupAmount)
-      : await processPayment(topupAmount, selectedPaymentMethod.type)
-    if (success) setConfirmDialogOpen(false)
   }
 
   const handleRedeem = async () => {
@@ -197,18 +190,6 @@ function RechargeContent() {
         discountRate={getDiscountRate()}
       />
 
-      <PaymentConfirmDialog
-        open={confirmDialogOpen}
-        onOpenChange={setConfirmDialogOpen}
-        onConfirm={handlePaymentConfirm}
-        topupAmount={topupAmount}
-        paymentAmount={paymentAmount}
-        paymentMethod={selectedPaymentMethod}
-        calculating={calculating}
-        processing={processing || pancakeProcessing}
-        discountRate={getDiscountRate()}
-        usdExchangeRate={effectiveUsdExchangeRate}
-      />
 
       <BillingHistoryDialog
         open={billingDialogOpen}
