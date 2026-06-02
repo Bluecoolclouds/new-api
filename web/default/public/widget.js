@@ -125,160 +125,189 @@ Base URL для API: https://apinet.cloud/v1
   const ICON_BOT   = `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a2 2 0 012 2c0 .74-.4 1.38-1 1.72V7h1a7 7 0 017 7H3a7 7 0 017-7h1V5.72A2 2 0 0112 2zM7.5 14a1.5 1.5 0 100 3 1.5 1.5 0 000-3zm9 0a1.5 1.5 0 100 3 1.5 1.5 0 000-3zm-4.5 3a1 1 0 100 2 1 1 0 000-2zm-5 3h12l-1 2H7l-1-2z"/></svg>`;
 
   const STYLES = `
-    #apinet-widget-btn {
-      position: fixed; bottom: 24px; right: 24px; z-index: 999999;
-      width: 56px; height: 56px; border-radius: 50%;
-      background: linear-gradient(135deg, #2563eb, #1d4ed8);
-      box-shadow: 0 4px 20px rgba(37,99,235,0.45);
-      border: none; cursor: pointer; display: flex; align-items: center; justify-content: center;
-      transition: transform 0.2s, box-shadow 0.2s;
-    }
-    #apinet-widget-btn:hover { transform: scale(1.08); box-shadow: 0 6px 26px rgba(37,99,235,0.55); }
-    #apinet-widget-btn svg { width: 26px; height: 26px; transition: opacity 0.2s; color: white !important; fill: white !important; }
-    #apinet-widget-badge {
-      position: absolute; top: -4px; right: -4px;
-      min-width: 20px; height: 20px; border-radius: 10px;
-      background: #ef4444; color: white; font-size: 11px; font-weight: 700;
-      display: flex; align-items: center; justify-content: center;
-      padding: 0 5px; border: 2px solid white;
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-      pointer-events: none; animation: aw-badge-pop 0.25s cubic-bezier(0.34,1.56,0.64,1);
-    }
     #apinet-widget-btn-wrap {
-      position: fixed; bottom: 24px; right: 24px; z-index: 999999;
-      width: 56px; height: 56px;
+      position: fixed !important; bottom: 24px !important; right: 24px !important;
+      z-index: 999999 !important; width: 56px !important; height: 56px !important;
+    }
+    #apinet-widget-btn {
+      position: absolute !important; inset: 0 !important;
+      width: 100% !important; height: 100% !important; border-radius: 50% !important;
+      background: linear-gradient(135deg, #2563eb, #1d4ed8) !important;
+      box-shadow: 0 4px 20px rgba(37,99,235,0.45) !important;
+      border: none !important; cursor: pointer !important;
+      display: flex !important; align-items: center !important; justify-content: center !important;
+      transition: transform 0.2s, box-shadow 0.2s !important;
+      color: white !important;
+    }
+    #apinet-widget-btn:hover { transform: scale(1.08) !important; box-shadow: 0 6px 26px rgba(37,99,235,0.55) !important; }
+    #apinet-widget-btn svg { width: 26px !important; height: 26px !important; color: white !important; fill: white !important; }
+    #apinet-widget-badge {
+      position: absolute !important; top: -4px !important; right: -4px !important;
+      min-width: 20px !important; height: 20px !important; border-radius: 10px !important;
+      background: #ef4444 !important; color: white !important; font-size: 11px !important;
+      font-weight: 700 !important; display: flex !important; align-items: center !important;
+      justify-content: center !important; padding: 0 5px !important; border: 2px solid white !important;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif !important;
+      pointer-events: none !important; animation: aw-badge-pop 0.25s cubic-bezier(0.34,1.56,0.64,1) !important;
+      box-sizing: border-box !important;
     }
     @keyframes aw-badge-pop { from { transform: scale(0); } to { transform: scale(1); } }
     #apinet-widget-panel {
-      position: fixed; bottom: 92px; right: 24px; z-index: 999998;
-      width: 360px; max-width: calc(100vw - 32px);
-      height: 560px; max-height: calc(100vh - 120px);
-      background: #ffffff; border-radius: 16px;
-      box-shadow: 0 8px 40px rgba(0,0,0,0.18);
-      display: flex; flex-direction: column; overflow: hidden;
-      opacity: 0; transform: translateY(16px) scale(0.97); pointer-events: none;
-      transition: opacity 0.22s ease, transform 0.22s ease;
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-      color-scheme: light; color: #1e293b;
+      position: fixed !important; bottom: 92px !important; right: 24px !important;
+      z-index: 999998 !important; width: 360px !important;
+      max-width: calc(100vw - 32px) !important;
+      height: 560px !important; max-height: calc(100vh - 120px) !important;
+      background: #ffffff !important; border-radius: 16px !important;
+      box-shadow: 0 8px 40px rgba(0,0,0,0.18) !important;
+      display: flex !important; flex-direction: column !important; overflow: hidden !important;
+      opacity: 0 !important; transform: translateY(16px) scale(0.97) !important;
+      pointer-events: none !important;
+      transition: opacity 0.22s ease, transform 0.22s ease !important;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif !important;
+      color: #1e293b !important;
     }
     #apinet-widget-panel *, #apinet-widget-panel *::before, #apinet-widget-panel *::after {
-      box-sizing: border-box;
+      box-sizing: border-box !important;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif !important;
     }
-    #apinet-widget-panel.open { opacity: 1; transform: translateY(0) scale(1); pointer-events: all; }
+    #apinet-widget-panel.open {
+      opacity: 1 !important; transform: translateY(0) scale(1) !important;
+      pointer-events: all !important;
+    }
     .aw-header {
-      background: linear-gradient(135deg, #2563eb, #1d4ed8);
-      padding: 12px 14px 0; display: flex; flex-direction: column; flex-shrink: 0;
+      background: linear-gradient(135deg, #2563eb, #1d4ed8) !important;
+      padding: 12px 14px 0 !important; display: flex !important;
+      flex-direction: column !important; flex-shrink: 0 !important;
     }
-    .aw-header-top { display: flex; align-items: center; gap: 10px; padding-bottom: 10px; }
-    .aw-header-icon { width: 32px; height: 32px; background: rgba(255,255,255,0.2); border-radius: 50%;
-      display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
-    .aw-header-icon svg { width: 16px; height: 16px; }
-    .aw-header-text { flex: 1; }
-    .aw-header-title { color: white; font-weight: 600; font-size: 14px; line-height: 1.2; }
-    .aw-header-sub { color: rgba(255,255,255,0.75); font-size: 11px; margin-top: 1px; }
-    .aw-close { background: none; border: none; cursor: pointer; padding: 4px; color: rgba(255,255,255,0.8);
-      border-radius: 6px; display: flex; transition: background 0.15s; }
-    .aw-close:hover { background: rgba(255,255,255,0.15); color: white; }
-    .aw-close svg { width: 18px; height: 18px; }
+    .aw-header-top { display: flex !important; align-items: center !important; gap: 10px !important; padding-bottom: 10px !important; }
+    .aw-header-icon {
+      width: 32px !important; height: 32px !important;
+      background: rgba(255,255,255,0.2) !important; border-radius: 50% !important;
+      display: flex !important; align-items: center !important;
+      justify-content: center !important; flex-shrink: 0 !important;
+    }
+    .aw-header-icon svg { width: 16px !important; height: 16px !important; fill: white !important; }
+    .aw-header-text { flex: 1 !important; }
+    .aw-header-title { color: white !important; font-weight: 600 !important; font-size: 14px !important; line-height: 1.2 !important; }
+    .aw-header-sub { color: rgba(255,255,255,0.75) !important; font-size: 11px !important; margin-top: 1px !important; }
+    .aw-close {
+      background: transparent !important; border: none !important; cursor: pointer !important;
+      padding: 4px !important; color: rgba(255,255,255,0.8) !important;
+      border-radius: 6px !important; display: flex !important; transition: background 0.15s !important;
+    }
+    .aw-close:hover { background: rgba(255,255,255,0.15) !important; color: white !important; }
+    .aw-close svg { width: 18px !important; height: 18px !important; fill: currentColor !important; }
     .aw-tg-bar {
-      background: rgba(255,255,255,0.12); border-radius: 8px; margin: 0 0 8px;
-      display: flex; align-items: center; gap: 7px;
-      padding: 7px 10px; text-decoration: none; cursor: pointer;
-      transition: background 0.15s; border: 1px solid rgba(255,255,255,0.2);
+      background: rgba(255,255,255,0.12) !important; border-radius: 8px !important; margin: 0 0 8px !important;
+      display: flex !important; align-items: center !important; gap: 7px !important;
+      padding: 7px 10px !important; text-decoration: none !important; cursor: pointer !important;
+      transition: background 0.15s !important; border: 1px solid rgba(255,255,255,0.2) !important;
     }
-    .aw-tg-bar:hover { background: rgba(255,255,255,0.2); }
-    .aw-tg-bar svg { width: 16px; height: 16px; color: white; flex-shrink: 0; }
-    .aw-tg-bar span { color: white; font-size: 12.5px; font-weight: 500; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
+    .aw-tg-bar:hover { background: rgba(255,255,255,0.2) !important; }
+    .aw-tg-bar svg { width: 16px !important; height: 16px !important; fill: white !important; flex-shrink: 0 !important; }
+    .aw-tg-bar span { color: white !important; font-size: 12.5px !important; font-weight: 500 !important; }
     .aw-report-bar {
-      background: rgba(255,255,255,0.10); border-radius: 8px; margin: 0 0 10px;
-      display: flex; align-items: center; gap: 7px;
-      padding: 6px 10px; cursor: pointer;
-      transition: background 0.15s; border: 1px solid rgba(255,255,255,0.15);
-      color: rgba(255,255,255,0.9); font-size: 12px; font-weight: 500;
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: rgba(255,255,255,0.10) !important; border-radius: 8px !important;
+      margin: 0 0 10px !important; display: flex !important; align-items: center !important;
+      gap: 7px !important; padding: 6px 10px !important; cursor: pointer !important;
+      transition: background 0.15s !important; border: 1px solid rgba(255,255,255,0.15) !important;
+      color: rgba(255,255,255,0.9) !important; font-size: 12px !important; font-weight: 500 !important;
+      width: 100% !important; text-align: left !important;
     }
-    .aw-report-bar:hover { background: rgba(255,255,255,0.18); }
+    .aw-report-bar:hover { background: rgba(255,255,255,0.18) !important; }
     .aw-chips {
-      padding: 8px 12px 4px; display: flex; flex-wrap: wrap; gap: 6px; flex-shrink: 0;
-      border-bottom: 1px solid #f1f5f9;
+      padding: 8px 12px 4px !important; display: flex !important; flex-wrap: wrap !important;
+      gap: 6px !important; flex-shrink: 0 !important;
+      border-bottom: 1px solid #f1f5f9 !important; background: #ffffff !important;
     }
     .aw-chip {
-      background: #f1f5f9; border: 1px solid #e2e8f0; border-radius: 20px;
-      padding: 4px 11px; font-size: 12px; color: #475569; cursor: pointer;
-      transition: background 0.15s, color 0.15s, border-color 0.15s;
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-      white-space: nowrap;
+      background: #f1f5f9 !important; border: 1px solid #e2e8f0 !important;
+      border-radius: 20px !important; padding: 4px 11px !important;
+      font-size: 12px !important; color: #475569 !important; cursor: pointer !important;
+      transition: background 0.15s, color 0.15s, border-color 0.15s !important;
+      white-space: nowrap !important;
     }
-    .aw-chip:hover { background: #2563eb; color: white; border-color: #2563eb; }
+    .aw-chip:hover { background: #2563eb !important; color: white !important; border-color: #2563eb !important; }
     .aw-messages {
-      flex: 1; overflow-y: auto; padding: 14px 12px; display: flex; flex-direction: column; gap: 10px;
-      scroll-behavior: smooth; background: #ffffff; color: #1e293b;
+      flex: 1 !important; overflow-y: auto !important; padding: 14px 12px !important;
+      display: flex !important; flex-direction: column !important; gap: 10px !important;
+      scroll-behavior: smooth !important; background: #ffffff !important; color: #1e293b !important;
     }
     .aw-messages::-webkit-scrollbar { width: 4px; }
     .aw-messages::-webkit-scrollbar-track { background: transparent; }
     .aw-messages::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 4px; }
-    .aw-msg { max-width: 88%; display: flex; flex-direction: column; gap: 3px; }
-    .aw-msg.user   { align-self: flex-end; }
-    .aw-msg.bot    { align-self: flex-start; }
-    .aw-msg.admin  { align-self: flex-start; }
-    .aw-msg-label  { font-size: 10px; font-weight: 600; color: #64748b; padding: 0 2px; letter-spacing: 0.03em; }
+    .aw-msg { max-width: 88% !important; display: flex !important; flex-direction: column !important; gap: 3px !important; }
+    .aw-msg.user   { align-self: flex-end !important; }
+    .aw-msg.bot    { align-self: flex-start !important; }
+    .aw-msg.admin  { align-self: flex-start !important; }
+    .aw-msg-label  { font-size: 10px !important; font-weight: 600 !important; color: #64748b !important; padding: 0 2px !important; letter-spacing: 0.03em !important; }
     .aw-bubble {
-      padding: 9px 13px; border-radius: 14px; font-size: 13.5px; line-height: 1.5;
-      word-break: break-word; white-space: pre-wrap;
+      padding: 9px 13px !important; border-radius: 14px !important;
+      font-size: 13.5px !important; line-height: 1.5 !important;
+      word-break: break-word !important; white-space: pre-wrap !important;
     }
-    .aw-msg.user  .aw-bubble { background: #2563eb; color: white; border-bottom-right-radius: 4px; }
-    .aw-msg.bot   .aw-bubble { background: #f1f5f9; color: #1e293b; border-bottom-left-radius: 4px; }
-    .aw-msg.admin .aw-bubble { background: #ecfdf5; color: #064e3b; border-bottom-left-radius: 4px;
-      border: 1px solid #a7f3d0; }
-    .aw-bubble a { color: #2563eb; }
+    .aw-msg.user  .aw-bubble { background: #2563eb !important; color: white !important; border-bottom-right-radius: 4px !important; }
+    .aw-msg.bot   .aw-bubble { background: #f1f5f9 !important; color: #1e293b !important; border-bottom-left-radius: 4px !important; }
+    .aw-msg.admin .aw-bubble { background: #ecfdf5 !important; color: #064e3b !important; border-bottom-left-radius: 4px !important; border: 1px solid #a7f3d0 !important; }
+    .aw-bubble a { color: #2563eb !important; }
     .aw-msg.bot .aw-bubble code, .aw-msg.admin .aw-bubble code {
-      background: #e2e8f0; padding: 1px 5px; border-radius: 4px; font-size: 12px; font-family: monospace;
+      background: #e2e8f0 !important; padding: 1px 5px !important; border-radius: 4px !important;
+      font-size: 12px !important; font-family: monospace !important; color: #1e293b !important;
     }
     .aw-msg.bot .aw-bubble pre, .aw-msg.admin .aw-bubble pre {
-      background: #1e293b; color: #e2e8f0; padding: 10px 12px; border-radius: 8px; overflow-x: auto;
-      font-size: 12px; margin: 6px 0; white-space: pre;
+      background: #1e293b !important; color: #e2e8f0 !important; padding: 10px 12px !important;
+      border-radius: 8px !important; overflow-x: auto !important;
+      font-size: 12px !important; margin: 6px 0 !important; white-space: pre !important;
     }
-    .aw-msg.bot .aw-bubble pre code, .aw-msg.admin .aw-bubble pre code { background: none; padding: 0; color: inherit; }
-    .aw-rating {
-      display: flex; align-items: center; gap: 6px; margin-top: 4px; padding: 0 2px;
+    .aw-msg.bot .aw-bubble pre code, .aw-msg.admin .aw-bubble pre code {
+      background: transparent !important; padding: 0 !important; color: #e2e8f0 !important;
     }
+    .aw-rating { display: flex !important; align-items: center !important; gap: 6px !important; margin-top: 4px !important; padding: 0 2px !important; }
     .aw-rate-btn {
-      background: none; border: 1px solid #e2e8f0; border-radius: 6px;
-      padding: 2px 8px; font-size: 12px; cursor: pointer; color: #64748b;
-      transition: background 0.15s, border-color 0.15s, color 0.15s;
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: transparent !important; border: 1px solid #e2e8f0 !important;
+      border-radius: 6px !important; padding: 2px 8px !important; font-size: 12px !important;
+      cursor: pointer !important; color: #64748b !important;
+      transition: background 0.15s, border-color 0.15s, color 0.15s !important;
     }
-    .aw-rate-btn:hover { background: #f1f5f9; border-color: #cbd5e1; color: #1e293b; }
-    .aw-rate-btn.good:hover { background: #dcfce7; border-color: #86efac; color: #15803d; }
-    .aw-rate-btn.bad:hover  { background: #fee2e2; border-color: #fca5a5; color: #b91c1c; }
-    .aw-rate-thanks { font-size: 11px; color: #94a3b8; font-style: italic; }
-    .aw-typing { display: flex; align-items: center; gap: 4px; padding: 10px 13px; }
-    .aw-typing span { width: 7px; height: 7px; border-radius: 50%; background: #94a3b8;
-      animation: aw-bounce 1.2s infinite; }
-    .aw-typing span:nth-child(2) { animation-delay: 0.2s; }
-    .aw-typing span:nth-child(3) { animation-delay: 0.4s; }
+    .aw-rate-btn:hover { background: #f1f5f9 !important; border-color: #cbd5e1 !important; color: #1e293b !important; }
+    .aw-rate-btn.good:hover { background: #dcfce7 !important; border-color: #86efac !important; color: #15803d !important; }
+    .aw-rate-btn.bad:hover  { background: #fee2e2 !important; border-color: #fca5a5 !important; color: #b91c1c !important; }
+    .aw-rate-thanks { font-size: 11px !important; color: #94a3b8 !important; font-style: italic !important; }
+    .aw-typing { display: flex !important; align-items: center !important; gap: 4px !important; padding: 10px 13px !important; background: #f1f5f9 !important; border-radius: 14px !important; }
+    .aw-typing span { width: 7px !important; height: 7px !important; border-radius: 50% !important; background: #94a3b8 !important; animation: aw-bounce 1.2s infinite !important; display: block !important; }
+    .aw-typing span:nth-child(2) { animation-delay: 0.2s !important; }
+    .aw-typing span:nth-child(3) { animation-delay: 0.4s !important; }
     @keyframes aw-bounce { 0%,80%,100%{transform:translateY(0)} 40%{transform:translateY(-6px)} }
-    .aw-footer { padding: 10px 12px; border-top: 1px solid #e2e8f0; display: flex; gap: 8px; flex-shrink: 0; background: #ffffff; color: #1e293b; }
+    .aw-footer {
+      padding: 10px 12px !important; border-top: 1px solid #e2e8f0 !important;
+      display: flex !important; gap: 8px !important; flex-shrink: 0 !important;
+      background: #ffffff !important;
+    }
     .aw-input {
-      flex: 1; border: 1.5px solid #e2e8f0; border-radius: 10px; padding: 9px 12px;
-      font-size: 13.5px; outline: none; resize: none; font-family: inherit;
-      transition: border-color 0.15s; line-height: 1.4; max-height: 90px; overflow-y: auto; color: #1e293b;
-      background: #fff;
+      flex: 1 !important; border: 1.5px solid #e2e8f0 !important; border-radius: 10px !important;
+      padding: 9px 12px !important; font-size: 13.5px !important; outline: none !important;
+      resize: none !important; transition: border-color 0.15s !important;
+      line-height: 1.4 !important; max-height: 90px !important; overflow-y: auto !important;
+      color: #1e293b !important; background: #ffffff !important;
     }
-    .aw-input:focus { border-color: #2563eb; }
-    .aw-input::placeholder { color: #94a3b8; }
+    .aw-input:focus { border-color: #2563eb !important; }
+    .aw-input::placeholder { color: #94a3b8 !important; }
     .aw-send {
-      width: 38px; height: 38px; border-radius: 10px; background: #2563eb;
-      border: none; cursor: pointer; display: flex; align-items: center; justify-content: center;
-      flex-shrink: 0; align-self: flex-end; transition: background 0.15s, transform 0.1s;
+      width: 38px !important; height: 38px !important; border-radius: 10px !important;
+      background: #2563eb !important; border: none !important; cursor: pointer !important;
+      display: flex !important; align-items: center !important; justify-content: center !important;
+      flex-shrink: 0 !important; align-self: flex-end !important;
+      transition: background 0.15s, transform 0.1s !important;
+      color: white !important;
     }
-    .aw-send:hover { background: #1d4ed8; }
-    .aw-send:active { transform: scale(0.95); }
-    .aw-send:disabled { background: #93c5fd; cursor: not-allowed; }
-    .aw-send svg { width: 17px; height: 17px; }
+    .aw-send:hover { background: #1d4ed8 !important; }
+    .aw-send:active { transform: scale(0.95) !important; }
+    .aw-send:disabled { background: #93c5fd !important; cursor: not-allowed !important; }
+    .aw-send svg { width: 17px !important; height: 17px !important; fill: white !important; }
     .aw-powered {
-      font-size: 10px; color: #cbd5e1; text-align: center; padding: 0 0 7px;
-      flex-shrink: 0; letter-spacing: 0.01em; background: #ffffff;
+      font-size: 10px !important; color: #cbd5e1 !important; text-align: center !important;
+      padding: 0 0 7px !important; flex-shrink: 0 !important;
+      letter-spacing: 0.01em !important; background: #ffffff !important;
     }
   `;
 
