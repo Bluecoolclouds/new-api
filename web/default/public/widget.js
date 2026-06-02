@@ -51,6 +51,11 @@
       rateBad: 'Не помогло',
       rateThanks: 'Спасибо за оценку!',
       unread: 'непрочитанных',
+      escalateCard: '👤 Подключаем оператора',
+      escalateSub: 'Живой специалист ответит в ближайшее время',
+      escalateBtn: 'Написать в Telegram',
+      escalateTgMsg: 'Здравствуйте! Мне нужна помощь оператора.\n\nИстория чата:\n',
+      reportTgMsg: 'Здравствуйте! Сообщаю о проблеме.\n\nИстория чата:\n',
     },
     en: {
       title: 'APINET Support',
@@ -73,6 +78,11 @@
       rateBad: 'Not helpful',
       rateThanks: 'Thanks for your feedback!',
       unread: 'unread',
+      escalateCard: '👤 Connecting you to an operator',
+      escalateSub: 'A human specialist will reply shortly',
+      escalateBtn: 'Open Telegram',
+      escalateTgMsg: 'Hello! I need help from a human operator.\n\nChat history:\n',
+      reportTgMsg: 'Hello! I want to report an issue.\n\nChat history:\n',
     },
   };
   const t = T[LANG];
@@ -94,7 +104,7 @@ Main topics:
 API Base URL: https://apinet.cloud/v1
 Tokens are created at: https://apinet.cloud/keys
 
-If you cannot help or the issue requires account access, direct the user to Telegram: ${TG_LINK}
+ESCALATION RULE: If the user's problem requires manual account access (balance corrections, bans, billing disputes, bugs), or the user explicitly asks for a human/operator, start your reply with the exact tag [[OPERATOR]] on its own line, then give a short message saying a human operator will assist them shortly.
 
 Never invent features that don't exist. Be honest when you don't know.`
     : `Ты агент технической поддержки сервиса APINET.CLOUD — LLM-шлюза, который предоставляет доступ к AI-моделям (OpenAI, Claude, Gemini, DeepSeek и др.) через единый OpenAI-совместимый API.
@@ -113,7 +123,7 @@ Never invent features that don't exist. Be honest when you don't know.`
 Base URL для API: https://apinet.cloud/v1
 Токены создаются на странице: https://apinet.cloud/keys
 
-Если не можешь помочь или проблема требует доступа к аккаунту — отправь пользователя в Telegram: ${TG_LINK}
+ПРАВИЛО ЭСКАЛАЦИИ: Если проблема пользователя требует ручного доступа к аккаунту (корректировка баланса, баны, споры по оплате, ошибки платформы), или пользователь явно просит живого оператора/человека — начни ответ с тега [[OPERATOR]] на отдельной строке, затем напиши короткое сообщение что живой оператор скоро поможет.
 
 Никогда не выдумывай функции которых нет. Если не знаешь — скажи честно.`
   );
@@ -309,6 +319,29 @@ Base URL для API: https://apinet.cloud/v1
       padding: 0 0 7px !important; flex-shrink: 0 !important;
       letter-spacing: 0.01em !important; background: #ffffff !important;
     }
+    .aw-escalate {
+      margin: 4px 0 0 !important; border-radius: 12px !important;
+      background: linear-gradient(135deg, #1e40af, #1d4ed8) !important;
+      padding: 12px 14px !important; display: flex !important;
+      flex-direction: column !important; gap: 8px !important;
+    }
+    .aw-escalate-title {
+      color: white !important; font-weight: 700 !important;
+      font-size: 13px !important; line-height: 1.3 !important;
+    }
+    .aw-escalate-sub {
+      color: rgba(255,255,255,0.8) !important; font-size: 11.5px !important;
+    }
+    .aw-escalate-btn {
+      display: inline-flex !important; align-items: center !important; gap: 6px !important;
+      background: rgba(255,255,255,0.18) !important; border: 1px solid rgba(255,255,255,0.3) !important;
+      border-radius: 8px !important; padding: 6px 12px !important;
+      color: white !important; font-size: 12.5px !important; font-weight: 600 !important;
+      cursor: pointer !important; text-decoration: none !important;
+      transition: background 0.15s !important; width: fit-content !important;
+    }
+    .aw-escalate-btn:hover { background: rgba(255,255,255,0.28) !important; }
+    .aw-escalate-btn svg { width: 14px !important; height: 14px !important; fill: white !important; flex-shrink: 0 !important; }
   `;
 
   function escapeHtml(s) {
@@ -500,6 +533,32 @@ Base URL для API: https://apinet.cloud/v1
       return bubble;
     }
 
+    // ── Build chat history text for Telegram ──────────────────────────────────
+    function buildHistoryText() {
+      return history.map(m => (m.role === 'user' ? '👤 ' : '🤖 ') + m.content).join('\n\n');
+    }
+
+    function tgEscalateUrl(msgPrefix) {
+      const text = msgPrefix + buildHistoryText();
+      const tgUsername = TG_LINK.replace('https://t.me/', '');
+      return `https://t.me/${tgUsername}?text=${encodeURIComponent(text.slice(0, 4000))}`;
+    }
+
+    // ── Escalation card ───────────────────────────────────────────────────────
+    function addEscalation(parentEl) {
+      const card = document.createElement('div');
+      card.className = 'aw-escalate';
+      const tgUrl = tgEscalateUrl(t.escalateTgMsg);
+      card.innerHTML = `
+        <div class="aw-escalate-title">${t.escalateCard}</div>
+        <div class="aw-escalate-sub">${t.escalateSub}</div>
+        <a class="aw-escalate-btn" href="${tgUrl}" target="_blank" rel="noopener">
+          ${ICON_TG}<span>${t.escalateBtn}</span>
+        </a>`;
+      parentEl.appendChild(card);
+      scrollBottom();
+    }
+
     function addTyping() {
       const msg = document.createElement('div');
       msg.className = 'aw-msg bot'; msg.id = 'aw-typing';
@@ -513,12 +572,9 @@ Base URL для API: https://apinet.cloud/v1
 
     // ── Report button ─────────────────────────────────────────────────────────
     reportBtn.addEventListener('click', function () {
-      inputEl.value = t.reportTemplate;
-      inputEl.style.height = 'auto';
-      inputEl.style.height = Math.min(inputEl.scrollHeight, 90) + 'px';
-      inputEl.focus();
-      // Put cursor at end
-      inputEl.selectionStart = inputEl.selectionEnd = inputEl.value.length;
+      // Open Telegram with pre-filled message containing chat history
+      const url = tgEscalateUrl(t.reportTgMsg);
+      window.open(url, '_blank', 'noopener');
     });
 
     // ── Bot mode: poll for admin replies ─────────────────────────────────────
@@ -640,8 +696,17 @@ Base URL для API: https://apinet.cloud/v1
           }
         }
         if (fullText) {
-          history.push({ role: 'assistant', content: fullText });
-          addRating(msgEl);
+          // Detect [[OPERATOR]] escalation trigger
+          const ESCALATE_TAG = '[[OPERATOR]]';
+          if (fullText.includes(ESCALATE_TAG)) {
+            const cleaned = fullText.replace(ESCALATE_TAG, '').replace(/^\n+/, '').trim();
+            bubble.innerHTML = renderMarkdown(cleaned);
+            history.push({ role: 'assistant', content: cleaned });
+            addEscalation(msgEl);
+          } else {
+            history.push({ role: 'assistant', content: fullText });
+            addRating(msgEl);
+          }
         }
       } catch {
         removeTyping();
