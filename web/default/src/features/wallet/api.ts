@@ -363,7 +363,7 @@ export async function adminGetWithdrawals(params: {
   pageSize?: number
   status?: string
 }): Promise<ApiResponse<WithdrawalRecord[]> & { total?: number }> {
-  const res = await api.get('/api/withdrawal/admin', { params })
+  const res = await api.get('/api/user/withdrawal/admin', { params })
   return res.data
 }
 
@@ -375,6 +375,6 @@ export async function adminUpdateWithdrawal(
   status: 'approved' | 'rejected',
   note?: string
 ): Promise<ApiResponse<WithdrawalRecord>> {
-  const res = await api.put(`/api/withdrawal/admin/${id}`, { status, note: note || '' })
+  const res = await api.put(`/api/user/withdrawal/admin/${id}`, { status, note: note || '' })
   return res.data
 }
