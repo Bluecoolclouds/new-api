@@ -160,14 +160,19 @@ Base URL для API: https://apinet.cloud/v1
     #apinet-widget-btn:hover { transform: scale(1.08) !important; box-shadow: 0 6px 26px rgba(37,99,235,0.55) !important; }
     #apinet-widget-btn svg { width: 26px !important; height: 26px !important; color: white !important; fill: white !important; }
     #apinet-widget-badge {
+      display: none !important;
       position: absolute !important; top: -4px !important; right: -4px !important;
       min-width: 20px !important; height: 20px !important; border-radius: 10px !important;
       background: #ef4444 !important; color: white !important; font-size: 11px !important;
-      font-weight: 700 !important; display: flex !important; align-items: center !important;
+      font-weight: 700 !important; align-items: center !important;
       justify-content: center !important; padding: 0 5px !important; border: 2px solid white !important;
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif !important;
-      pointer-events: none !important; animation: aw-badge-pop 0.25s cubic-bezier(0.34,1.56,0.64,1) !important;
+      pointer-events: none !important;
       box-sizing: border-box !important;
+    }
+    #apinet-widget-badge.visible {
+      display: flex !important;
+      animation: aw-badge-pop 0.25s cubic-bezier(0.34,1.56,0.64,1) !important;
     }
     @keyframes aw-badge-pop { from { transform: scale(0); } to { transform: scale(1); } }
     #apinet-widget-panel {
@@ -404,7 +409,6 @@ Base URL для API: https://apinet.cloud/v1
 
     const badge = document.createElement('div');
     badge.id = 'apinet-widget-badge';
-    badge.style.display = 'none';
     btnWrap.appendChild(badge);
 
     const panel = document.createElement('div');
@@ -452,12 +456,12 @@ Base URL для API: https://apinet.cloud/v1
       if (isOpen) return;
       unreadCount++;
       badge.textContent = unreadCount > 9 ? '9+' : String(unreadCount);
-      badge.style.display = 'flex';
+      badge.classList.add('visible');
     }
 
     function clearUnread() {
       unreadCount = 0;
-      badge.style.display = 'none';
+      badge.classList.remove('visible');
     }
 
 
