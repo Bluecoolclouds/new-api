@@ -181,12 +181,6 @@ func RequestPallyPay(c *gin.Context) {
                 return
         }
 
-        minTopup := getPallyMinTopup()
-        if req.Amount < minTopup {
-                c.JSON(http.StatusOK, gin.H{"message": "error", "data": fmt.Sprintf("最低充值 %d", minTopup)})
-                return
-        }
-
         id := c.GetInt("id")
         user, _ := model.GetUserById(id, false)
 
@@ -194,6 +188,11 @@ func RequestPallyPay(c *gin.Context) {
         tradeNo := "pl_" + common.Sha1([]byte(ref))
 
         money := getPallyPayMoney(req.Amount, user.Group)
+        minTopup := getPallyMinTopup()
+        if money < float64(minTopup) {
+                c.JSON(http.StatusOK, gin.H{"message": "error", "data": fmt.Sprintf("Минимальная сумма пополнения %d рублей", minTopup)})
+                return
+        }
 
         topUp := &model.TopUp{
                 UserId:          id,

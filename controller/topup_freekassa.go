@@ -233,10 +233,6 @@ func RequestFreeKassaAmount(c *gin.Context) {
                 c.JSON(http.StatusOK, gin.H{"message": "error", "data": "参数错误"})
                 return
         }
-        if req.Amount < getFreeKassaMinTopup() {
-                c.JSON(http.StatusOK, gin.H{"message": "error", "data": fmt.Sprintf("充值数量不能小于 %d", getFreeKassaMinTopup())})
-                return
-        }
         id := c.GetInt("id")
         group, err := model.GetUserGroup(id, true)
         if err != nil {
@@ -272,11 +268,6 @@ func RequestFreeKassaPay(c *gin.Context) {
                 c.JSON(http.StatusOK, gin.H{"message": "error", "data": "参数错误"})
                 return
         }
-        if req.Amount < getFreeKassaMinTopup() {
-                c.JSON(http.StatusOK, gin.H{"message": "error", "data": fmt.Sprintf("充值数量不能小于 %d", getFreeKassaMinTopup())})
-                return
-        }
-
         id := c.GetInt("id")
         user, err := model.GetUserById(id, false)
         if err != nil || user == nil {
@@ -291,8 +282,8 @@ func RequestFreeKassaPay(c *gin.Context) {
         }
 
         payMoney := getFreeKassaPayMoney(req.Amount, group)
-        if payMoney < 100.0 {
-                c.JSON(http.StatusOK, gin.H{"message": "error", "data": "Минимальная сумма пополнения 100 рублей"})
+        if payMoney < float64(setting.FreeKassaMinTopUp) {
+                c.JSON(http.StatusOK, gin.H{"message": "error", "data": fmt.Sprintf("Минимальная сумма пополнения %d рублей", setting.FreeKassaMinTopUp)})
                 return
         }
 

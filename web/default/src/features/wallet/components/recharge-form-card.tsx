@@ -315,7 +315,19 @@ export function RechargeFormCard({
     Array.isArray(topupInfo?.pay_methods) && topupInfo.pay_methods.length > 0
   const hasWaffoPaymentMethods =
     Array.isArray(waffoPayMethods) && waffoPayMethods.length > 0
-  const minTopup = getMinTopupAmount(topupInfo)
+  // For RUB-native gateways (FreeKassa, Pally), min_topup is stored in RUB.
+  // Convert to credits so toDisplay(credits) = credits * rubRate = minRub
+  const minTopup = useMemo(() => {
+    if (localCurrency === 'rub' && rubRate > 1 && topupInfo) {
+      if (topupInfo.enable_freekassa_topup && topupInfo.freekassa_min_topup) {
+        return topupInfo.freekassa_min_topup / rubRate
+      }
+      if (topupInfo.enable_pally_topup && topupInfo.pally_min_topup) {
+        return topupInfo.pally_min_topup / rubRate
+      }
+    }
+    return getMinTopupAmount(topupInfo)
+  }, [topupInfo, localCurrency, rubRate])
   const maxTopup =
     localCurrency === 'rub' && rubRate > 1
       ? Math.round(20000 / rubRate)
