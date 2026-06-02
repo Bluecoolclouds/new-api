@@ -202,7 +202,10 @@ export function useTopupInfo() {
         setPresetAmounts(customPresets)
       } else {
         const minTopup = getMinTopupAmount(processedData)
-        const defaultPresets = generatePresetAmounts(minTopup)
+        const defaultPresets = generatePresetAmounts(
+          minTopup,
+          processedData.discount || {}
+        )
         setPresetAmounts(defaultPresets)
       }
     } catch (err) {

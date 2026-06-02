@@ -14,7 +14,7 @@ import {
   useWaffoPayment,
   useWaffoPancakePayment,
 } from '../hooks'
-import { getDefaultPaymentType, getMinTopupAmount, isWaffoPancakePayment } from '../lib'
+import { getDefaultPaymentType, getMinTopupAmount, isWaffoPancakePayment, getAmountDiscount } from '../lib'
 import { DEFAULT_DISCOUNT_RATE } from '../constants'
 import type { PaymentMethod, PresetAmount, CreemProduct } from '../types'
 import { RechargeFormCard } from './recharge-form-card'
@@ -138,10 +138,12 @@ function RechargeContent() {
     }
   }
 
-  const getDiscountRate = useCallback(
-    () => topupInfo?.discount?.[topupAmount] || DEFAULT_DISCOUNT_RATE,
-    [topupInfo, topupAmount]
-  )
+  const getDiscountRate = useCallback(() => {
+    if (!topupInfo?.discount || Object.keys(topupInfo.discount).length === 0) {
+      return DEFAULT_DISCOUNT_RATE
+    }
+    return getAmountDiscount(topupAmount, topupInfo.discount)
+  }, [topupInfo, topupAmount])
 
   const handleMethodChange = useCallback(
     async (method: PaymentMethod) => {

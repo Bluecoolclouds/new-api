@@ -175,10 +175,17 @@ export function getMinTopupAmount(topupInfo: TopupInfo | null): number {
 /**
  * Generate preset amounts based on minimum topup
  */
-export function generatePresetAmounts(minAmount: number): PresetAmount[] {
-  return DEFAULT_PRESET_MULTIPLIERS.map((multiplier) => ({
-    value: minAmount * multiplier,
-  }))
+export function generatePresetAmounts(
+  minAmount: number,
+  discounts: Record<number, number> = {}
+): PresetAmount[] {
+  return DEFAULT_PRESET_MULTIPLIERS.map((multiplier) => {
+    const value = minAmount * multiplier
+    return {
+      value,
+      discount: getAmountDiscount(value, discounts),
+    }
+  })
 }
 
 /**
