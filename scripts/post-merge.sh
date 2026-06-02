@@ -8,4 +8,4 @@ cd web/default
 node node_modules/.bin/rsbuild build
 cd ../..
 
-GIT_OPTIONAL_LOCKS=0 go build -o new-api .
+go build -buildvcs=false -o new-api .
