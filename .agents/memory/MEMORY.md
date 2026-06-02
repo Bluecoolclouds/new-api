@@ -2,3 +2,4 @@
 - [Go embed frontend rebuild](go-embed-rebuild.md) — frontend CSS/JS changes require BOTH `npm run build` AND `go build` to take effect; the binary embeds assets at compile time
 - [Payment gateway pattern](payment-gateway-pattern.md) — how to add a new payment method (Heleket as example); covers all files that must be touched across backend + frontend
 - [Heleket API sign formula](heleket-sign.md) — sign = md5(base64(body) + apiKey) with NO colon; amount in topup APIs is USD not credits; unitPrice multiplied not divided
+- [FreeKassa nonce is int32](freekassa-nonce-int32.md) — nonce stored as signed int32; sending ms/ns nonce clamps to int32 max and permanently locks shop; use Unix seconds; recover via API-key regen
