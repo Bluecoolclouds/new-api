@@ -426,12 +426,15 @@ export function RechargeFormCard({
   // ── Summary calculations ───────────────────────────────────────────────
   const bonusPct =
     discountRate < DEFAULT_DISCOUNT_RATE
-      ? Math.round((1 / discountRate - 1) * 100)
+      ? Math.round((1 - discountRate) * 100)
       : 0
 
-  const equivalentAmount =
-    discountRate < DEFAULT_DISCOUNT_RATE && paymentAmount > 0
-      ? Math.round(paymentAmount / discountRate)
+  // Savings in display currency, computed from topup amount × discount fraction.
+  // Does NOT depend on paymentAmount so it works even when the backend amount
+  // calculation returns 0 (e.g. FreeKassa with non-integer USD amounts).
+  const savingsDisplayAmount =
+    discountRate < DEFAULT_DISCOUNT_RATE && topupAmount > 0
+      ? Math.round(toDisplay(topupAmount) * (1 - discountRate))
       : null
 
   const totalCredits = topupAmount * QUOTA_PER_DOLLAR
@@ -775,13 +778,13 @@ export function RechargeFormCard({
 
 
                   {/* Savings row */}
-                  {equivalentAmount != null && equivalentAmount > paymentAmount && (
+                  {savingsDisplayAmount != null && savingsDisplayAmount > 0 && (
                     <div className='flex items-center justify-between px-4 py-2 bg-emerald-50 dark:bg-emerald-950/20 border-t'>
                       <span className='text-xs text-emerald-700 dark:text-emerald-400 font-medium'>
                         {t('Your savings')}
                       </span>
                       <span className='text-xs font-bold text-emerald-700 dark:text-emerald-400'>
-                        {displaySymbol}{Math.round(equivalentAmount - paymentAmount)}
+                        {displaySymbol}{savingsDisplayAmount}
                       </span>
                     </div>
                   )}

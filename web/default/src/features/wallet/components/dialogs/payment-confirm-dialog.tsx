@@ -60,9 +60,12 @@ export function PaymentConfirmDialog({
   usdExchangeRate = 1,
 }: PaymentConfirmDialogProps) {
   const { t } = useTranslation()
-  const hasDiscount = discountRate > 0 && discountRate < 1 && paymentAmount > 0
-  const originalAmount = hasDiscount ? Math.round(paymentAmount / discountRate) : 0
-  const discountAmount = hasDiscount ? Math.round(originalAmount - paymentAmount) : 0
+  // hasDiscount does not require paymentAmount > 0 — for gateways like FreeKassa
+  // the backend amount endpoint may return 0 for non-integer USD inputs, so we
+  // derive savings directly from topupAmount and the display exchange rate.
+  const hasDiscount = discountRate > 0 && discountRate < 1 && topupAmount > 0
+  const displayBase = topupAmount * usdExchangeRate
+  const discountAmount = hasDiscount ? Math.round(displayBase * (1 - discountRate)) : 0
 
   return (
     <AlertDialog open={open} onOpenChange={onOpenChange}>
@@ -99,11 +102,21 @@ export function PaymentConfirmDialog({
             ) : (
               <div className='flex items-baseline gap-2'>
                 <span className='text-2xl font-semibold'>
-                  {formatCurrency(paymentAmount)}
+                  {paymentAmount > 0
+                    ? formatCurrency(paymentAmount)
+                    : formatLocalCurrencyAmount(displayBase * discountRate, {
+                        digitsLarge: 2,
+                        digitsSmall: 2,
+                        abbreviate: false,
+                      })}
                 </span>
                 {hasDiscount && (
                   <span className='text-muted-foreground text-sm line-through'>
-                    {formatCurrency(originalAmount)}
+                    {formatLocalCurrencyAmount(displayBase, {
+                      digitsLarge: 2,
+                      digitsSmall: 2,
+                      abbreviate: false,
+                    })}
                   </span>
                 )}
               </div>
@@ -115,7 +128,11 @@ export function PaymentConfirmDialog({
               <div className='flex items-center justify-between text-sm'>
                 <span className='text-muted-foreground'>{t('You save')}</span>
                 <span className='font-semibold text-green-600'>
-                  {formatCurrency(discountAmount)}
+                  {formatLocalCurrencyAmount(discountAmount, {
+                    digitsLarge: 2,
+                    digitsSmall: 2,
+                    abbreviate: false,
+                  })}
                 </span>
               </div>
             </div>
