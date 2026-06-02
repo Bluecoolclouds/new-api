@@ -4539,13 +4539,13 @@
     "Zero retention": "Zero retention",
     "Zhipu": "Zhipu",
     "Zhipu V4": "Zhipu V4",
-    "Zoom": "Zoom"
-  },
-  "Selected": "Selected",
-  "Credits": "Credits",
-  "Your savings": "Your savings",
-  "no discount": "no discount",
-  "Save {{amount}}": "Save {{amount}}",
-  "preset_pay_no_discount": "Pay {{amount}}, no discount",
-  "preset_pay_save": "Pay {{amount}}, Save {{savings}}"
+    "Zoom": "Zoom",
+    "Selected": "Selected",
+    "Credits": "Credits",
+    "Your savings": "Your savings",
+    "no discount": "no discount",
+    "Save {{amount}}": "Save {{amount}}",
+    "preset_pay_no_discount": "Pay {{amount}}, no discount",
+    "preset_pay_save": "Pay {{amount}}, Save {{savings}}"
+  }
 }

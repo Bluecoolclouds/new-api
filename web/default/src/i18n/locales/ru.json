@@ -4589,13 +4589,13 @@
     "You pay with APINET": "Вы платите через APINET",
     "Zhipu": "Zhipu",
     "Zhipu V4": "Zhipu V4",
-    "Zoom": "Zoom"
-  },
-  "Selected": "Выбрано",
-  "Credits": "Кредитов",
-  "Your savings": "Ваша выгода",
-  "no discount": "без скидки",
-  "Save {{amount}}": "Экономия {{amount}}",
-  "preset_pay_no_discount": "Оплата {{amount}}, без скидки",
-  "preset_pay_save": "Оплата {{amount}}, экономия {{savings}}"
+    "Zoom": "Zoom",
+    "Selected": "Выбрано",
+    "Credits": "Кредитов",
+    "Your savings": "Ваша выгода",
+    "no discount": "без скидки",
+    "Save {{amount}}": "Экономия {{amount}}",
+    "preset_pay_no_discount": "Оплата {{amount}}, без скидки",
+    "preset_pay_save": "Оплата {{amount}}, экономия {{savings}}"
+  }
 }
