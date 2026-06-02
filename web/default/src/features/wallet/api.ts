@@ -289,3 +289,42 @@ export async function completeOrder(
   const res = await api.post('/api/user/topup/complete', request)
   return res.data
 }
+
+export interface WithdrawalSubmitRequest {
+  amount: number
+  method: string
+  details: string
+}
+
+export interface WithdrawalRecord {
+  id: number
+  user_id: number
+  username?: string
+  amount: number
+  method: string
+  details: string
+  status: string
+  note: string
+  created_time: number
+  updated_time: number
+}
+
+/**
+ * Submit a withdrawal request
+ */
+export async function submitWithdrawal(
+  request: WithdrawalSubmitRequest
+): Promise<ApiResponse<WithdrawalRecord>> {
+  const res = await api.post('/api/user/withdrawal', request)
+  return res.data
+}
+
+/**
+ * Get current user's withdrawal requests
+ */
+export async function getUserWithdrawals(): Promise<
+  ApiResponse<WithdrawalRecord[]>
+> {
+  const res = await api.get('/api/user/withdrawal')
+  return res.data
+}

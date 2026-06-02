@@ -62,7 +62,7 @@ func SetApiRouter(router *gin.Engine) {
                 // :env separates test vs prod URLs so the operator can register each
                 // in Pancake's matching webhook slot; handler enforces env match.
                 apiRouter.POST("/waffo-pancake/webhook/:env", controller.WaffoPancakeWebhook)
-			apiRouter.POST("/heleket/webhook", controller.HeleketWebhook)
+                        apiRouter.POST("/heleket/webhook", controller.HeleketWebhook)
 
                 // Universal secure verification routes
                 apiRouter.POST("/verify", middleware.UserAuth(), middleware.CriticalRateLimit(), controller.UniversalVerify)
@@ -110,8 +110,8 @@ func SetApiRouter(router *gin.Engine) {
                                 selfRoute.POST("/waffo-pancake/pay", middleware.CriticalRateLimit(), controller.RequestWaffoPancakePay)
                                 selfRoute.POST("/freekassa/amount", controller.RequestFreeKassaAmount)
                                 selfRoute.POST("/freekassa/pay", middleware.CriticalRateLimit(), controller.RequestFreeKassaPay)
-					selfRoute.POST("/heleket/amount", controller.RequestHeleketAmount)
-					selfRoute.POST("/heleket/pay", middleware.CriticalRateLimit(), controller.RequestHeleketPay)
+                                        selfRoute.POST("/heleket/amount", controller.RequestHeleketAmount)
+                                        selfRoute.POST("/heleket/pay", middleware.CriticalRateLimit(), controller.RequestHeleketPay)
                                 selfRoute.POST("/aff_transfer", controller.TransferAffQuota)
                                 selfRoute.PUT("/setting", controller.UpdateUserSetting)
 
@@ -129,6 +129,10 @@ func SetApiRouter(router *gin.Engine) {
                                 // Custom OAuth bindings
                                 selfRoute.GET("/oauth/bindings", controller.GetUserOAuthBindings)
                                 selfRoute.DELETE("/oauth/bindings/:provider_id", controller.UnbindCustomOAuth)
+
+                                // Withdrawal
+                                selfRoute.POST("/withdrawal", middleware.CriticalRateLimit(), controller.SubmitWithdrawal)
+                                selfRoute.GET("/withdrawal", controller.GetUserWithdrawals)
                         }
 
                         adminRoute := userRoute.Group("/")
@@ -151,6 +155,10 @@ func SetApiRouter(router *gin.Engine) {
                                 // Admin 2FA routes
                                 adminRoute.GET("/2fa/stats", controller.Admin2FAStats)
                                 adminRoute.DELETE("/:id/2fa", controller.AdminDisable2FA)
+
+                                // Admin withdrawal management
+                                adminRoute.GET("/withdrawal/admin", controller.AdminGetWithdrawals)
+                                adminRoute.PUT("/withdrawal/admin/:id", controller.AdminUpdateWithdrawal)
                         }
                 }
 

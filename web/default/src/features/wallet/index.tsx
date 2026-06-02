@@ -27,8 +27,10 @@ import { RedemptionCodeCard } from './components/redemption-code-card'
 import { BillingHistoryDialog } from './components/dialogs/billing-history-dialog'
 import { CreemConfirmDialog } from './components/dialogs/creem-confirm-dialog'
 import { TransferDialog } from './components/dialogs/transfer-dialog'
+import { WithdrawDialog } from './components/dialogs/withdraw-dialog'
 import { RechargeFormCard } from './components/recharge-form-card'
 import { SubscriptionPlansCard } from './components/subscription-plans-card'
+import { VipTierCard } from './components/vip-tier-card'
 import { WalletStatsCard } from './components/wallet-stats-card'
 import { DEFAULT_DISCOUNT_RATE } from './constants'
 import {
@@ -67,6 +69,7 @@ export function Wallet(props: WalletProps) {
     useState<PaymentMethod>()
   const [paymentLoading, setPaymentLoading] = useState<string | null>(null)
   const [transferDialogOpen, setTransferDialogOpen] = useState(false)
+  const [withdrawDialogOpen, setWithdrawDialogOpen] = useState(false)
   const [billingDialogOpen, setBillingDialogOpen] = useState(false)
   const [redemptionCode, setRedemptionCode] = useState('')
   const [creemDialogOpen, setCreemDialogOpen] = useState(false)
@@ -269,41 +272,24 @@ export function Wallet(props: WalletProps) {
         <SectionPageLayout.Title>{t('Wallet')}</SectionPageLayout.Title>
         <SectionPageLayout.Content>
           <div className='mx-auto flex w-full max-w-7xl flex-col gap-4 sm:gap-5'>
-            <div className='grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,512px)] lg:items-start'>
 
-              {/* ── Left column: stats + subscription + affiliate ── */}
-              <div className='flex flex-col gap-4'>
-                <WalletStatsCard user={user} loading={userLoading} />
+            {/* ── Full-width stats row ── */}
+            <WalletStatsCard user={user} loading={userLoading} />
 
-                {showSubscriptionPanel && (
-                  <SubscriptionPlansCard
-                    topupInfo={topupInfo}
-                    onAvailabilityChange={handleSubscriptionAvailabilityChange}
-                    userQuota={user?.quota}
-                    onPurchaseSuccess={fetchUser}
-                  />
-                )}
+            {showSubscriptionPanel && (
+              <SubscriptionPlansCard
+                topupInfo={topupInfo}
+                onAvailabilityChange={handleSubscriptionAvailabilityChange}
+                userQuota={user?.quota}
+                onPurchaseSuccess={fetchUser}
+              />
+            )}
 
-                <AffiliateRewardsCard
-                  user={user}
-                  affiliateLink={affiliateLink}
-                  onTransfer={() => setTransferDialogOpen(true)}
-                  complianceConfirmed={
-                    topupInfo?.payment_compliance_confirmed !== false
-                  }
-                  loading={affiliateLoading}
-                />
+            {/* ── Two-column: recharge form | affiliate + redemption ── */}
+            <div className='grid gap-4 lg:grid-cols-2 lg:items-start'>
 
-                <RedemptionCodeCard
-                  redemptionCode={redemptionCode}
-                  onRedemptionCodeChange={setRedemptionCode}
-                  onRedeem={handleRedeem}
-                  redeeming={redeeming}
-                />
-              </div>
-
-              {/* ── Right column: recharge form ── */}
-              <div id='wallet-add-funds' className='scroll-mt-4 max-w-lg mx-auto w-full'>
+              {/* Left: add funds */}
+              <div id='wallet-add-funds' className='scroll-mt-4'>
                 <RechargeFormCard
                   topupInfo={topupInfo}
                   presetAmounts={presetAmounts}
@@ -350,6 +336,34 @@ export function Wallet(props: WalletProps) {
                 />
               </div>
 
+              {/* Right: affiliate + redemption */}
+              <div className='flex flex-col gap-4'>
+                <RedemptionCodeCard
+                  redemptionCode={redemptionCode}
+                  onRedemptionCodeChange={setRedemptionCode}
+                  onRedeem={handleRedeem}
+                  redeeming={redeeming}
+                />
+                <AffiliateRewardsCard
+                  user={user}
+                  affiliateLink={affiliateLink}
+                  onTransfer={() => setTransferDialogOpen(true)}
+                  onWithdraw={() => setWithdrawDialogOpen(true)}
+                  complianceConfirmed={
+                    topupInfo?.payment_compliance_confirmed !== false
+                  }
+                  loading={affiliateLoading}
+                />
+                <VipTierCard
+                  user={user}
+                  quotaPerUnit={
+                    currency?.quotaPerUnit && currency.quotaPerUnit > 0
+                      ? currency.quotaPerUnit
+                      : 500000
+                  }
+                />
+              </div>
+
             </div>
           </div>
         </SectionPageLayout.Content>
@@ -375,6 +389,13 @@ export function Wallet(props: WalletProps) {
         onConfirm={handleCreemConfirm}
         product={selectedCreemProduct}
         processing={creemProcessing}
+      />
+
+      <WithdrawDialog
+        open={withdrawDialogOpen}
+        onOpenChange={setWithdrawDialogOpen}
+        availableQuota={user?.aff_quota ?? 0}
+        onSuccess={fetchUser}
       />
     </>
   )
