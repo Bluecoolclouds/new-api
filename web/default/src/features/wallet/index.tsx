@@ -45,6 +45,7 @@ import {
   getDefaultPaymentType,
   getMinTopupAmount,
   isWaffoPancakePayment,
+  getAmountDiscount,
 } from './lib'
 import type {
   UserWalletData,
@@ -251,9 +252,12 @@ export function Wallet(props: WalletProps) {
     }
   }
 
-  // Get discount rate for current topup amount
+  // Get discount rate for current topup amount (threshold-based: highest tier <= amount)
   const getDiscountRate = useCallback(() => {
-    return topupInfo?.discount?.[topupAmount] || DEFAULT_DISCOUNT_RATE
+    if (!topupInfo?.discount || Object.keys(topupInfo.discount).length === 0) {
+      return DEFAULT_DISCOUNT_RATE
+    }
+    return getAmountDiscount(topupAmount, topupInfo.discount)
   }, [topupInfo, topupAmount])
 
   // Handle method change without opening dialog — just recalculate summary

@@ -185,7 +185,7 @@ export function generatePresetAmounts(minAmount: number): PresetAmount[] {
  * Threshold-based discount lookup: returns the discount for the highest
  * configured threshold that is <= amount. Returns 1.0 when no match.
  */
-function getAmountDiscount(
+export function getAmountDiscount(
   amount: number,
   discounts: Record<number, number>
 ): number {
