@@ -106,8 +106,8 @@ export function Calculator() {
 
   const effectiveApinet = bonusEnabled ? blendedApinet / BONUS_MULTIPLIER : blendedApinet
 
-  const apinetCost  = (effectiveApinet * volume) / 1000
-  const retailCost  = (blendedRetail   * volume) / 1000
+  const apinetCost  = effectiveApinet * volume
+  const retailCost  = blendedRetail   * volume
   const saved       = retailCost - apinetCost
   const discount    = retailCost > 0 ? Math.round((saved / retailCost) * 100) : 0
 
