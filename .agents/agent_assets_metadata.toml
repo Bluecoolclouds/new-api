@@ -102,3 +102,9 @@ id = "g-3ExisnmnQYhlXVnlON4"
 uri = "file://.local/5_model_price_COMPLETE.json"
 type = "unspecified"
 title = "5. Фиксированная цена — 353 модели"
+
+[[outputs]]
+id = "JClH1XWQckqIgDV16iFrH"
+uri = "file://apinet-agent-docs.zip"
+type = "unspecified"
+title = "APINET Agent Docs — память, описание, база знаний"
