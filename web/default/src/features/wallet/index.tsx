@@ -383,6 +383,12 @@ export function Wallet(props: WalletProps) {
             ? currency!.customCurrencyExchangeRate!
             : currency?.usdExchangeRate || 1
         }
+        displaySymbol={
+          ((currency?.customCurrencyExchangeRate ?? 0) > 1 ||
+            (currency?.usdExchangeRate ?? 1) > 1)
+            ? (currency?.customCurrencySymbol || '₽')
+            : '$'
+        }
       />
 
       <TransferDialog

@@ -18,7 +18,6 @@ For commercial licensing, please contact support@quantumnous.com
 */
 import { Loader2 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
-import { formatLocalCurrencyAmount } from '@/lib/currency'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -45,6 +44,7 @@ interface PaymentConfirmDialogProps {
   processing: boolean
   discountRate?: number
   usdExchangeRate?: number
+  displaySymbol?: string
 }
 
 export function PaymentConfirmDialog({
@@ -58,8 +58,22 @@ export function PaymentConfirmDialog({
   processing,
   discountRate = DEFAULT_DISCOUNT_RATE,
   usdExchangeRate = 1,
+  displaySymbol,
 }: PaymentConfirmDialogProps) {
   const { t } = useTranslation()
+
+  // Determine whether amounts are in a local (non-USD) currency.
+  // When usdExchangeRate > 1 the dialog receives pre-converted local amounts;
+  // use displaySymbol directly instead of relying on formatLocalCurrencyAmount
+  // (which reads the system USD config and always renders "$").
+  const isLocal = usdExchangeRate > 1 && !!displaySymbol
+  const sym = isLocal ? displaySymbol : '$'
+
+  const fmt = (amount: number) =>
+    isLocal
+      ? `${sym}${Math.round(amount).toLocaleString()}`
+      : formatCurrency(amount)
+
   // hasDiscount does not require paymentAmount > 0 — for gateways like FreeKassa
   // the backend amount endpoint may return 0 for non-integer USD inputs, so we
   // derive savings directly from topupAmount and the display exchange rate.
@@ -85,11 +99,7 @@ export function PaymentConfirmDialog({
               {t('Topup Amount')}
             </span>
             <span className='text-lg font-semibold'>
-              {formatLocalCurrencyAmount(topupAmount * usdExchangeRate, {
-                digitsLarge: 2,
-                digitsSmall: 2,
-                abbreviate: false,
-              })}
+              {fmt(displayBase)}
             </span>
           </div>
 
@@ -103,20 +113,12 @@ export function PaymentConfirmDialog({
               <div className='flex items-baseline gap-2'>
                 <span className='text-2xl font-semibold'>
                   {paymentAmount > 0
-                    ? formatCurrency(paymentAmount)
-                    : formatLocalCurrencyAmount(displayBase * discountRate, {
-                        digitsLarge: 2,
-                        digitsSmall: 2,
-                        abbreviate: false,
-                      })}
+                    ? fmt(paymentAmount)
+                    : fmt(displayBase * discountRate)}
                 </span>
                 {hasDiscount && (
                   <span className='text-muted-foreground text-sm line-through'>
-                    {formatLocalCurrencyAmount(displayBase, {
-                      digitsLarge: 2,
-                      digitsSmall: 2,
-                      abbreviate: false,
-                    })}
+                    {fmt(displayBase)}
                   </span>
                 )}
               </div>
@@ -128,11 +130,7 @@ export function PaymentConfirmDialog({
               <div className='flex items-center justify-between text-sm'>
                 <span className='text-muted-foreground'>{t('You save')}</span>
                 <span className='font-semibold text-green-600'>
-                  {formatLocalCurrencyAmount(discountAmount, {
-                    digitsLarge: 2,
-                    digitsSmall: 2,
-                    abbreviate: false,
-                  })}
+                  {fmt(discountAmount)}
                 </span>
               </div>
             </div>
