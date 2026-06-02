@@ -326,6 +326,12 @@ export function RechargeFormCard({
   const allMethodCards = useMemo(() => {
     const methods: { method: PaymentMethod; waffoIndex?: number }[] = []
 
+    if (enablePallyTopup) {
+      methods.push({
+        method: { type: 'pally', name: 'Pally' },
+      })
+    }
+
     if (enableFreeKassaTopup) {
       methods.push({
         method: { type: 'freekassa', name: 'СБП' },
@@ -347,12 +353,6 @@ export function RechargeFormCard({
     if (enableHeleketTopup) {
       methods.push({
         method: { type: 'heleket', name: 'Heleket' },
-      })
-    }
-
-    if (enablePallyTopup) {
-      methods.push({
-        method: { type: 'pally', name: 'Pally' },
       })
     }
 
