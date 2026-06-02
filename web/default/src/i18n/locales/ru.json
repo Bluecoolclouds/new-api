@@ -4630,6 +4630,22 @@
     "Zero retention": "Без хранения данных",
     "Zhipu": "Zhipu",
     "Zhipu V4": "Zhipu V4",
-    "Zoom": "Zoom"
+    "Zoom": "Zoom",
+    "Withdrawal Requests": "Заявки на вывод",
+    "Approve withdrawal": "Одобрить вывод",
+    "Reject withdrawal": "Отклонить вывод",
+    "No withdrawal requests": "Заявок на вывод нет",
+    "Withdrawal requests from users will appear here": "Заявки пользователей на вывод средств появятся здесь",
+    "Withdrawal approved": "Вывод одобрен",
+    "Withdrawal rejected": "Вывод отклонён",
+    "Rejection reason": "Причина отказа",
+    "Note (optional)": "Комментарий (необязательно)",
+    "Please enter a rejection reason": "Укажите причину отказа",
+    "Transaction ID or comment...": "ID транзакции или комментарий...",
+    "Reason for rejection...": "Причина отказа...",
+    "Approve": "Одобрить",
+    "Reject": "Отклонить",
+    "Approved": "Одобрено",
+    "Rejected": "Отклонено"
   }
 }

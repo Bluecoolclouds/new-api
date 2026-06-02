@@ -4579,6 +4579,22 @@
     "Zero retention": "Zero retention",
     "Zhipu": "Zhipu",
     "Zhipu V4": "Zhipu V4",
-    "Zoom": "Zoom"
+    "Zoom": "Zoom",
+    "Withdrawal Requests": "Withdrawal Requests",
+    "Approve withdrawal": "Approve withdrawal",
+    "Reject withdrawal": "Reject withdrawal",
+    "No withdrawal requests": "No withdrawal requests",
+    "Withdrawal requests from users will appear here": "Withdrawal requests from users will appear here",
+    "Withdrawal approved": "Withdrawal approved",
+    "Withdrawal rejected": "Withdrawal rejected",
+    "Rejection reason": "Rejection reason",
+    "Note (optional)": "Note (optional)",
+    "Please enter a rejection reason": "Please enter a rejection reason",
+    "Transaction ID or comment...": "Transaction ID or comment...",
+    "Reason for rejection...": "Reason for rejection...",
+    "Approve": "Approve",
+    "Reject": "Reject",
+    "Approved": "Approved",
+    "Rejected": "Rejected"
   }
 }

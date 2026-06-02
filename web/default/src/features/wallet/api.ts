@@ -328,3 +328,27 @@ export async function getUserWithdrawals(): Promise<
   const res = await api.get('/api/user/withdrawal')
   return res.data
 }
+
+/**
+ * Admin: get all withdrawal requests
+ */
+export async function adminGetWithdrawals(params: {
+  page?: number
+  pageSize?: number
+  status?: string
+}): Promise<ApiResponse<WithdrawalRecord[]> & { total?: number }> {
+  const res = await api.get('/api/withdrawal/admin', { params })
+  return res.data
+}
+
+/**
+ * Admin: approve or reject a withdrawal request
+ */
+export async function adminUpdateWithdrawal(
+  id: number,
+  status: 'approved' | 'rejected',
+  note?: string
+): Promise<ApiResponse<WithdrawalRecord>> {
+  const res = await api.put(`/api/withdrawal/admin/${id}`, { status, note: note || '' })
+  return res.data
+}
