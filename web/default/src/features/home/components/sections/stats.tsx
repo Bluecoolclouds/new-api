@@ -101,42 +101,7 @@ export function Stats() {
         </div>
       </div>
 
-      {/* Pricing highlights strip */}
-      <AnimateInView animation='fade-up'>
-        <div className='border-border/40 bg-muted/5 border-b'>
-          <div className='mx-auto max-w-6xl px-6 py-6'>
-            <div className='mb-4 flex items-center gap-2'>
-              <span className='text-muted-foreground text-[10px] font-bold tracking-[0.15em] uppercase'>
-                {t('Model Pricing')}
-              </span>
-              <div className='bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 rounded-full px-2 py-0.5 text-[10px] font-semibold'>
-                {t('Live rates')}
-              </div>
-            </div>
-            <div className='flex flex-wrap items-stretch gap-px overflow-hidden rounded-xl border border-border/40 bg-border/40'>
-              {PRICING_HIGHLIGHTS.map((item, i) => (
-                <div
-                  key={i}
-                  className='group bg-background hover:bg-muted/20 flex flex-1 min-w-[140px] flex-col items-center justify-center px-4 py-4 text-center transition-colors duration-200'
-                >
-                  <span className='text-xl font-bold tracking-tight text-foreground tabular-nums'>
-                    {item.value}
-                  </span>
-                  <span className='text-muted-foreground mt-0.5 text-[11px]'>
-                    {item.label}
-                  </span>
-                  <span className='mt-1 text-xs font-medium text-foreground/70'>
-                    {item.model}
-                  </span>
-                  <span className='text-muted-foreground/50 mt-0.5 text-[10px] line-through'>
-                    {item.saved} {t('retail')}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </AnimateInView>
+      {/* Pricing highlights strip — hidden */}
     </div>
   )
 }
