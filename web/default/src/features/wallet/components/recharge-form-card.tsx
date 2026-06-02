@@ -579,30 +579,61 @@ export function RechargeFormCard({
                   </div>
                 </div>
 
-                {/* Preset chips */}
+                {/* Preset cards */}
                 {presetAmounts.length > 0 && (
-                  <CardContent className='px-5 py-3.5'>
-                    <div className='flex flex-wrap gap-1.5'>
-                      {presetAmounts.slice(0, 8).map((preset) => (
-                        <button
-                          key={preset.value}
-                          type='button'
-                          onClick={() => onSelectPreset(preset)}
-                          className={cn(
-                            'rounded-full border px-3 py-1.5 text-sm font-medium transition-all',
-                            selectedPreset === preset.value
-                              ? 'border-foreground bg-foreground text-background shadow-sm'
-                              : 'border-border text-muted-foreground hover:border-foreground/30 hover:text-foreground'
-                          )}
-                        >
-                          {toDisplay(preset.value).toLocaleString()}{displaySymbol}
-                          {preset.discount && preset.discount < 1 && (
-                            <span className='ml-1.5 text-xs text-green-600'>
-                              -{Math.round((1 - preset.discount) * 100)}%
-                            </span>
-                          )}
-                        </button>
-                      ))}
+                  <CardContent className='px-4 pb-4 pt-1'>
+                    <div className='grid grid-cols-2 gap-2 sm:grid-cols-4'>
+                      {presetAmounts.slice(0, 8).map((preset) => {
+                        const displayAmt = toDisplay(preset.value)
+                        const hasPresetDiscount =
+                          preset.discount != null && preset.discount < 1
+                        const discountPct = hasPresetDiscount
+                          ? Math.round((1 - preset.discount!) * 100)
+                          : 0
+                        const savingsAmt = hasPresetDiscount
+                          ? Math.round(displayAmt * (1 - preset.discount!))
+                          : 0
+                        const isSelected = selectedPreset === preset.value
+
+                        return (
+                          <div key={preset.value} className='relative'>
+                            {hasPresetDiscount && (
+                              <span className='absolute -right-1.5 -top-1.5 z-10 inline-flex items-center rounded-full bg-emerald-500 px-1.5 py-px text-[10px] font-bold leading-4 text-white shadow'>
+                                -{discountPct}%
+                              </span>
+                            )}
+                            <button
+                              type='button'
+                              onClick={() => onSelectPreset(preset)}
+                              className={cn(
+                                'w-full rounded-xl border p-3 text-left transition-all',
+                                isSelected
+                                  ? 'border-primary bg-primary/5 ring-1 ring-primary shadow-sm'
+                                  : 'border-border hover:border-primary/40 hover:bg-muted/30'
+                              )}
+                            >
+                              <div
+                                className={cn(
+                                  'text-base font-bold tabular-nums',
+                                  isSelected
+                                    ? 'text-primary'
+                                    : 'text-foreground'
+                                )}
+                              >
+                                {displayAmt.toLocaleString()}
+                                {displaySymbol}
+                              </div>
+                              <div className='mt-1 truncate text-[11px] text-muted-foreground'>
+                                {hasPresetDiscount
+                                  ? t('Save {{amount}}', {
+                                      amount: `${displaySymbol}${savingsAmt}`,
+                                    })
+                                  : t('no discount')}
+                              </div>
+                            </button>
+                          </div>
+                        )
+                      })}
                     </div>
                   </CardContent>
                 )}

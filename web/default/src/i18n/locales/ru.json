@@ -4593,5 +4593,7 @@
   },
   "Selected": "Выбрано",
   "Credits": "Кредитов",
-  "Your savings": "Ваша выгода"
+  "Your savings": "Ваша выгода",
+  "no discount": "без скидки",
+  "Save {{amount}}": "Экономия {{amount}}"
 }
