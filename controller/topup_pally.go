@@ -199,7 +199,7 @@ func RequestPallyPay(c *gin.Context) {
 
         topUp := &model.TopUp{
                 UserId:          id,
-                Amount:          req.Amount * pallyQuotaPerDollar,
+                Amount:          req.Amount,
                 Money:           money,
                 TradeNo:         tradeNo,
                 PaymentMethod:   model.PaymentMethodPally,
