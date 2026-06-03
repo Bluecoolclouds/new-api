@@ -134,6 +134,10 @@ func InitOptionMap() {
         common.OptionMap["HeleketUnitPrice"] = strconv.FormatFloat(setting.HeleketUnitPrice, 'f', -1, 64)
         common.OptionMap["HeleketMinTopUp"] = strconv.Itoa(setting.HeleketMinTopUp)
         common.OptionMap["HeleketReturnURL"] = setting.HeleketReturnURL
+        common.OptionMap["PallyApiToken"] = setting.PallyApiToken
+        common.OptionMap["PallyShopID"] = setting.PallyShopID
+        common.OptionMap["PallyUnitPrice"] = strconv.FormatFloat(setting.PallyUnitPrice, 'f', -1, 64)
+        common.OptionMap["PallyMinTopUp"] = strconv.Itoa(setting.PallyMinTopUp)
         common.OptionMap["TopupGroupRatio"] = common.TopupGroupRatio2JSONString()
         common.OptionMap["Chats"] = setting.Chats2JsonString()
         common.OptionMap["AutoGroups"] = setting.AutoGroups2JsonString()
@@ -523,6 +527,14 @@ func updateOptionMap(key string, value string) (err error) {
                 setting.HeleketMinTopUp, _ = strconv.Atoi(value)
         case "HeleketReturnURL":
                 setting.HeleketReturnURL = value
+        case "PallyApiToken":
+                setting.PallyApiToken = value
+        case "PallyShopID":
+                setting.PallyShopID = value
+        case "PallyUnitPrice":
+                setting.PallyUnitPrice, _ = strconv.ParseFloat(value, 64)
+        case "PallyMinTopUp":
+                setting.PallyMinTopUp, _ = strconv.Atoi(value)
         case "TopupGroupRatio":
                 err = common.UpdateTopupGroupRatioByJSONString(value)
         case "GitHubClientId":
