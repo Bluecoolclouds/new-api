@@ -51,10 +51,8 @@
       rateBad: 'Не помогло',
       rateThanks: 'Спасибо за оценку!',
       unread: 'непрочитанных',
-      escalateCard: '👤 Подключаем оператора',
-      escalateSub: 'Живой специалист ответит в ближайшее время',
-      escalateBtn: 'Написать в Telegram',
-      escalateTgMsg: 'Здравствуйте! Мне нужна помощь оператора.\n\nИстория чата:\n',
+      escalateLabel: 'Нужна помощь специалиста?',
+      escalateBtn: 'Связаться с поддержкой',
       reportTgMsg: 'Здравствуйте! Сообщаю о проблеме.\n\nИстория чата:\n',
     },
     en: {
@@ -78,10 +76,8 @@
       rateBad: 'Not helpful',
       rateThanks: 'Thanks for your feedback!',
       unread: 'unread',
-      escalateCard: '👤 Connecting you to an operator',
-      escalateSub: 'A human specialist will reply shortly',
-      escalateBtn: 'Open Telegram',
-      escalateTgMsg: 'Hello! I need help from a human operator.\n\nChat history:\n',
+      escalateLabel: 'Need help from a specialist?',
+      escalateBtn: 'Contact support',
       reportTgMsg: 'Hello! I want to report an issue.\n\nChat history:\n',
     },
   };
@@ -332,28 +328,21 @@ Base URL для API: https://apinet.cloud/v1
       letter-spacing: 0.01em !important; background: #ffffff !important;
     }
     .aw-escalate {
-      margin: 4px 0 0 !important; border-radius: 12px !important;
-      background: linear-gradient(135deg, #1e40af, #1d4ed8) !important;
-      padding: 12px 14px !important; display: flex !important;
-      flex-direction: column !important; gap: 8px !important;
+      margin: 8px 0 0 !important; border-radius: 10px !important;
+      border: 1px solid #e2e8f0 !important; background: #f8fafc !important;
+      padding: 10px 13px !important; display: flex !important;
+      align-items: center !important; gap: 10px !important;
     }
-    .aw-escalate-title {
-      color: white !important; font-weight: 700 !important;
-      font-size: 13px !important; line-height: 1.3 !important;
-    }
-    .aw-escalate-sub {
-      color: rgba(255,255,255,0.8) !important; font-size: 11.5px !important;
-    }
-    .aw-escalate-btn {
+    .aw-escalate-link {
       display: inline-flex !important; align-items: center !important; gap: 6px !important;
-      background: rgba(255,255,255,0.18) !important; border: 1px solid rgba(255,255,255,0.3) !important;
-      border-radius: 8px !important; padding: 6px 12px !important;
-      color: white !important; font-size: 12.5px !important; font-weight: 600 !important;
-      cursor: pointer !important; text-decoration: none !important;
-      transition: background 0.15s !important; width: fit-content !important;
+      color: #1d4ed8 !important; font-size: 13px !important; font-weight: 600 !important;
+      text-decoration: none !important;
     }
-    .aw-escalate-btn:hover { background: rgba(255,255,255,0.28) !important; }
-    .aw-escalate-btn svg { width: 14px !important; height: 14px !important; fill: white !important; flex-shrink: 0 !important; }
+    .aw-escalate-link:hover { text-decoration: underline !important; }
+    .aw-escalate-link svg { width: 15px !important; height: 15px !important; fill: #1d4ed8 !important; flex-shrink: 0 !important; }
+    .aw-escalate-label {
+      font-size: 12.5px !important; color: #64748b !important; flex: 1 !important;
+    }
   `;
 
   function escapeHtml(s) {
@@ -553,18 +542,16 @@ Base URL для API: https://apinet.cloud/v1
       scrollBottom();
     }
 
-    // ── Escalation card ───────────────────────────────────────────────────────
+    // ── Escalation block ──────────────────────────────────────────────────────
     function addEscalation(parentEl) {
-      const card = document.createElement('div');
-      card.className = 'aw-escalate';
-      const tgUrl = tgEscalateUrl(t.escalateTgMsg);
-      card.innerHTML = `
-        <div class="aw-escalate-title">${t.escalateCard}</div>
-        <div class="aw-escalate-sub">${t.escalateSub}</div>
-        <a class="aw-escalate-btn" href="${tgUrl}" target="_blank" rel="noopener">
+      const block = document.createElement('div');
+      block.className = 'aw-escalate';
+      block.innerHTML = `
+        <span class="aw-escalate-label">${t.escalateLabel}</span>
+        <a class="aw-escalate-link" href="${TG_LINK}" target="_blank" rel="noopener">
           ${ICON_TG}<span>${t.escalateBtn}</span>
         </a>`;
-      parentEl.appendChild(card);
+      parentEl.appendChild(block);
       scrollBottom();
     }
 
