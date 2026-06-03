@@ -108,3 +108,9 @@ id = "JClH1XWQckqIgDV16iFrH"
 uri = "file://apinet-agent-docs.zip"
 type = "unspecified"
 title = "APINET Agent Docs — память, описание, база знаний"
+
+[[outputs]]
+id = "jXYedaDWocSXD5_l9i9ni"
+uri = "file://widget-bot.tar.gz"
+type = "unspecified"
+title = "widget-bot.tar.gz"
