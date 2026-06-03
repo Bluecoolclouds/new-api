@@ -15,7 +15,6 @@ import (
         "github.com/QuantumNous/new-api/logger"
         "github.com/QuantumNous/new-api/model"
         "github.com/QuantumNous/new-api/setting"
-        "github.com/QuantumNous/new-api/setting/operation_setting"
         system_setting "github.com/QuantumNous/new-api/setting/system_setting"
 
         "github.com/gin-gonic/gin"
@@ -45,22 +44,6 @@ func getPallyMinTopup() int64 {
 
 const pallyQuotaPerDollar = int64(500000)
 
-func getPallyAmountDiscount(amount int64) float64 {
-        discounts := operation_setting.GetPaymentSetting().AmountDiscount
-        if len(discounts) == 0 {
-                return 1.0
-        }
-        bestThreshold := -1
-        bestRatio := 1.0
-        for threshold, ratio := range discounts {
-                if int64(threshold) <= amount && threshold > bestThreshold {
-                        bestThreshold = threshold
-                        bestRatio = ratio
-                }
-        }
-        return bestRatio
-}
-
 func getPallyPayMoney(amount int64, group string) float64 {
         // amount is USD dollars; unitPrice is RUB per credit; 1 USD = 500 000 credits
         dAmount := decimal.NewFromInt(amount * pallyQuotaPerDollar)
@@ -75,7 +58,7 @@ func getPallyPayMoney(amount int64, group string) float64 {
                 unitPrice = 0.0002
         }
 
-        discountRatio := getPallyAmountDiscount(amount)
+        discountRatio := getAmountDiscount(int(amount))
 
         money := dAmount.
                 Mul(decimal.NewFromFloat(unitPrice)).

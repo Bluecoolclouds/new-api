@@ -62,9 +62,12 @@ func getHeleketPayMoney(amount int64, group string) float64 {
                 unitPrice = 1.0
         }
 
+        discount := getAmountDiscount(int(amount))
+
         money := dAmount.
                 Mul(decimal.NewFromFloat(unitPrice)).
-                Mul(decimal.NewFromFloat(topupGroupRatio))
+                Mul(decimal.NewFromFloat(topupGroupRatio)).
+                Mul(decimal.NewFromFloat(discount))
 
         return money.InexactFloat64()
 }
