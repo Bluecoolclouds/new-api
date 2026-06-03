@@ -52,7 +52,8 @@
       rateThanks: 'Спасибо за оценку!',
       unread: 'непрочитанных',
       escalateLabel: 'Нужна помощь специалиста?',
-      escalateBtn: 'Связаться с поддержкой',
+      escalateSub: 'Напишите нам — живой специалист ответит',
+      escalateBtn: 'Написать в Telegram',
       reportTgMsg: 'Здравствуйте! Сообщаю о проблеме.\n\nИстория чата:\n',
     },
     en: {
@@ -77,7 +78,8 @@
       rateThanks: 'Thanks for your feedback!',
       unread: 'unread',
       escalateLabel: 'Need help from a specialist?',
-      escalateBtn: 'Contact support',
+      escalateSub: 'Write to us — a human will reply',
+      escalateBtn: 'Open Telegram',
       reportTgMsg: 'Hello! I want to report an issue.\n\nChat history:\n',
     },
   };
@@ -328,21 +330,37 @@ Base URL для API: https://apinet.cloud/v1
       letter-spacing: 0.01em !important; background: #ffffff !important;
     }
     .aw-escalate {
-      margin: 8px 0 0 !important; border-radius: 10px !important;
-      border: 1px solid #e2e8f0 !important; background: #f8fafc !important;
-      padding: 10px 13px !important; display: flex !important;
-      align-items: center !important; gap: 10px !important;
+      margin: 10px 0 0 !important; border-radius: 14px !important;
+      border: 1.5px solid #e2e8f0 !important; background: #f8fafc !important;
+      padding: 14px 16px !important; display: flex !important;
+      align-items: center !important; gap: 13px !important;
     }
-    .aw-escalate-link {
-      display: inline-flex !important; align-items: center !important; gap: 6px !important;
-      color: #1d4ed8 !important; font-size: 13px !important; font-weight: 600 !important;
-      text-decoration: none !important;
+    .aw-escalate-icon {
+      width: 40px !important; height: 40px !important; flex-shrink: 0 !important;
+      background: #229ed9 !important; border-radius: 50% !important;
+      display: flex !important; align-items: center !important; justify-content: center !important;
     }
-    .aw-escalate-link:hover { text-decoration: underline !important; }
-    .aw-escalate-link svg { width: 15px !important; height: 15px !important; fill: #1d4ed8 !important; flex-shrink: 0 !important; }
-    .aw-escalate-label {
-      font-size: 12.5px !important; color: #64748b !important; flex: 1 !important;
+    .aw-escalate-icon svg { width: 22px !important; height: 22px !important; fill: white !important; }
+    .aw-escalate-body {
+      flex: 1 !important; min-width: 0 !important;
     }
+    .aw-escalate-title {
+      font-size: 13px !important; font-weight: 700 !important;
+      color: #0f172a !important; line-height: 1.3 !important; margin: 0 0 2px !important;
+    }
+    .aw-escalate-sub {
+      font-size: 11.5px !important; color: #64748b !important; line-height: 1.4 !important;
+    }
+    .aw-escalate-btn {
+      display: inline-flex !important; align-items: center !important; gap: 5px !important;
+      background: #229ed9 !important; color: white !important;
+      font-size: 12px !important; font-weight: 600 !important;
+      border-radius: 8px !important; padding: 7px 13px !important;
+      text-decoration: none !important; white-space: nowrap !important;
+      flex-shrink: 0 !important; transition: background 0.15s !important;
+    }
+    .aw-escalate-btn:hover { background: #1a8bbf !important; }
+    .aw-escalate-btn svg { width: 13px !important; height: 13px !important; fill: white !important; flex-shrink: 0 !important; }
   `;
 
   function escapeHtml(s) {
@@ -547,8 +565,12 @@ Base URL для API: https://apinet.cloud/v1
       const block = document.createElement('div');
       block.className = 'aw-escalate';
       block.innerHTML = `
-        <span class="aw-escalate-label">${t.escalateLabel}</span>
-        <a class="aw-escalate-link" href="${TG_LINK}" target="_blank" rel="noopener">
+        <div class="aw-escalate-icon">${ICON_TG}</div>
+        <div class="aw-escalate-body">
+          <div class="aw-escalate-title">${t.escalateLabel}</div>
+          <div class="aw-escalate-sub">${t.escalateSub}</div>
+        </div>
+        <a class="aw-escalate-btn" href="${TG_LINK}" target="_blank" rel="noopener">
           ${ICON_TG}<span>${t.escalateBtn}</span>
         </a>`;
       parentEl.appendChild(block);
