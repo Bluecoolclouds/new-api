@@ -85,7 +85,8 @@ func getFreeKassaPayMoney(amount int64, group string) float64 {
         payMoney := dAmount.
                 Mul(decimal.NewFromFloat(setting.FreeKassaUnitPrice)).
                 Mul(decimal.NewFromFloat(topupGroupRatio)).
-                Mul(decimal.NewFromFloat(discount))
+                Mul(decimal.NewFromFloat(discount)).
+                Round(2)
 
         return payMoney.InexactFloat64()
 }

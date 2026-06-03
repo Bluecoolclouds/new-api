@@ -63,7 +63,8 @@ func getPallyPayMoney(amount int64, group string) float64 {
         money := dAmount.
                 Mul(decimal.NewFromFloat(unitPrice)).
                 Mul(decimal.NewFromFloat(topupGroupRatio)).
-                Mul(decimal.NewFromFloat(discountRatio))
+                Mul(decimal.NewFromFloat(discountRatio)).
+                Round(2)
 
         return money.InexactFloat64()
 }
