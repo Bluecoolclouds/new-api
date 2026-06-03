@@ -152,8 +152,8 @@ export function usePayment() {
             return false
           }
           if (response.data?.pay_link) {
-            window.open(response.data.pay_link, '_blank')
             toast.success(i18next.t('Redirecting to payment page...'))
+            window.location.href = response.data.pay_link
             return true
           }
           return false
