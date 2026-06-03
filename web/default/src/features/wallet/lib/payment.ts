@@ -177,7 +177,12 @@ export function getMinTopupAmount(topupInfo: TopupInfo | null): number {
   }
 
   if (topupInfo.enable_pally_topup) {
-    return topupInfo.pally_min_topup || DEFAULT_MIN_TOPUP
+    const pallyUnitPrice = topupInfo.pally_unit_price || 0.0002
+    const rubPerUsd = pallyUnitPrice * 500000
+    if (rubPerUsd > 0 && topupInfo.pally_min_topup) {
+      return Math.max(1, Math.ceil(topupInfo.pally_min_topup / rubPerUsd))
+    }
+    return DEFAULT_MIN_TOPUP
   }
 
   return DEFAULT_MIN_TOPUP
