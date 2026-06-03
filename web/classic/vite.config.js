@@ -32,6 +32,27 @@ export default defineConfig({
       '@': path.resolve(__dirname, './src'),
     },
   },
+  css: {
+    preprocessorOptions: {
+      scss: {
+        loadPaths: [path.resolve(__dirname, 'node_modules')],
+        importers: [
+          {
+            findFileUrl(url) {
+              if (url.startsWith('~')) {
+                const stripped = url.slice(1);
+                return new URL(
+                  path.resolve(__dirname, 'node_modules', stripped),
+                  'file://'
+                );
+              }
+              return null;
+            },
+          },
+        ],
+      },
+    },
+  },
   plugins: [
     codeInspectorPlugin({
       bundler: 'vite',
