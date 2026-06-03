@@ -42,8 +42,11 @@ func getPallyMinTopup() int64 {
         return int64(minTopup)
 }
 
+const pallyQuotaPerDollar = int64(500000)
+
 func getPallyPayMoney(amount int64, group string) float64 {
-        dAmount := decimal.NewFromInt(amount)
+        // amount is USD dollars; unitPrice is RUB per credit; 1 USD = 500 000 credits
+        dAmount := decimal.NewFromInt(amount * pallyQuotaPerDollar)
 
         topupGroupRatio := common.GetTopupGroupRatio(group)
         if topupGroupRatio == 0 {
@@ -196,7 +199,7 @@ func RequestPallyPay(c *gin.Context) {
 
         topUp := &model.TopUp{
                 UserId:          id,
-                Amount:          req.Amount,
+                Amount:          req.Amount * pallyQuotaPerDollar,
                 Money:           money,
                 TradeNo:         tradeNo,
                 PaymentMethod:   model.PaymentMethodPally,
