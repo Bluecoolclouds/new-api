@@ -470,8 +470,23 @@ app.get('/widget/poll', (req, res) => {
   res.json({ reply });
 });
 
+// ── Telegram: send message to user (direct chat) ──────────────────────────────
+function tgSendToUser(chatId, text, extra = {}) {
+  return tgRequest('sendMessage', { chat_id: chatId, text, parse_mode: 'HTML', ...extra });
+}
+
+function startKeyboard() {
+  return {
+    inline_keyboard: [
+      [{ text: '🌐 Открыть APINET.CLOUD', url: 'https://apinet.cloud' }],
+      [{ text: '💬 Чат поддержки на сайте', url: 'https://apinet.cloud' }],
+      [{ text: '📣 Telegram поддержки', url: 'https://t.me/apinet_support' }],
+    ],
+  };
+}
+
 // ── POST /telegram/webhook/<secret> ───────────────────────────────────────────
-// Telegram sends updates here (admin replies in topics)
+// Telegram sends updates here (admin replies in topics + user direct messages)
 app.post(`/telegram/webhook/${WEBHOOK_SECRET}`, (req, res) => {
   res.sendStatus(200);
 
@@ -480,10 +495,31 @@ app.post(`/telegram/webhook/${WEBHOOK_SECRET}`, (req, res) => {
   if (!msg) return;
 
   const senderId = String(msg.from?.id || '');
+  const chatId = msg.chat?.id;
   const text = msg.text || '';
   const threadId = msg.message_thread_id;
 
-  if (!text || !threadId) return;
+  if (!text) return;
+
+  // ── Direct messages from users (not in a topic) ────────────────────────────
+  if (!threadId) {
+    if (text.startsWith('/start')) {
+      const firstName = msg.from?.first_name || 'пользователь';
+      tgSendToUser(chatId,
+        `👋 Привет, <b>${firstName}</b>!\n\n` +
+        `Я бот технической поддержки <b>APINET.CLOUD</b> — AI API шлюза.\n\n` +
+        `Для общения со службой поддержки используйте чат на сайте — ` +
+        `там AI ответит мгновенно, а если нужен оператор — подключим живого специалиста.`,
+        { reply_markup: startKeyboard() }
+      );
+    } else {
+      tgSendToUser(chatId,
+        `💬 Для обращения в поддержку воспользуйтесь чатом на сайте или напишите нам в Telegram.`,
+        { reply_markup: startKeyboard() }
+      );
+    }
+    return;
+  }
 
   // Check admin whitelist — fail-closed: reject ALL if ADMIN_IDS is empty
   if (!ADMIN_IDS.has(senderId)) {
