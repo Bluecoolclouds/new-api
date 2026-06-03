@@ -102,7 +102,7 @@ Main topics:
 API Base URL: https://apinet.cloud/v1
 Tokens are created at: https://apinet.cloud/keys
 
-ESCALATION RULE: If the user's problem requires manual account access (balance corrections, bans, billing disputes, bugs), or the user explicitly asks for a human/operator, start your reply with the exact tag [[OPERATOR]] on its own line, then give a short message saying a human operator will assist them shortly.
+ESCALATION RULE: If the user's problem requires manual account access (balance corrections, bans, billing disputes, bugs), or the user explicitly asks for a human/operator, start your reply with the exact tag [[OPERATOR]] on its own line, then write: "Please contact our support team in Telegram." Do NOT say anything about an operator connecting or joining.
 
 SUGGESTED ACTIONS: At the end of your reply, you may suggest 2-4 follow-up buttons by appending: [[ACTIONS: Label1 | Label2 | Label3]]
 Use this when the user might want to explore next steps, for example after answering about errors suggest: [[ACTIONS: Как создать токен? | Пополнить баланс | Другая ошибка]]
@@ -125,7 +125,7 @@ Never invent features that don't exist. Be honest when you don't know.`
 Base URL для API: https://apinet.cloud/v1
 Токены создаются на странице: https://apinet.cloud/keys
 
-ПРАВИЛО ЭСКАЛАЦИИ: Если проблема пользователя требует ручного доступа к аккаунту (корректировка баланса, баны, споры по оплате, ошибки платформы), или пользователь явно просит живого оператора/человека — начни ответ с тега [[OPERATOR]] на отдельной строке, затем напиши короткое сообщение что живой оператор скоро поможет.
+ПРАВИЛО ЭСКАЛАЦИИ: Если проблема пользователя требует ручного доступа к аккаунту (корректировка баланса, баны, споры по оплате, ошибки платформы), или пользователь явно просит живого оператора/человека — начни ответ с тега [[OPERATOR]] на отдельной строке, затем напиши: "Свяжитесь с нашей службой поддержки в Telegram." Не пиши ничего про подключение оператора или что кто-то скоро ответит.
 
 КНОПКИ: В конце ответа ты можешь предложить 2-4 варианта следующего шага, добавив в самом конце: [[ACTIONS: Вариант1 | Вариант2 | Вариант3]]
 Используй кнопки когда есть очевидные следующие шаги — например, после ответа про ошибку: [[ACTIONS: Как создать токен? | Пополнить баланс | Другая ошибка]]
@@ -333,34 +333,35 @@ Base URL для API: https://apinet.cloud/v1
       margin: 10px 0 0 !important; border-radius: 14px !important;
       border: 1.5px solid #e2e8f0 !important; background: #f8fafc !important;
       padding: 14px 16px !important; display: flex !important;
-      align-items: center !important; gap: 13px !important;
+      flex-direction: column !important; gap: 10px !important;
+    }
+    .aw-escalate-head {
+      display: flex !important; align-items: center !important; gap: 10px !important;
     }
     .aw-escalate-icon {
-      width: 40px !important; height: 40px !important; flex-shrink: 0 !important;
+      width: 36px !important; height: 36px !important; flex-shrink: 0 !important;
       background: #229ed9 !important; border-radius: 50% !important;
       display: flex !important; align-items: center !important; justify-content: center !important;
     }
-    .aw-escalate-icon svg { width: 22px !important; height: 22px !important; fill: white !important; }
-    .aw-escalate-body {
-      flex: 1 !important; min-width: 0 !important;
-    }
+    .aw-escalate-icon svg { width: 20px !important; height: 20px !important; fill: white !important; }
+    .aw-escalate-body { min-width: 0 !important; }
     .aw-escalate-title {
       font-size: 13px !important; font-weight: 700 !important;
-      color: #0f172a !important; line-height: 1.3 !important; margin: 0 0 2px !important;
+      color: #0f172a !important; line-height: 1.3 !important; margin: 0 0 1px !important;
     }
     .aw-escalate-sub {
       font-size: 11.5px !important; color: #64748b !important; line-height: 1.4 !important;
     }
     .aw-escalate-btn {
-      display: inline-flex !important; align-items: center !important; gap: 5px !important;
-      background: #229ed9 !important; color: white !important;
-      font-size: 12px !important; font-weight: 600 !important;
-      border-radius: 8px !important; padding: 7px 13px !important;
-      text-decoration: none !important; white-space: nowrap !important;
-      flex-shrink: 0 !important; transition: background 0.15s !important;
+      display: flex !important; align-items: center !important; justify-content: center !important;
+      gap: 6px !important; background: #229ed9 !important; color: white !important;
+      font-size: 13px !important; font-weight: 600 !important;
+      border-radius: 9px !important; padding: 9px 14px !important;
+      text-decoration: none !important; transition: background 0.15s !important;
+      width: 100% !important; box-sizing: border-box !important;
     }
     .aw-escalate-btn:hover { background: #1a8bbf !important; }
-    .aw-escalate-btn svg { width: 13px !important; height: 13px !important; fill: white !important; flex-shrink: 0 !important; }
+    .aw-escalate-btn svg { width: 15px !important; height: 15px !important; fill: white !important; flex-shrink: 0 !important; }
   `;
 
   function escapeHtml(s) {
@@ -565,10 +566,12 @@ Base URL для API: https://apinet.cloud/v1
       const block = document.createElement('div');
       block.className = 'aw-escalate';
       block.innerHTML = `
-        <div class="aw-escalate-icon">${ICON_TG}</div>
-        <div class="aw-escalate-body">
-          <div class="aw-escalate-title">${t.escalateLabel}</div>
-          <div class="aw-escalate-sub">${t.escalateSub}</div>
+        <div class="aw-escalate-head">
+          <div class="aw-escalate-icon">${ICON_TG}</div>
+          <div class="aw-escalate-body">
+            <div class="aw-escalate-title">${t.escalateLabel}</div>
+            <div class="aw-escalate-sub">${t.escalateSub}</div>
+          </div>
         </div>
         <a class="aw-escalate-btn" href="${TG_LINK}" target="_blank" rel="noopener">
           ${ICON_TG}<span>${t.escalateBtn}</span>
