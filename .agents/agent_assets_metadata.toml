@@ -114,3 +114,9 @@ id = "jXYedaDWocSXD5_l9i9ni"
 uri = "file://widget-bot.tar.gz"
 type = "unspecified"
 title = "widget-bot.tar.gz (ADMIN_IDS=635680174 прописан)"
+
+[[outputs]]
+id = "8eMTo2s1txGM0SrT8H-mL"
+uri = "file://widget-only.tar.gz"
+type = "unspecified"
+title = "widget.js v7 (заменить на сервере)"
