@@ -98,7 +98,7 @@ export function AffiliateRewardsCard({
 
   const rules = [
     t(
-      'Earn a reward each time a referred user adds funds to their account.'
+      'Earn 10% from direct referrals, 5% from level 2, and 3% from level 3 — on every top-up they make.'
     ),
     t(
       'Rewards accumulate as Pending Revenue and can be transferred to your main balance at any time.'
