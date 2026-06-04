@@ -132,3 +132,9 @@ id = "ocXgub56Tm5khn_OMEVrs"
 uri = "file://apinet-video-guide.zip"
 type = "unspecified"
 title = "APINET.CLOUD — Видео-гайд (HTML)"
+
+[[outputs]]
+id = "KvpFjrXnND3_Hlyoku5W6"
+uri = "file://apinet-promo.zip"
+type = "unspecified"
+title = "VideoTemplate — promo (40+ AI)"
