@@ -126,3 +126,9 @@ id = "tlW3un_ayBlN27FIUarFd"
 uri = "file://apinet-video.zip"
 type = "unspecified"
 title = "ApinetVideo.tsx — компонент анимированного видео"
+
+[[outputs]]
+id = "ocXgub56Tm5khn_OMEVrs"
+uri = "file://apinet-video-guide.zip"
+type = "unspecified"
+title = "APINET.CLOUD — Видео-гайд (HTML)"
