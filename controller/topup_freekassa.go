@@ -459,6 +459,7 @@ func FreeKassaNotify(c *gin.Context) {
 
         logger.LogInfo(c.Request.Context(), fmt.Sprintf("FreeKassa 充值成功 trade_no=%s user_id=%d quota_to_add=%d money=%.2f client_ip=%s", topUp.TradeNo, topUp.UserId, quotaToAdd, topUp.Money, c.ClientIP()))
         model.RecordTopupLog(topUp.UserId, fmt.Sprintf("使用FreeKassa充值成功，充值额度: %d，支付金额：%.2f", quotaToAdd, topUp.Money), c.ClientIP(), topUp.PaymentMethod, model.PaymentProviderFreeKassa)
+        model.RewardReferralChain(topUp.UserId, quotaToAdd)
 
         _, _ = c.Writer.WriteString("YES")
 }

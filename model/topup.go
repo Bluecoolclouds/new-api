@@ -161,6 +161,7 @@ func Recharge(referenceId string, customerId string, callerIp string) (err error
         }
 
         RecordTopupLog(topUp.UserId, fmt.Sprintf("使用在线充值成功，充值金额: %v，支付金额：%d", logger.FormatQuota(int(quota)), topUp.Amount), callerIp, topUp.PaymentMethod, PaymentMethodStripe)
+        RewardReferralChain(topUp.UserId, int(quota))
 
         return nil
 }
@@ -466,6 +467,7 @@ func RechargeCreem(referenceId string, customerEmail string, customerName string
         }
 
         RecordTopupLog(topUp.UserId, fmt.Sprintf("使用Creem充值成功，充值额度: %v，支付金额：%.2f", quota, topUp.Money), callerIp, topUp.PaymentMethod, PaymentMethodCreem)
+        RewardReferralChain(topUp.UserId, int(quota))
 
         return nil
 }
@@ -528,6 +530,7 @@ func RechargeWaffo(tradeNo string, callerIp string) (err error) {
 
         if quotaToAdd > 0 {
                 RecordTopupLog(topUp.UserId, fmt.Sprintf("Waffo充值成功，充值额度: %v，支付金额: %.2f", logger.FormatQuota(quotaToAdd), topUp.Money), callerIp, topUp.PaymentMethod, PaymentMethodWaffo)
+                RewardReferralChain(topUp.UserId, quotaToAdd)
         }
 
         return nil
@@ -589,6 +592,7 @@ func RechargeWaffoPancake(tradeNo string) (err error) {
 
         if quotaToAdd > 0 {
                 RecordLog(topUp.UserId, LogTypeTopup, fmt.Sprintf("Waffo Pancake充值成功，充值额度: %v，支付金额: %.2f", logger.FormatQuota(quotaToAdd), topUp.Money))
+                RewardReferralChain(topUp.UserId, quotaToAdd)
         }
 
         return nil
@@ -652,6 +656,7 @@ func RechargeHeleket(tradeNo string, callerIp string) (err error) {
 
         if quotaToAdd > 0 {
                 RecordTopupLog(topUp.UserId, fmt.Sprintf("Heleket充值成功，充值额度: %v，支付金额: %.4f", logger.FormatQuota(quotaToAdd), topUp.Money), callerIp, topUp.PaymentMethod, PaymentMethodHeleket)
+                RewardReferralChain(topUp.UserId, quotaToAdd)
         }
 
         return nil
@@ -715,6 +720,7 @@ func RechargePally(tradeNo string, callerIp string) (err error) {
 
         if quotaToAdd > 0 {
                 RecordTopupLog(topUp.UserId, fmt.Sprintf("Pally充值成功，充值额度: %v，支付金额: %.2f RUB", logger.FormatQuota(quotaToAdd), topUp.Money), callerIp, topUp.PaymentMethod, PaymentMethodPally)
+                RewardReferralChain(topUp.UserId, quotaToAdd)
         }
 
         return nil
