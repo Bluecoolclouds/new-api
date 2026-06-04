@@ -138,3 +138,9 @@ id = "KvpFjrXnND3_Hlyoku5W6"
 uri = "file://apinet-promo.zip"
 type = "unspecified"
 title = "VideoTemplate — promo (40+ AI)"
+
+[[outputs]]
+id = "K-tENWvSdAGrmwkXRYRyN"
+uri = "file://apinet-screencast.zip"
+type = "unspecified"
+title = "APINET.CLOUD — Скринкаст (реальный интерфейс)"
