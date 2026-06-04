@@ -120,3 +120,9 @@ id = "8eMTo2s1txGM0SrT8H-mL"
 uri = "file://widget-only.tar.gz"
 type = "unspecified"
 title = "widget.js v9 — вертикальный блок + правильный текст AI"
+
+[[outputs]]
+id = "tlW3un_ayBlN27FIUarFd"
+uri = "file://apinet-video.zip"
+type = "unspecified"
+title = "ApinetVideo.tsx — компонент анимированного видео"
