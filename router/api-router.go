@@ -68,6 +68,9 @@ func SetApiRouter(router *gin.Engine) {
                 // Universal secure verification routes
                 apiRouter.POST("/verify", middleware.UserAuth(), middleware.CriticalRateLimit(), controller.UniversalVerify)
 
+                // Token verification for third-party services (accepts sk-... relay tokens)
+                apiRouter.GET("/user/verify-token", middleware.TokenAuthReadOnly(), controller.VerifyToken)
+
                 userRoute := apiRouter.Group("/user")
                 {
                         userRoute.POST("/register", middleware.CriticalRateLimit(), middleware.TurnstileCheck(), controller.Register)
