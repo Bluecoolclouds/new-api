@@ -1,11 +1,11 @@
 #!/bin/bash
 set -e
 
-NODE=/nix/store/cikdc61gfwvdma6y0p9b5d5d448aqcv6-nodejs-24.12.0/bin/node
-export PATH="$(dirname "$NODE"):$PATH"
+export PATH="/nix/store/60z37432vmgkg54krwr1z057bqwp7583-go-1.25.5/bin:$PATH"
 
 cd web/default
-node node_modules/.bin/rsbuild build
+bun install
+DISABLE_ESLINT_PLUGIN=true bun run build
 cd ../..
 
 go build -buildvcs=false -o new-api .
