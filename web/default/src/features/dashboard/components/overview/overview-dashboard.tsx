@@ -61,6 +61,7 @@ import {
   useApiInfo,
   useDashboardContentVisibility,
 } from '../../hooks/use-status-data'
+import { CheckinCalendarCard } from '@/features/profile/components/checkin-calendar-card'
 import { AnnouncementsPanel } from './announcements-panel'
 import { ApiInfoPanel } from './api-info-panel'
 import { ApiKeysMiniPanel } from './api-keys-mini-panel'
@@ -449,6 +450,9 @@ export function OverviewDashboard() {
   const { t } = useTranslation()
   const { status } = useStatus()
   const telegramBotName = (status?.telegram_bot_name as string) ?? ''
+  const checkinEnabled = status?.checkin_enabled === true
+  const turnstileEnabled = !!(status?.turnstile_check && status?.turnstile_site_key)
+  const turnstileSiteKey = status?.turnstile_site_key || ''
   const user = useAuthStore((state) => state.auth.user)
   const { items: apiInfoItems } = useApiInfo()
   const {
@@ -843,11 +847,6 @@ export function OverviewDashboard() {
               <QuickActionsSidebar actions={visibleQuickActions} />
             </CardStaggerItem>
           </CardStaggerContainer>
-          <CardStaggerContainer>
-            <CardStaggerItem>
-              <RecentActivityPanel />
-            </CardStaggerItem>
-          </CardStaggerContainer>
           {showAnnouncementsPanel && (
             <CardStaggerContainer>
               <CardStaggerItem>
@@ -855,6 +854,22 @@ export function OverviewDashboard() {
               </CardStaggerItem>
             </CardStaggerContainer>
           )}
+          {checkinEnabled && (
+            <CardStaggerContainer>
+              <CardStaggerItem>
+                <CheckinCalendarCard
+                  checkinEnabled={checkinEnabled}
+                  turnstileEnabled={turnstileEnabled}
+                  turnstileSiteKey={turnstileSiteKey}
+                />
+              </CardStaggerItem>
+            </CardStaggerContainer>
+          )}
+          <CardStaggerContainer>
+            <CardStaggerItem>
+              <RecentActivityPanel />
+            </CardStaggerItem>
+          </CardStaggerContainer>
         </div>
       </div>
     </div>
