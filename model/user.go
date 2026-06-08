@@ -1080,3 +1080,20 @@ func RootUserExists() bool {
         }
         return true
 }
+
+func UpdateUserGroup(userId int, group string) error {
+        err := DB.Model(&User{}).Where("id = ?", userId).Update("group", group).Error
+        if err != nil {
+                return err
+        }
+        if err := UpdateUserGroupCache(userId, group); err != nil {
+                common.SysLog("failed to update user group cache: " + err.Error())
+        }
+        return nil
+}
+
+func GetUsersByGroup(group string, limit, offset int) ([]User, error) {
+        var users []User
+        err := DB.Where(map[string]interface{}{"group": group}).Select("id").Limit(limit).Offset(offset).Find(&users).Error
+        return users, err
+}

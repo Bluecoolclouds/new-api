@@ -309,6 +309,8 @@ export interface UserWalletData {
   aff_count: number
   /** User group */
   group: string
+  /** Quota spent today (for SVIP progress) */
+  today_quota?: number
 }
 
 /**

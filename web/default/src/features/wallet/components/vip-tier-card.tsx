@@ -43,11 +43,12 @@ function ProgressBar({ pct }: { pct: number }) {
 export function VipTierCard({ user, quotaPerUnit }: VipTierCardProps) {
   const { t } = useTranslation()
 
-  const usedUSD = (user?.used_quota ?? 0) / (quotaPerUnit > 0 ? quotaPerUnit : 500000)
-  const dailyAvg = usedUSD / 30
+  const qpu = quotaPerUnit > 0 ? quotaPerUnit : 500000
+  const usedUSD = (user?.used_quota ?? 0) / qpu
+  const todayUSD = (user?.today_quota ?? 0) / qpu
 
   const vipPct = Math.min((usedUSD / VIP_THRESHOLD) * 100, 100)
-  const svipPct = Math.min((dailyAvg / SVIP_DAILY) * 100, 100)
+  const svipPct = Math.min((todayUSD / SVIP_DAILY) * 100, 100)
 
   const fmtUSD = (v: number) =>
     v >= 1000
@@ -56,7 +57,7 @@ export function VipTierCard({ user, quotaPerUnit }: VipTierCardProps) {
 
   const perks = [
     t('Reach $1,000 in total spend to auto-upgrade to the VIP group.'),
-    t('Average $100/day in usage over a month to auto-upgrade to the SVIP group.'),
+    t('Spend $100 in a single day as VIP to instantly upgrade to SVIP. SVIP is kept as long as you spend ≥ $100 every day.'),
     t('Higher tiers unlock extra discounts stacked on top of current offers.'),
   ]
 
@@ -94,9 +95,9 @@ export function VipTierCard({ user, quotaPerUnit }: VipTierCardProps) {
 
             <div>
               <div className='mb-1 flex items-baseline justify-between text-[12px]'>
-                <span className='text-white/60'>{t('Avg / day (30 d)')} → SVIP</span>
+                <span className='text-white/60'>{t('Today\'s spend')} → SVIP</span>
                 <span className='font-mono text-white/90'>
-                  {fmtUSD(dailyAvg)}{' '}
+                  {fmtUSD(todayUSD)}{' '}
                   <span className='text-white/40'>/ {fmtUSD(SVIP_DAILY)}</span>
                 </span>
               </div>

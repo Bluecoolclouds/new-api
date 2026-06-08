@@ -553,3 +553,13 @@ func DeleteOldLog(ctx context.Context, targetTimestamp int64, limit int) (int64,
 
         return total, nil
 }
+
+func GetUserDailyQuotaFromDB(userId int, startTs, endTs int64) (int, error) {
+        var total int64
+        err := DB.Model(&Log{}).
+                Where("user_id = ? AND type = ? AND created_at >= ? AND created_at < ?",
+                        userId, LogTypeConsume, startTs, endTs).
+                Select("COALESCE(SUM(quota), 0)").
+                Scan(&total).Error
+        return int(total), err
+}
