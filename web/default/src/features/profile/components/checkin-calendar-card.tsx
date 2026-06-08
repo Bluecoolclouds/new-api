@@ -296,6 +296,39 @@ export function CheckinCalendarCard({
   return (
     <TooltipProvider delay={100}>
       <Dialog
+        open={showTelegramPromo && !!telegramChannelUrl}
+        onOpenChange={(open) => !open && setShowTelegramPromo(false)}
+      >
+        <DialogContent className='sm:max-w-sm'>
+          <DialogHeader>
+            <DialogTitle className='text-center text-lg'>
+              📢 {t('Subscribe to get daily rewards')}
+            </DialogTitle>
+          </DialogHeader>
+          <div className='flex flex-col items-center gap-5 py-2'>
+            <p className='text-muted-foreground text-center text-sm'>
+              {t('Join our Telegram channel for news and bonuses')}
+            </p>
+            <a
+              href={telegramChannelUrl}
+              target='_blank'
+              rel='noopener noreferrer'
+              className='inline-flex w-full items-center justify-center gap-2 rounded-lg bg-sky-500 py-2.5 text-sm font-semibold text-white hover:bg-sky-600'
+            >
+              {telegramChannelId}
+              <ExternalLink className='h-4 w-4' />
+            </a>
+            <Button
+              className='w-full'
+              onClick={() => setShowTelegramPromo(false)}
+            >
+              {t('Done')}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
         open={turnstileModalVisible}
         onOpenChange={(open) => {
           setTurnstileModalVisible(open)
@@ -406,43 +439,6 @@ export function CheckinCalendarCard({
 
         {!collapsed ? (
           <>
-            {/* Telegram promo banner */}
-            {showTelegramPromo && telegramChannelUrl && (
-              <div className='border-b bg-sky-50 px-4 py-3 dark:bg-sky-950/30 sm:px-5'>
-                <div className='flex items-start justify-between gap-3'>
-                  <div className='flex items-start gap-2.5'>
-                    <span className='mt-0.5 text-base'>📢</span>
-                    <div>
-                      <p className='text-sm font-medium text-sky-800 dark:text-sky-200'>
-                        {t('Subscribe to get daily rewards')}
-                      </p>
-                      <p className='text-muted-foreground mt-0.5 text-xs'>
-                        {t('Join our Telegram channel for news and bonuses')}
-                      </p>
-                    </div>
-                  </div>
-                  <div className='flex shrink-0 items-center gap-2'>
-                    <a
-                      href={telegramChannelUrl}
-                      target='_blank'
-                      rel='noopener noreferrer'
-                      className='inline-flex items-center gap-1 rounded-md bg-sky-500 px-3 py-1.5 text-xs font-medium text-white hover:bg-sky-600'
-                    >
-                      {t('Subscribe')}
-                      <ExternalLink className='h-3 w-3' />
-                    </a>
-                    <button
-                      type='button'
-                      className='text-muted-foreground hover:text-foreground flex h-6 w-6 items-center justify-center rounded-md transition-colors'
-                      onClick={() => setShowTelegramPromo(false)}
-                    >
-                      ✕
-                    </button>
-                  </div>
-                </div>
-              </div>
-            )}
-
             {/* Stats */}
             <div className='grid grid-cols-3 divide-x border-b'>
               <div className='bg-card p-3 text-center sm:p-4'>
