@@ -94,6 +94,7 @@ export function CheckinCalendarCard({
   const [turnstileWidgetKey, setTurnstileWidgetKey] = useState(0)
   const [initialLoaded, setInitialLoaded] = useState(false)
   const [collapsed, setCollapsed] = useState<boolean>(false)
+  const [showTelegramPromo, setShowTelegramPromo] = useState(false)
 
   const currentMonthStr = useMemo(() => {
     const y = currentMonth.getFullYear()
@@ -188,20 +189,12 @@ export function CheckinCalendarCard({
               `🔥 ${t('Day')} ${streak} — +${formatQuotaWithCurrency(quota_awarded)}`
             )
           }
+          if (telegramChannelId && streak === 1) {
+            setShowTelegramPromo(true)
+          }
           refetch()
           setTurnstileModalVisible(false)
         } else {
-          if (res.message === 'NEED_TELEGRAM_LINK') {
-            toast.error(t('Link your Telegram account in Profile settings to check in'))
-            return
-          }
-          if (res.message === 'NEED_TELEGRAM_SUBSCRIPTION') {
-            if (telegramChannelUrl) {
-              window.open(telegramChannelUrl, '_blank', 'noopener')
-            }
-            toast.error(t('Subscribe to our Telegram channel to check in'), { duration: 5000 })
-            return
-          }
           if (!token && shouldTriggerTurnstile(res.message)) {
             if (!turnstileSiteKey) {
               toast.error(t('Turnstile is enabled but site key is empty.'))
@@ -413,6 +406,43 @@ export function CheckinCalendarCard({
 
         {!collapsed ? (
           <>
+            {/* Telegram promo banner */}
+            {showTelegramPromo && telegramChannelUrl && (
+              <div className='border-b bg-sky-50 px-4 py-3 dark:bg-sky-950/30 sm:px-5'>
+                <div className='flex items-start justify-between gap-3'>
+                  <div className='flex items-start gap-2.5'>
+                    <span className='mt-0.5 text-base'>📢</span>
+                    <div>
+                      <p className='text-sm font-medium text-sky-800 dark:text-sky-200'>
+                        {t('Subscribe to get daily rewards')}
+                      </p>
+                      <p className='text-muted-foreground mt-0.5 text-xs'>
+                        {t('Join our Telegram channel for news and bonuses')}
+                      </p>
+                    </div>
+                  </div>
+                  <div className='flex shrink-0 items-center gap-2'>
+                    <a
+                      href={telegramChannelUrl}
+                      target='_blank'
+                      rel='noopener noreferrer'
+                      className='inline-flex items-center gap-1 rounded-md bg-sky-500 px-3 py-1.5 text-xs font-medium text-white hover:bg-sky-600'
+                    >
+                      {t('Subscribe')}
+                      <ExternalLink className='h-3 w-3' />
+                    </a>
+                    <button
+                      type='button'
+                      className='text-muted-foreground hover:text-foreground flex h-6 w-6 items-center justify-center rounded-md transition-colors'
+                      onClick={() => setShowTelegramPromo(false)}
+                    >
+                      ✕
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* Stats */}
             <div className='grid grid-cols-3 divide-x border-b'>
               <div className='bg-card p-3 text-center sm:p-4'>
@@ -640,7 +670,7 @@ export function CheckinCalendarCard({
                       <li className='flex items-start gap-2'>
                         <span className='mt-0.5 shrink-0 text-sky-500'>•</span>
                         <span className='flex flex-wrap items-center gap-1'>
-                          {t('Subscription required')}:{' '}
+                          {t('Subscribe for news and bonuses')}:{' '}
                           <a
                             href={telegramChannelUrl}
                             target='_blank'
