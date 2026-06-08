@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"time"
@@ -11,6 +12,48 @@ import (
 	"github.com/QuantumNous/new-api/setting/operation_setting"
 	"github.com/gin-gonic/gin"
 )
+
+// checkTelegramSubscription проверяет подписку пользователя на Telegram-канал.
+// Возвращает "NEED_TELEGRAM_LINK" если аккаунт не привязан,
+// "NEED_TELEGRAM_SUBSCRIPTION" если не подписан на канал.
+func checkTelegramSubscription(userId int, channelId string) error {
+	if channelId == "" || common.TelegramBotToken == "" {
+		return nil
+	}
+
+	user, err := model.GetUserById(userId, false)
+	if err != nil || user == nil || user.TelegramId == "" {
+		return fmt.Errorf("NEED_TELEGRAM_LINK")
+	}
+
+	url := fmt.Sprintf("https://api.telegram.org/bot%s/getChatMember?chat_id=%s&user_id=%s",
+		common.TelegramBotToken, channelId, user.TelegramId)
+
+	resp, err := http.Get(url) //nolint:noctx
+	if err != nil {
+		return nil // сетевая ошибка — пропускаем проверку
+	}
+	defer resp.Body.Close()
+
+	var result struct {
+		Ok     bool `json:"ok"`
+		Result struct {
+			Status string `json:"status"`
+		} `json:"result"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		return nil
+	}
+	if !result.Ok {
+		return nil
+	}
+
+	status := result.Result.Status
+	if status == "left" || status == "kicked" || status == "" {
+		return fmt.Errorf("NEED_TELEGRAM_SUBSCRIPTION")
+	}
+	return nil
+}
 
 func GetCheckinStatus(c *gin.Context) {
 	setting := operation_setting.GetCheckinSetting()
@@ -33,10 +76,11 @@ func GetCheckinStatus(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"data": gin.H{
-			"enabled":   setting.Enabled,
-			"min_quota": setting.MinQuota,
-			"max_quota": setting.MaxQuota,
-			"stats":     stats,
+			"enabled":             setting.Enabled,
+			"min_quota":           setting.MinQuota,
+			"max_quota":           setting.MaxQuota,
+			"telegram_channel_id": setting.TelegramChannelId,
+			"stats":               stats,
 		},
 	})
 }
@@ -49,6 +93,14 @@ func DoCheckin(c *gin.Context) {
 	}
 
 	userId := c.GetInt("id")
+
+	if err := checkTelegramSubscription(userId, setting.TelegramChannelId); err != nil {
+		c.JSON(http.StatusOK, gin.H{
+			"success": false,
+			"message": err.Error(),
+		})
+		return
+	}
 
 	checkin, err := model.UserCheckin(userId)
 	if err != nil {

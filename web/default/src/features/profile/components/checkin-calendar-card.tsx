@@ -24,6 +24,7 @@ import {
   ChevronLeft,
   ChevronRight,
   ChevronUp,
+  ExternalLink,
   Flame,
   Star,
   Sparkles,
@@ -145,6 +146,10 @@ export function CheckinCalendarCard({
   const todayRecord = checkinRecordsMap[todayString]
   const currentStreak = checkinData?.stats?.current_streak ?? 0
   const nextMilestone = getNextMilestone(currentStreak)
+  const telegramChannelId = checkinData?.telegram_channel_id || ''
+  const telegramChannelUrl = telegramChannelId
+    ? `https://t.me/${telegramChannelId.replace(/^@/, '')}`
+    : ''
   const nextMilestoneMultiplier = nextMilestone
     ? getMilestoneMultiplier(nextMilestone) ?? null
     : null
@@ -186,6 +191,17 @@ export function CheckinCalendarCard({
           refetch()
           setTurnstileModalVisible(false)
         } else {
+          if (res.message === 'NEED_TELEGRAM_LINK') {
+            toast.error(t('Link your Telegram account in Profile settings to check in'))
+            return
+          }
+          if (res.message === 'NEED_TELEGRAM_SUBSCRIPTION') {
+            if (telegramChannelUrl) {
+              window.open(telegramChannelUrl, '_blank', 'noopener')
+            }
+            toast.error(t('Subscribe to our Telegram channel to check in'), { duration: 5000 })
+            return
+          }
           if (!token && shouldTriggerTurnstile(res.message)) {
             if (!turnstileSiteKey) {
               toast.error(t('Turnstile is enabled but site key is empty.'))
@@ -205,7 +221,7 @@ export function CheckinCalendarCard({
         setCheckinLoading(false)
       }
     },
-    [refetch, shouldTriggerTurnstile, t, turnstileSiteKey]
+    [refetch, shouldTriggerTurnstile, t, turnstileSiteKey, telegramChannelUrl]
   )
 
   const handlePrevMonth = () => {
@@ -620,6 +636,23 @@ export function CheckinCalendarCard({
                       <span className='text-primary mt-0.5 shrink-0'>•</span>
                       <span>{t('You can only check in once per day')}</span>
                     </li>
+                    {telegramChannelUrl && (
+                      <li className='flex items-start gap-2'>
+                        <span className='mt-0.5 shrink-0 text-sky-500'>•</span>
+                        <span className='flex flex-wrap items-center gap-1'>
+                          {t('Subscription required')}:{' '}
+                          <a
+                            href={telegramChannelUrl}
+                            target='_blank'
+                            rel='noopener noreferrer'
+                            className='inline-flex items-center gap-0.5 text-sky-500 underline underline-offset-2'
+                          >
+                            {telegramChannelId}
+                            <ExternalLink className='h-2.5 w-2.5' />
+                          </a>
+                        </span>
+                      </li>
+                    )}
                   </ul>
                 </div>
               </div>

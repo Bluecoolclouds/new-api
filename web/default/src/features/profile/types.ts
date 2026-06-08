@@ -227,6 +227,8 @@ export interface CheckinStatusResponse {
   min_quota: number
   /** Maximum quota per check-in */
   max_quota: number
+  /** Telegram channel ID required for check-in (e.g. @apinet_news), empty = no requirement */
+  telegram_channel_id?: string
   /** Check-in statistics */
   stats: CheckinStats
 }
