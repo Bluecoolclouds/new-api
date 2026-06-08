@@ -222,6 +222,7 @@ const BILLING_SECTIONS = [
           enabled: settings['checkin_setting.enabled'],
           minQuota: settings['checkin_setting.min_quota'],
           maxQuota: settings['checkin_setting.max_quota'],
+          telegramChannelId: settings['checkin_setting.telegram_channel_id'] ?? '',
         }}
       />
     ),

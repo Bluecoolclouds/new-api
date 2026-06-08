@@ -45,6 +45,7 @@ const schema = z.object({
   enabled: z.boolean(),
   minQuota: z.coerce.number().int().min(0),
   maxQuota: z.coerce.number().int().min(0),
+  telegramChannelId: z.string(),
 })
 
 type Values = z.infer<typeof schema>
@@ -56,6 +57,7 @@ export function CheckinSettingsSection({
     enabled: boolean
     minQuota: number
     maxQuota: number
+    telegramChannelId: string
   }
 }) {
   const { t } = useTranslation()
@@ -67,6 +69,7 @@ export function CheckinSettingsSection({
       enabled: defaultValues.enabled,
       minQuota: defaultValues.minQuota,
       maxQuota: defaultValues.maxQuota,
+      telegramChannelId: defaultValues.telegramChannelId,
     },
   })
 
@@ -94,6 +97,13 @@ export function CheckinSettingsSection({
       updates.push({
         key: 'checkin_setting.max_quota',
         value: String(values.maxQuota),
+      })
+    }
+
+    if (values.telegramChannelId !== defaultValues.telegramChannelId) {
+      updates.push({
+        key: 'checkin_setting.telegram_channel_id',
+        value: values.telegramChannelId,
       })
     }
 
@@ -144,51 +154,75 @@ export function CheckinSettingsSection({
           />
 
           {enabled && (
-            <div className='grid gap-6 sm:grid-cols-2'>
-              <FormField
-                control={form.control}
-                name='minQuota'
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>{t('Minimum check-in quota')}</FormLabel>
-                    <FormControl>
-                      <Input
-                        type='number'
-                        min={0}
-                        placeholder={t('1000')}
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormDescription>
-                      {t('Minimum quota amount awarded for check-in')}
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+            <>
+              <div className='grid gap-6 sm:grid-cols-2'>
+                <FormField
+                  control={form.control}
+                  name='minQuota'
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>{t('Minimum check-in quota')}</FormLabel>
+                      <FormControl>
+                        <Input
+                          type='number'
+                          min={0}
+                          placeholder={t('1000')}
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormDescription>
+                        {t('Minimum quota amount awarded for check-in')}
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name='maxQuota'
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>{t('Maximum check-in quota')}</FormLabel>
+                      <FormControl>
+                        <Input
+                          type='number'
+                          min={0}
+                          placeholder={t('10000')}
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormDescription>
+                        {t('Maximum quota amount awarded for check-in')}
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
 
               <FormField
                 control={form.control}
-                name='maxQuota'
+                name='telegramChannelId'
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>{t('Maximum check-in quota')}</FormLabel>
+                    <FormLabel>{t('Telegram channel ID (optional)')}</FormLabel>
                     <FormControl>
                       <Input
-                        type='number'
-                        min={0}
-                        placeholder={t('10000')}
+                        placeholder='@apinet_news'
                         {...field}
                       />
                     </FormControl>
                     <FormDescription>
-                      {t('Maximum quota amount awarded for check-in')}
+                      {t(
+                        'If set, users must be subscribed to this Telegram channel to check in. Requires Telegram bot token to be configured.'
+                      )}
                     </FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}
               />
-            </div>
+            </>
           )}
         </SettingsForm>
       </Form>
