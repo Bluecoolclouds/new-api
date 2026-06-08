@@ -12,7 +12,6 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// GetCheckinStatus 获取用户签到状态和历史记录
 func GetCheckinStatus(c *gin.Context) {
 	setting := operation_setting.GetCheckinSetting()
 	if !setting.Enabled {
@@ -20,7 +19,6 @@ func GetCheckinStatus(c *gin.Context) {
 		return
 	}
 	userId := c.GetInt("id")
-	// 获取月份参数，默认为当前月份
 	month := c.DefaultQuery("month", time.Now().Format("2006-01"))
 
 	stats, err := model.GetUserCheckinStats(userId, month)
@@ -43,7 +41,6 @@ func GetCheckinStatus(c *gin.Context) {
 	})
 }
 
-// DoCheckin 执行用户签到
 func DoCheckin(c *gin.Context) {
 	setting := operation_setting.GetCheckinSetting()
 	if !setting.Enabled {
@@ -61,12 +58,15 @@ func DoCheckin(c *gin.Context) {
 		})
 		return
 	}
-	model.RecordLog(userId, model.LogTypeSystem, fmt.Sprintf("用户签到，获得额度 %s", logger.LogQuota(checkin.QuotaAwarded)))
+	model.RecordLog(userId, model.LogTypeSystem, fmt.Sprintf("用户签到，获得额度 %s (连续第%d天)", logger.LogQuota(checkin.QuotaAwarded), checkin.Streak))
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"message": "签到成功",
 		"data": gin.H{
 			"quota_awarded": checkin.QuotaAwarded,
-			"checkin_date":  checkin.CheckinDate},
+			"checkin_date":  checkin.CheckinDate,
+			"streak":        checkin.Streak,
+			"is_milestone":  model.IsMilestoneStreak(checkin.Streak),
+		},
 	})
 }

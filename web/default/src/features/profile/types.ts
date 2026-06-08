@@ -211,6 +211,8 @@ export interface CheckinStats {
   total_quota: number
   /** Current month check-in count */
   checkin_count: number
+  /** Current consecutive streak */
+  current_streak: number
   /** Check-in records for the queried month */
   records: CheckinRecord[]
 }
@@ -221,6 +223,10 @@ export interface CheckinStats {
 export interface CheckinStatusResponse {
   /** Whether check-in feature is enabled */
   enabled: boolean
+  /** Minimum quota per check-in */
+  min_quota: number
+  /** Maximum quota per check-in */
+  max_quota: number
   /** Check-in statistics */
   stats: CheckinStats
 }
@@ -231,4 +237,20 @@ export interface CheckinStatusResponse {
 export interface CheckinResponse {
   /** Quota awarded for this check-in */
   quota_awarded: number
+  /** Streak at time of check-in */
+  streak: number
+  /** Whether this was a milestone streak day */
+  is_milestone: boolean
+}
+
+/**
+ * Checkin record for a specific date
+ */
+export interface CheckinRecord {
+  /** Check-in date (YYYY-MM-DD) */
+  checkin_date: string
+  /** Quota awarded for this check-in */
+  quota_awarded: number
+  /** Streak on this check-in day */
+  streak: number
 }

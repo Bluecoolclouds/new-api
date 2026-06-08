@@ -24,7 +24,10 @@ import {
   ChevronLeft,
   ChevronRight,
   ChevronUp,
+  Flame,
+  Star,
   Sparkles,
+  Trophy,
 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
@@ -55,6 +58,26 @@ interface CheckinCalendarCardProps {
   turnstileSiteKey: string
 }
 
+const MILESTONES = [7, 15, 25, 31] as const
+const MILESTONE_MULTIPLIERS: Record<number, number> = {
+  7: 3,
+  15: 5,
+  25: 7,
+  31: 10,
+}
+
+function getNextMilestone(streak: number): number | null {
+  return MILESTONES.find((m) => m > streak) ?? null
+}
+
+function getMilestoneMultiplier(streak: number): number | null {
+  return MILESTONE_MULTIPLIERS[streak] ?? null
+}
+
+function isMilestone(streak: number): boolean {
+  return streak in MILESTONE_MULTIPLIERS
+}
+
 export function CheckinCalendarCard({
   checkinEnabled,
   turnstileEnabled,
@@ -77,7 +100,6 @@ export function CheckinCalendarCard({
     return `${y}-${m}`
   }, [currentMonth])
 
-  // Fetch checkin status
   /* eslint-disable @tanstack/query/exhaustive-deps */
   const {
     data: checkinData,
@@ -98,10 +120,10 @@ export function CheckinCalendarCard({
   /* eslint-enable @tanstack/query/exhaustive-deps */
 
   const checkinRecordsMap = useMemo(() => {
-    const map: Record<string, number> = {}
+    const map: Record<string, CheckinRecord> = {}
     const records = checkinData?.stats?.records || []
     records.forEach((record: CheckinRecord) => {
-      map[record.checkin_date] = record.quota_awarded
+      map[record.checkin_date] = record
     })
     return map
   }, [checkinData?.stats?.records])
@@ -120,7 +142,12 @@ export function CheckinCalendarCard({
   }, [])
 
   const checkedToday = checkinData?.stats?.checked_in_today === true
-  const todayAward = checkinRecordsMap[todayString]
+  const todayRecord = checkinRecordsMap[todayString]
+  const currentStreak = checkinData?.stats?.current_streak ?? 0
+  const nextMilestone = getNextMilestone(currentStreak)
+  const nextMilestoneMultiplier = nextMilestone
+    ? getMilestoneMultiplier(nextMilestone) ?? null
+    : null
 
   useEffect(() => {
     if (initialLoaded) return
@@ -145,9 +172,17 @@ export function CheckinCalendarCard({
       try {
         const res = await performCheckin(token)
         if (res.success && res.data) {
-          toast.success(
-            `${t('Check-in successful! Received')} ${formatQuotaWithCurrency(res.data.quota_awarded)}`
-          )
+          const { quota_awarded, streak, is_milestone } = res.data
+          if (is_milestone) {
+            toast.success(
+              `🏆 ${t('Milestone')} ${streak} ${t('days')}! +${formatQuotaWithCurrency(quota_awarded)} (×${getMilestoneMultiplier(streak)})`,
+              { duration: 5000 }
+            )
+          } else {
+            toast.success(
+              `🔥 ${t('Day')} ${streak} — +${formatQuotaWithCurrency(quota_awarded)}`
+            )
+          }
           refetch()
           setTurnstileModalVisible(false)
         } else {
@@ -192,22 +227,19 @@ export function CheckinCalendarCard({
     const firstDay = new Date(year, month, 1)
     const lastDay = new Date(year, month + 1, 0)
     const daysInMonth = lastDay.getDate()
-    const startDayOfWeek = firstDay.getDay() // 0 = Sunday
+    const startDayOfWeek = firstDay.getDay()
 
     const days: Array<{ date: Date; isCurrentMonth: boolean }> = []
 
-    // Fill leading empty days
     for (let i = 0; i < startDayOfWeek; i++) {
       const d = new Date(year, month, -startDayOfWeek + i + 1)
       days.push({ date: d, isCurrentMonth: false })
     }
 
-    // Fill current month days
     for (let i = 1; i <= daysInMonth; i++) {
       days.push({ date: new Date(year, month, i), isCurrentMonth: true })
     }
 
-    // Fill trailing empty days to complete the grid
     const remaining = 7 - (days.length % 7)
     if (remaining < 7) {
       for (let i = 1; i <= remaining; i++) {
@@ -242,6 +274,15 @@ export function CheckinCalendarCard({
       </div>
     )
   }
+
+  // Milestone progress bar config
+  const allMilestones = [0, ...MILESTONES]
+  const prevMilestone = [...MILESTONES].reverse().find((m) => m <= currentStreak) ?? 0
+  const progressMax = nextMilestone ?? 31
+  const progressMin = prevMilestone
+  const progressPct = nextMilestone
+    ? Math.min(((currentStreak - progressMin) / (nextMilestone - progressMin)) * 100, 100)
+    : 100
 
   return (
     <TooltipProvider delay={100}>
@@ -293,6 +334,23 @@ export function CheckinCalendarCard({
                   <h3 className='text-sm font-semibold tracking-tight sm:text-base'>
                     {t('Daily Check-in')}
                   </h3>
+                  {currentStreak > 0 && (
+                    <div
+                      className={cn(
+                        'inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-[11px] font-medium',
+                        isMilestone(currentStreak)
+                          ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400'
+                          : 'bg-orange-500/10 text-orange-600 dark:text-orange-400'
+                      )}
+                    >
+                      {isMilestone(currentStreak) ? (
+                        <Trophy className='h-2.5 w-2.5' />
+                      ) : (
+                        <Flame className='h-2.5 w-2.5' />
+                      )}
+                      {currentStreak} {t('days')}
+                    </div>
+                  )}
                   {checkedToday && (
                     <div className='inline-flex items-center gap-1 rounded-md bg-emerald-500/10 px-2 py-0.5 text-[11px] font-medium text-emerald-600 dark:text-emerald-400'>
                       <Sparkles className='h-2.5 w-2.5' />
@@ -301,9 +359,11 @@ export function CheckinCalendarCard({
                   )}
                 </div>
                 <p className='text-muted-foreground mt-0.5 text-xs'>
-                  {checkedToday && todayAward !== undefined
-                    ? `${t('Today')} +${formatQuotaWithCurrency(todayAward)}`
-                    : t('Check in daily to receive random quota rewards')}
+                  {checkedToday && todayRecord
+                    ? `${t('Today')} +${formatQuotaWithCurrency(todayRecord.quota_awarded)}`
+                    : nextMilestone
+                      ? `${t('Next milestone')}: ${t('Day')} ${nextMilestone} (×${nextMilestoneMultiplier})`
+                      : t('Check in daily to receive increasing quota rewards')}
                 </p>
               </div>
             </button>
@@ -356,34 +416,100 @@ export function CheckinCalendarCard({
                 </div>
               </div>
               <div className='bg-card p-3 text-center sm:p-4'>
-                <div className='text-lg font-semibold tracking-tight tabular-nums sm:text-xl'>
-                  {formatQuotaWithCurrency(
-                    checkinData?.stats?.total_quota || 0,
-                    { digitsLarge: 0 }
+                <div className='flex items-center justify-center gap-1'>
+                  <span className='text-lg font-semibold tracking-tight tabular-nums sm:text-xl'>
+                    {currentStreak}
+                  </span>
+                  {currentStreak > 0 && (
+                    <Flame className='h-4 w-4 text-orange-500' />
                   )}
                 </div>
                 <div className='text-muted-foreground mt-0.5 text-[11px] leading-tight sm:text-xs'>
-                  {t('Total earned')}
+                  {t('Streak')}
                 </div>
               </div>
             </div>
 
+            {/* Milestone progress bar */}
+            <div className='border-b px-4 py-3 sm:px-5'>
+              <div className='mb-2 flex items-center justify-between'>
+                <span className='text-muted-foreground text-[11px] font-medium'>
+                  {t('Streak progress')}
+                </span>
+                {nextMilestone ? (
+                  <span className='text-[11px] font-medium text-amber-600 dark:text-amber-400'>
+                    {t('Day')} {nextMilestone}: ×{nextMilestoneMultiplier}
+                  </span>
+                ) : (
+                  <span className='text-[11px] font-medium text-amber-600 dark:text-amber-400'>
+                    🏆 {t('Max milestone reached')}!
+                  </span>
+                )}
+              </div>
+              <div className='relative h-2 w-full overflow-hidden rounded-full bg-muted'>
+                <div
+                  className={cn(
+                    'h-full rounded-full transition-all duration-500',
+                    isMilestone(currentStreak)
+                      ? 'bg-amber-500'
+                      : 'bg-orange-400'
+                  )}
+                  style={{ width: `${progressPct}%` }}
+                />
+              </div>
+              <div className='relative mt-1.5 flex'>
+                {MILESTONES.map((m) => {
+                  const pct = ((m - progressMin) / (progressMax - progressMin)) * 100
+                  const reached = currentStreak >= m
+                  return (
+                    <Tooltip key={m}>
+                      <TooltipTrigger asChild>
+                        <div
+                          className='absolute -translate-x-1/2'
+                          style={{ left: `${Math.min(pct, 100)}%` }}
+                        >
+                          <Star
+                            className={cn(
+                              'h-3 w-3 transition-colors',
+                              reached
+                                ? 'fill-amber-500 text-amber-500'
+                                : 'text-muted-foreground/40'
+                            )}
+                          />
+                        </div>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <div className='text-xs'>
+                          <div className='font-medium'>
+                            {t('Day')} {m}
+                          </div>
+                          <div className='text-muted-foreground'>
+                            ×{MILESTONE_MULTIPLIERS[m]} {t('bonus')}
+                          </div>
+                        </div>
+                      </TooltipContent>
+                    </Tooltip>
+                  )
+                })}
+              </div>
+            </div>
+
             {/* Calendar */}
-            <div className='p-4 sm:p-6'>
-              <div className='space-y-3 sm:space-y-4'>
+            <div className='p-4 sm:p-5'>
+              <div className='space-y-3'>
                 {/* Month navigation */}
                 <div className='flex items-center justify-between'>
                   <h4 className='text-xs font-semibold sm:text-sm'>
                     {dayjs(currentMonth).format('YYYY-MM')}
                   </h4>
-                  <div className='flex items-center gap-0.5 sm:gap-1'>
+                  <div className='flex items-center gap-0.5'>
                     <Button
                       variant='ghost'
                       size='icon'
                       className='h-7 w-7 sm:h-8 sm:w-8'
                       onClick={handlePrevMonth}
                     >
-                      <ChevronLeft className='h-3.5 w-3.5 sm:h-4 sm:w-4' />
+                      <ChevronLeft className='h-3.5 w-3.5' />
                     </Button>
                     <Button
                       variant='ghost'
@@ -391,24 +517,22 @@ export function CheckinCalendarCard({
                       className='h-7 w-7 sm:h-8 sm:w-8'
                       onClick={handleNextMonth}
                     >
-                      <ChevronRight className='h-3.5 w-3.5 sm:h-4 sm:w-4' />
+                      <ChevronRight className='h-3.5 w-3.5' />
                     </Button>
                   </div>
                 </div>
 
                 {/* Calendar grid */}
-                <div className='grid grid-cols-7 gap-0.5 sm:gap-1'>
-                  {/* Week day headers */}
+                <div className='grid grid-cols-7 gap-0.5'>
                   {weekDays.map((day) => (
                     <div
                       key={day}
-                      className='text-muted-foreground flex h-7 items-center justify-center text-[10px] font-medium sm:h-8 sm:text-xs'
+                      className='text-muted-foreground flex h-7 items-center justify-center text-[10px] font-medium'
                     >
                       {day}
                     </div>
                   ))}
 
-                  {/* Calendar days */}
                   {calendarDays.map((dayObj, idx) => {
                     const dateStr = `${dayObj.date.getFullYear()}-${String(
                       dayObj.date.getMonth() + 1
@@ -416,8 +540,9 @@ export function CheckinCalendarCard({
                       dayObj.date.getDate()
                     ).padStart(2, '0')}`
                     const isToday = dateStr === todayString
-                    const quotaAwarded = checkinRecordsMap[dateStr]
-                    const isCheckedIn = quotaAwarded !== undefined
+                    const record = checkinRecordsMap[dateStr]
+                    const isCheckedIn = !!record
+                    const isMilestoneDay = isCheckedIn && isMilestone(record.streak)
                     const dayNum = dayObj.date.getDate()
 
                     const dayButton = (
@@ -426,16 +551,22 @@ export function CheckinCalendarCard({
                         variant={isToday ? 'default' : 'ghost'}
                         disabled={!dayObj.isCurrentMonth}
                         className={cn(
-                          'relative flex h-9 w-full flex-col items-center justify-center rounded-lg px-0 text-xs font-medium sm:h-10 sm:text-sm',
+                          'relative flex h-9 w-full flex-col items-center justify-center rounded-lg px-0 text-xs font-medium',
                           !dayObj.isCurrentMonth &&
                             'text-muted-foreground/40 cursor-default',
                           isToday && 'hover:bg-primary/90',
-                          !isToday && isCheckedIn && 'font-semibold'
+                          !isToday && isCheckedIn && 'font-semibold',
+                          !isToday && isMilestoneDay && 'ring-1 ring-amber-400/60'
                         )}
                       >
                         <span className='tabular-nums'>{dayNum}</span>
                         {isCheckedIn && !isToday && (
-                          <span className='absolute bottom-0.5 h-1 w-1 rounded-full bg-emerald-500 sm:bottom-1' />
+                          <span
+                            className={cn(
+                              'absolute bottom-0.5 h-1 w-1 rounded-full sm:bottom-1',
+                              isMilestoneDay ? 'bg-amber-500' : 'bg-emerald-500'
+                            )}
+                          />
                         )}
                       </Button>
                     )
@@ -443,14 +574,24 @@ export function CheckinCalendarCard({
                     if (isCheckedIn && dayObj.isCurrentMonth) {
                       return (
                         <Tooltip key={idx}>
-                          <TooltipTrigger render={dayButton}></TooltipTrigger>
+                          <TooltipTrigger render={dayButton} />
                           <TooltipContent>
                             <div className='text-xs'>
-                              <div className='font-medium'>
-                                {t('Checked in')}
+                              <div className='font-medium flex items-center gap-1'>
+                                {isMilestoneDay && (
+                                  <Trophy className='h-3 w-3 text-amber-500' />
+                                )}
+                                {isMilestoneDay
+                                  ? `${t('Milestone')} ${record.streak} ${t('days')}!`
+                                  : t('Checked in')}
                               </div>
                               <div className='text-muted-foreground mt-0.5'>
-                                +{formatQuotaWithCurrency(quotaAwarded)}
+                                +{formatQuotaWithCurrency(record.quota_awarded)}
+                                {record.streak > 0 && (
+                                  <span className='ml-1'>
+                                    ({t('Day')} {record.streak})
+                                  </span>
+                                )}
                               </div>
                             </div>
                           </TooltipContent>
@@ -466,12 +607,14 @@ export function CheckinCalendarCard({
                 <div className='bg-muted/40 rounded-xl p-3'>
                   <ul className='text-muted-foreground space-y-1.5 text-[11px] sm:text-xs'>
                     <li className='flex items-start gap-2'>
-                      <span className='text-primary mt-0.5 shrink-0'>•</span>
-                      <span>{t('Check in daily to receive random quota rewards')}</span>
+                      <Flame className='text-orange-500 mt-0.5 h-3 w-3 shrink-0' />
+                      <span>{t('Each consecutive day adds +5% to your reward')}</span>
                     </li>
                     <li className='flex items-start gap-2'>
-                      <span className='text-primary mt-0.5 shrink-0'>•</span>
-                      <span>{t('Rewards will be added directly to your balance')}</span>
+                      <Trophy className='text-amber-500 mt-0.5 h-3 w-3 shrink-0' />
+                      <span>
+                        {t('Super bonuses on days')} 7 (×3), 15 (×5), 25 (×7), 31 (×10)
+                      </span>
                     </li>
                     <li className='flex items-start gap-2'>
                       <span className='text-primary mt-0.5 shrink-0'>•</span>
