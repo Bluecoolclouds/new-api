@@ -41,6 +41,18 @@ export default defineConfig({
             findFileUrl(url) {
               if (url.startsWith('~')) {
                 const stripped = url.slice(1);
+                const candidates = [
+                  path.resolve(__dirname, 'node_modules', stripped),
+                  path.resolve(__dirname, 'node_modules/@douyinfe/semi-ui/node_modules', stripped),
+                ];
+                for (const candidate of candidates) {
+                  try {
+                    const fs = require('fs');
+                    if (fs.existsSync(candidate)) {
+                      return new URL(candidate, 'file://');
+                    }
+                  } catch (_) {}
+                }
                 return new URL(
                   path.resolve(__dirname, 'node_modules', stripped),
                   'file://'
