@@ -17,3 +17,9 @@ var FreeKassaCryptoPaymentSystemId = ""
 var FreeKassaFallbackEmail = ""
 
 var FreeKassaApiKey = ""
+
+var FreeKassaEnableSBP = true
+var FreeKassaEnableCard = true
+var FreeKassaEnableCrypto = true
+var FreeKassaEnableID32 = false
+var FreeKassaID32Name = "Кассир.ру"

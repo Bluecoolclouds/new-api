@@ -70,6 +70,7 @@ function getMethodSubtitle(type: string, t: (key: string) => string): string {
     freekassa: t('SBP / Fast Pay'),
     freekassa_card: t('Visa / MC / Mir'),
     freekassa_crypto: t('USDT / BTC / ETH'),
+    freekassa_id32: t('Кассир.ру'),
     waffo: t('Waffo Pay'),
     waffo_pancake: t('Waffo'),
     creem: t('Creem'),
@@ -206,6 +207,8 @@ interface RechargeFormCardProps {
   enableFreeKassaTopup?: boolean
   freekassaCardEnabled?: boolean
   freekassaCryptoEnabled?: boolean
+  freekassaID32Enabled?: boolean
+  freekassaID32Name?: string
   rawUsdExchangeRate?: number
   freekassaUnitPrice?: number
   freekassaCbrRate?: number
@@ -250,6 +253,8 @@ export function RechargeFormCard({
   enableFreeKassaTopup,
   freekassaCardEnabled,
   freekassaCryptoEnabled,
+  freekassaID32Enabled,
+  freekassaID32Name,
   rawUsdExchangeRate = 1,
   freekassaUnitPrice = 0,
   freekassaCbrRate = 0,
@@ -362,6 +367,12 @@ export function RechargeFormCard({
       })
     }
 
+    if (freekassaID32Enabled) {
+      methods.push({
+        method: { type: 'freekassa_id32', name: freekassaID32Name || 'Кассир.ру' },
+      })
+    }
+
     if (enableHeleketTopup) {
       methods.push({
         method: { type: 'heleket', name: 'Heleket' },
@@ -369,7 +380,7 @@ export function RechargeFormCard({
     }
 
     return methods
-  }, [enableFreeKassaTopup, freekassaCardEnabled, freekassaCryptoEnabled, enableHeleketTopup, enablePallyTopup, t])
+  }, [enableFreeKassaTopup, freekassaCardEnabled, freekassaCryptoEnabled, freekassaID32Enabled, freekassaID32Name, enableHeleketTopup, enablePallyTopup, t])
 
   const handleAmountChange = (value: string) => {
     setLocalAmount(value)

@@ -53,6 +53,11 @@ const freeKassaSchema = z.object({
   FreeKassaFallbackEmail: z.string(),
   FreeKassaCBRMarkup: z.coerce.number(),
   FreeKassaCBRAutoSync: z.boolean(),
+  FreeKassaEnableSBP: z.boolean(),
+  FreeKassaEnableCard: z.boolean(),
+  FreeKassaEnableCrypto: z.boolean(),
+  FreeKassaEnableID32: z.boolean(),
+  FreeKassaID32Name: z.string(),
 })
 
 export type FreeKassaSettingsValues = z.infer<typeof freeKassaSchema>
@@ -183,6 +188,21 @@ export function FreeKassaSettingsSection({ defaultValues }: Props) {
     }
     if (values.FreeKassaCBRAutoSync !== initial.FreeKassaCBRAutoSync) {
       updates.push({ key: 'FreeKassaCBRAutoSync', value: String(values.FreeKassaCBRAutoSync) })
+    }
+    if (values.FreeKassaEnableSBP !== initial.FreeKassaEnableSBP) {
+      updates.push({ key: 'FreeKassaEnableSBP', value: String(values.FreeKassaEnableSBP) })
+    }
+    if (values.FreeKassaEnableCard !== initial.FreeKassaEnableCard) {
+      updates.push({ key: 'FreeKassaEnableCard', value: String(values.FreeKassaEnableCard) })
+    }
+    if (values.FreeKassaEnableCrypto !== initial.FreeKassaEnableCrypto) {
+      updates.push({ key: 'FreeKassaEnableCrypto', value: String(values.FreeKassaEnableCrypto) })
+    }
+    if (values.FreeKassaEnableID32 !== initial.FreeKassaEnableID32) {
+      updates.push({ key: 'FreeKassaEnableID32', value: String(values.FreeKassaEnableID32) })
+    }
+    if (values.FreeKassaID32Name !== initial.FreeKassaID32Name) {
+      updates.push({ key: 'FreeKassaID32Name', value: values.FreeKassaID32Name })
     }
 
     if (updates.length === 0) {
@@ -618,6 +638,108 @@ export function FreeKassaSettingsSection({ defaultValues }: Props) {
               </FormItem>
             )}
           />
+
+          <div className='rounded-md border p-3 space-y-3 bg-muted/30'>
+            <p className='text-xs font-medium text-muted-foreground uppercase tracking-wide'>
+              {t('Payment Method Visibility')}
+            </p>
+            <p className='text-xs text-muted-foreground'>
+              {t('Enable or disable individual payment methods shown to users. Requires FreeKassa to be fully configured.')}
+            </p>
+
+            <FormField
+              control={form.control}
+              name='FreeKassaEnableSBP'
+              render={({ field }) => (
+                <FormItem className='flex flex-row items-center justify-between'>
+                  <div>
+                    <FormLabel>{t('SBP (Fast Pay)')}</FormLabel>
+                    <p className='text-muted-foreground text-xs'>
+                      {t('Show the SBP / Fast Pay method (ID from «SBP Payment System ID» field above).')}
+                    </p>
+                  </div>
+                  <FormControl>
+                    <Switch checked={field.value} onCheckedChange={field.onChange} />
+                  </FormControl>
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name='FreeKassaEnableCard'
+              render={({ field }) => (
+                <FormItem className='flex flex-row items-center justify-between'>
+                  <div>
+                    <FormLabel>{t('Cards (Visa / MC / Mir)')}</FormLabel>
+                    <p className='text-muted-foreground text-xs'>
+                      {t('Show the bank card payment method (ID from «Card Payment System ID» field above).')}
+                    </p>
+                  </div>
+                  <FormControl>
+                    <Switch checked={field.value} onCheckedChange={field.onChange} />
+                  </FormControl>
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name='FreeKassaEnableCrypto'
+              render={({ field }) => (
+                <FormItem className='flex flex-row items-center justify-between'>
+                  <div>
+                    <FormLabel>{t('Crypto')}</FormLabel>
+                    <p className='text-muted-foreground text-xs'>
+                      {t('Show the cryptocurrency payment method (ID from «Crypto Payment System ID» field above).')}
+                    </p>
+                  </div>
+                  <FormControl>
+                    <Switch checked={field.value} onCheckedChange={field.onChange} />
+                  </FormControl>
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name='FreeKassaEnableID32'
+              render={({ field }) => (
+                <FormItem className='flex flex-row items-center justify-between'>
+                  <div>
+                    <FormLabel>{t('Payment Method ID 32 (Кассир.ру)')}</FormLabel>
+                    <p className='text-muted-foreground text-xs'>
+                      {t('Show FreeKassa payment system ID 32. Uses the name from the field below.')}
+                    </p>
+                  </div>
+                  <FormControl>
+                    <Switch checked={field.value} onCheckedChange={field.onChange} />
+                  </FormControl>
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name='FreeKassaID32Name'
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>{t('ID 32 Display Name')}</FormLabel>
+                  <FormControl>
+                    <Input
+                      placeholder='Кассир.ру'
+                      autoComplete='off'
+                      {...field}
+                    />
+                  </FormControl>
+                  <p className='text-muted-foreground text-xs'>
+                    {t('The name shown to users for payment method ID 32.')}
+                  </p>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
         </SettingsForm>
       </Form>
     </div>

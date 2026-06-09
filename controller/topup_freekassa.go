@@ -50,6 +50,8 @@ func resolvePaymentSystemId(paymentMethod string) string {
                         return setting.FreeKassaCryptoPaymentSystemId
                 }
                 return setting.FreeKassaPaymentSystemId
+        case "freekassa_id32":
+                return "32"
         default:
                 return setting.FreeKassaPaymentSystemId
         }

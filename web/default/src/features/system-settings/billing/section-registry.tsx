@@ -188,6 +188,11 @@ const BILLING_SECTIONS = [
           FreeKassaFallbackEmail: settings.FreeKassaFallbackEmail ?? '',
           FreeKassaCBRMarkup: settings.FreeKassaCBRMarkup ?? 0,
           FreeKassaCBRAutoSync: settings.FreeKassaCBRAutoSync ?? false,
+          FreeKassaEnableSBP: settings.FreeKassaEnableSBP ?? true,
+          FreeKassaEnableCard: settings.FreeKassaEnableCard ?? true,
+          FreeKassaEnableCrypto: settings.FreeKassaEnableCrypto ?? true,
+          FreeKassaEnableID32: settings.FreeKassaEnableID32 ?? false,
+          FreeKassaID32Name: settings.FreeKassaID32Name ?? 'Кассир.ру',
         }}
         heleketDefaultValues={{
           HeleketApiKey: settings.HeleketApiKey ?? '',

@@ -128,6 +128,11 @@ func InitOptionMap() {
         common.OptionMap["FreeKassaCryptoPaymentSystemId"] = setting.FreeKassaCryptoPaymentSystemId
         common.OptionMap["FreeKassaFallbackEmail"] = setting.FreeKassaFallbackEmail
         common.OptionMap["FreeKassaApiKey"] = setting.FreeKassaApiKey
+        common.OptionMap["FreeKassaEnableSBP"] = strconv.FormatBool(setting.FreeKassaEnableSBP)
+        common.OptionMap["FreeKassaEnableCard"] = strconv.FormatBool(setting.FreeKassaEnableCard)
+        common.OptionMap["FreeKassaEnableCrypto"] = strconv.FormatBool(setting.FreeKassaEnableCrypto)
+        common.OptionMap["FreeKassaEnableID32"] = strconv.FormatBool(setting.FreeKassaEnableID32)
+        common.OptionMap["FreeKassaID32Name"] = setting.FreeKassaID32Name
         common.OptionMap["HeleketApiKey"] = setting.HeleketApiKey
         common.OptionMap["HeleketMerchantUUID"] = setting.HeleketMerchantUUID
         common.OptionMap["HeleketCurrency"] = setting.HeleketCurrency
@@ -515,6 +520,16 @@ func updateOptionMap(key string, value string) (err error) {
                 setting.FreeKassaFallbackEmail = value
         case "FreeKassaApiKey":
                 setting.FreeKassaApiKey = value
+        case "FreeKassaEnableSBP":
+                setting.FreeKassaEnableSBP = value == "true"
+        case "FreeKassaEnableCard":
+                setting.FreeKassaEnableCard = value == "true"
+        case "FreeKassaEnableCrypto":
+                setting.FreeKassaEnableCrypto = value == "true"
+        case "FreeKassaEnableID32":
+                setting.FreeKassaEnableID32 = value == "true"
+        case "FreeKassaID32Name":
+                setting.FreeKassaID32Name = value
         case "HeleketApiKey":
                 setting.HeleketApiKey = value
         case "HeleketMerchantUUID":
