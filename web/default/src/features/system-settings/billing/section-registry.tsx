@@ -192,7 +192,7 @@ const BILLING_SECTIONS = [
           FreeKassaEnableCard: settings.FreeKassaEnableCard ?? true,
           FreeKassaEnableCrypto: settings.FreeKassaEnableCrypto ?? true,
           FreeKassaEnableID32: settings.FreeKassaEnableID32 ?? false,
-          FreeKassaID32Name: settings.FreeKassaID32Name ?? 'Кассир.ру',
+          FreeKassaID32Name: settings.FreeKassaID32Name ?? 'Visa/Mastercard',
         }}
         heleketDefaultValues={{
           HeleketApiKey: settings.HeleketApiKey ?? '',

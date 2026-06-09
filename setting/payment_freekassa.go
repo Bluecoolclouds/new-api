@@ -22,4 +22,4 @@ var FreeKassaEnableSBP = true
 var FreeKassaEnableCard = true
 var FreeKassaEnableCrypto = true
 var FreeKassaEnableID32 = false
-var FreeKassaID32Name = "Кассир.ру"
+var FreeKassaID32Name = "Visa/Mastercard"

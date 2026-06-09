@@ -94,6 +94,7 @@ export function isFreeKassaPayment(paymentType: string): boolean {
     paymentType === PAYMENT_TYPES.FREEKASSA ||
     paymentType === PAYMENT_TYPES.FREEKASSA_CARD ||
     paymentType === PAYMENT_TYPES.FREEKASSA_CRYPTO ||
+    paymentType === PAYMENT_TYPES.FREEKASSA_ID32 ||
     paymentType.startsWith('freekassa_crypto_')
   )
 }

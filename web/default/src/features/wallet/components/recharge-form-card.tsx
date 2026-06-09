@@ -70,7 +70,7 @@ function getMethodSubtitle(type: string, t: (key: string) => string): string {
     freekassa: t('SBP / Fast Pay'),
     freekassa_card: t('Visa / MC / Mir'),
     freekassa_crypto: t('USDT / BTC / ETH'),
-    freekassa_id32: t('Кассир.ру'),
+    freekassa_id32: t('VISA/MASTERCARD USD WORLD'),
     waffo: t('Waffo Pay'),
     waffo_pancake: t('Waffo'),
     creem: t('Creem'),
