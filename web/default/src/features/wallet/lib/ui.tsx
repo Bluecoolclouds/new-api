@@ -149,6 +149,17 @@ export function getPaymentIcon(
           style={{ color: PAYMENT_ICON_COLORS[PAYMENT_TYPES.FREEKASSA] }}
         />
       )
+    case PAYMENT_TYPES.FREEKASSA_ID32:
+      return (
+        <img
+          src='/visa-mastercard.png'
+          alt='Visa/Mastercard'
+          className={className}
+          style={{ objectFit: 'contain' }}
+          loading='lazy'
+          decoding='async'
+        />
+      )
     default:
       return <CreditCard className={className} />
   }
