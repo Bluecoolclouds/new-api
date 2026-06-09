@@ -749,6 +749,12 @@ export function RechargeFormCard({
                                     alt='Pally'
                                     className='h-5 w-5 object-contain'
                                   />
+                                ) : method.type === 'freekassa_id32' ? (
+                                  <img
+                                    src='/visa-mastercard.png'
+                                    alt='Visa/Mastercard'
+                                    className='h-8 w-8 object-contain'
+                                  />
                                 ) : (
                                   getPaymentIcon(
                                     method.type.startsWith('waffo-') ? 'waffo' : method.type,
