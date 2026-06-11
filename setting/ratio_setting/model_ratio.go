@@ -314,6 +314,12 @@ var defaultModelPrice = map[string]float64{
         "veo-3.0-fast-generate-001":      0.15,
         "veo-3.1-generate-preview":       0.4,
         "veo-3.1-fast-generate-preview":  0.15,
+        "doubao-seedance-1-0-pro-250528":  0.20,
+        "doubao-seedance-1-0-lite-t2v":    0.07,
+        "doubao-seedance-1-0-lite-i2v":    0.07,
+        "doubao-seedance-1-5-pro-251215":  0.20,
+        "doubao-seedance-2-0-260128":      0.23,
+        "doubao-seedance-2-0-fast-260128": 0.185,
 }
 
 var defaultAudioRatio = map[string]float64{
