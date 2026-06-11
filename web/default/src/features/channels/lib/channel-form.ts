@@ -78,7 +78,7 @@ export const channelFormSchema = z.object({
   upstream_model_update_check_enabled: z.boolean().optional(),
   upstream_model_update_auto_sync_enabled: z.boolean().optional(),
   upstream_model_update_ignored_models: z.string().optional(),
-  markup_ratio: z.number().optional(),
+  markup_ratio: z.number().min(0.01).optional(),
 })
 
 export type ChannelFormValues = z.infer<typeof channelFormSchema>

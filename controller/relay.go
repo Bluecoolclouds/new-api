@@ -163,8 +163,11 @@ func Relay(c *gin.Context, relayFormat types.RelayFormat) {
                 logger.LogInfo(c, fmt.Sprintf("模型 %s 免费，跳过预扣费", relayInfo.OriginModelName))
         } else {
                 preConsumeQuota := priceData.QuotaToPreConsume
-                if mr := relayInfo.ChannelSetting.MarkupRatio; mr > 0 && mr != 1.0 && preConsumeQuota > 0 {
-                        preConsumeQuota = int(math.Round(float64(preConsumeQuota) * mr))
+                channelSetting, csOk := common.GetContextKeyType[dto.ChannelSettings](c, constant.ContextKeyChannelSetting)
+                if csOk {
+                        if mr := channelSetting.MarkupRatio; mr > 0 && mr != 1.0 && preConsumeQuota > 0 {
+                                preConsumeQuota = int(math.Round(float64(preConsumeQuota) * mr))
+                        }
                 }
                 newAPIError = service.PreConsumeBilling(c, preConsumeQuota, relayInfo)
                 if newAPIError != nil {
