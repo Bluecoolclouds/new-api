@@ -346,7 +346,7 @@ func PostTextConsumeQuota(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, us
                 }
         }
 
-        if relayInfo.ChannelSetting.MarkupRatio > 0 && relayInfo.ChannelSetting.MarkupRatio != 1.0 && summary.Quota > 0 {
+        if relayInfo.ChannelSetting.MarkupRatio > 1.0 && summary.Quota > 0 {
                 summary.Quota = int(decimal.NewFromInt(int64(summary.Quota)).Mul(decimal.NewFromFloat(relayInfo.ChannelSetting.MarkupRatio)).Round(0).IntPart())
                 if summary.Quota <= 0 {
                         summary.Quota = 1
@@ -462,7 +462,7 @@ func PostTextConsumeQuota(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, us
                 // to cache_creation_tokens.
                 other["cache_write_tokens"] = cacheWriteTokens
         }
-        if relayInfo.ChannelSetting.MarkupRatio > 0 && relayInfo.ChannelSetting.MarkupRatio != 1.0 {
+        if relayInfo.ChannelSetting.MarkupRatio > 1.0 {
                 other["markup_ratio"] = relayInfo.ChannelSetting.MarkupRatio
         }
         if relayInfo.GetFinalRequestRelayFormat() != types.RelayFormatClaude && usage != nil && usage.UsageSource != "" && usage.InputTokens > 0 {

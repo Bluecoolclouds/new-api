@@ -165,7 +165,7 @@ func Relay(c *gin.Context, relayFormat types.RelayFormat) {
                 preConsumeQuota := priceData.QuotaToPreConsume
                 channelSetting, csOk := common.GetContextKeyType[dto.ChannelSettings](c, constant.ContextKeyChannelSetting)
                 if csOk {
-                        if mr := channelSetting.MarkupRatio; mr > 0 && mr != 1.0 && preConsumeQuota > 0 {
+                        if mr := channelSetting.MarkupRatio; mr > 1.0 && preConsumeQuota > 0 {
                                 preConsumeQuota = int(math.Round(float64(preConsumeQuota) * mr))
                         }
                 }
