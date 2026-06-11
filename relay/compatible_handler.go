@@ -177,10 +177,17 @@ func TextHelper(c *gin.Context, info *relaycommon.RelayInfo) (newAPIError *types
                 }
 
                 // apply hard max_tokens cap after param_override (some upstreams have strict limits)
-                if capper, ok := adaptor.(channel.MaxTokensCapper); ok {
-                        cap := capper.MaxTokensCap()
-                        if cur := gjson.GetBytes(jsonData, "max_tokens"); cur.Exists() && cur.Uint() > uint64(cap) {
-                                if patched, patchErr := sjson.SetBytes(jsonData, "max_tokens", cap); patchErr == nil {
+                // cap priority: channel setting > adaptor interface
+                var maxTokensCapValue *uint
+                if info.ChannelSetting.MaxTokensCap != nil {
+                        maxTokensCapValue = info.ChannelSetting.MaxTokensCap
+                } else if capper, ok := adaptor.(channel.MaxTokensCapper); ok {
+                        v := capper.MaxTokensCap()
+                        maxTokensCapValue = &v
+                }
+                if maxTokensCapValue != nil {
+                        if cur := gjson.GetBytes(jsonData, "max_tokens"); cur.Exists() && cur.Uint() > uint64(*maxTokensCapValue) {
+                                if patched, patchErr := sjson.SetBytes(jsonData, "max_tokens", *maxTokensCapValue); patchErr == nil {
                                         jsonData = patched
                                 }
                         }
