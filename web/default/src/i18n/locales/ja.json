@@ -4548,6 +4548,8 @@
     "Zero retention": "データ保持なし",
     "Zhipu": "Zhipu",
     "Zhipu V4": "Zhipu V 4",
-    "Zoom": "ズーム"
+    "Zoom": "ズーム",
+    "Markup Ratio": "マークアップ倍率",
+    "Multiplier applied to the cost of all requests through this channel (e.g. 1.2 = +20%). Use 1 to disable.": "このチャンネルの全リクエストコストに適用される倍率（例: 1.2 = +20%）。1 で無効化。"
   }
 }

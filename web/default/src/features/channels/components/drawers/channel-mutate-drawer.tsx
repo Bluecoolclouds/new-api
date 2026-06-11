@@ -212,6 +212,7 @@ function hasAdvancedSettingsValues(values: ChannelFormValues): boolean {
     values.remark?.trim() ||
     values.priority ||
     values.weight ||
+    (values.markup_ratio !== undefined && values.markup_ratio !== 1) ||
     values.proxy?.trim() ||
     values.system_prompt?.trim() ||
     values.force_format ||
@@ -2546,6 +2547,35 @@ export function ChannelMutateDrawer({
                             )}
                           />
                         </div>
+
+                        <FormField
+                          control={form.control}
+                          name='markup_ratio'
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>{t('Markup Ratio')}</FormLabel>
+                              <FormControl>
+                                <Input
+                                  type='number'
+                                  step='0.01'
+                                  min='0'
+                                  placeholder='1'
+                                  {...field}
+                                  value={field.value ?? 1}
+                                  onChange={(e) =>
+                                    field.onChange(Number(e.target.value))
+                                  }
+                                />
+                              </FormControl>
+                              <FormDescription>
+                                {t(
+                                  'Multiplier applied to the cost of all requests through this channel (e.g. 1.2 = +20%). Use 1 to disable.'
+                                )}
+                              </FormDescription>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
 
                         <FormField
                           control={form.control}

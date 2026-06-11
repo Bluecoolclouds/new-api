@@ -346,6 +346,13 @@ func PostTextConsumeQuota(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, us
                 }
         }
 
+        if relayInfo.ChannelSetting.MarkupRatio > 0 && relayInfo.ChannelSetting.MarkupRatio != 1.0 && summary.Quota > 0 {
+                summary.Quota = int(decimal.NewFromInt(int64(summary.Quota)).Mul(decimal.NewFromFloat(relayInfo.ChannelSetting.MarkupRatio)).Round(0).IntPart())
+                if summary.Quota <= 0 {
+                        summary.Quota = 1
+                }
+        }
+
         if summary.WebSearchCallCount > 0 {
                 extraContent = append(extraContent, fmt.Sprintf("Web Search 调用 %d 次，调用花费 %s", summary.WebSearchCallCount, decimal.NewFromFloat(summary.WebSearchPrice).Mul(decimal.NewFromInt(int64(summary.WebSearchCallCount))).Div(decimal.NewFromInt(1000)).Mul(decimal.NewFromFloat(summary.GroupRatio)).Mul(decimal.NewFromFloat(common.QuotaPerUnit)).String()))
         }
@@ -454,6 +461,9 @@ func PostTextConsumeQuota(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, us
                 // If split 5m/1h values are present, this is their sum; otherwise it falls back
                 // to cache_creation_tokens.
                 other["cache_write_tokens"] = cacheWriteTokens
+        }
+        if relayInfo.ChannelSetting.MarkupRatio > 0 && relayInfo.ChannelSetting.MarkupRatio != 1.0 {
+                other["markup_ratio"] = relayInfo.ChannelSetting.MarkupRatio
         }
         if relayInfo.GetFinalRequestRelayFormat() != types.RelayFormatClaude && usage != nil && usage.UsageSource != "" && usage.InputTokens > 0 {
                 // input_tokens_total: explicit normalized total input used by the usage log UI.

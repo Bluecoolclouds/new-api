@@ -4679,6 +4679,8 @@
     "Zhipu": "Zhipu",
     "Zhipu V4": "Zhipu V4",
     "Zoom": "Zoom",
-    "СБП / Карта (RUB)": "СБП / Карта (RUB)"
+    "СБП / Карта (RUB)": "СБП / Карта (RUB)",
+    "Markup Ratio": "Наценка (×)",
+    "Multiplier applied to the cost of all requests through this channel (e.g. 1.2 = +20%). Use 1 to disable.": "Множитель стоимости всех запросов через этот канал (напр. 1.2 = +20%). Значение 1 — без наценки."
   }
 }

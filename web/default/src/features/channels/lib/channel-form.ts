@@ -78,6 +78,7 @@ export const channelFormSchema = z.object({
   upstream_model_update_check_enabled: z.boolean().optional(),
   upstream_model_update_auto_sync_enabled: z.boolean().optional(),
   upstream_model_update_ignored_models: z.string().optional(),
+  markup_ratio: z.number().optional(),
 })
 
 export type ChannelFormValues = z.infer<typeof channelFormSchema>
@@ -135,6 +136,7 @@ export const CHANNEL_FORM_DEFAULT_VALUES: ChannelFormValues = {
   upstream_model_update_check_enabled: false,
   upstream_model_update_auto_sync_enabled: false,
   upstream_model_update_ignored_models: '',
+  markup_ratio: 1,
 }
 
 // ============================================================================
@@ -157,6 +159,8 @@ export function transformChannelToFormDefaults(
     system_prompt_override: false,
   }
 
+  let markupRatio = 1
+
   if (channel.setting) {
     try {
       const parsed = JSON.parse(channel.setting)
@@ -167,6 +171,9 @@ export function transformChannelToFormDefaults(
         pass_through_body_enabled: parsed.pass_through_body_enabled || false,
         system_prompt: parsed.system_prompt || '',
         system_prompt_override: parsed.system_prompt_override || false,
+      }
+      if (typeof parsed.markup_ratio === 'number' && parsed.markup_ratio > 0) {
+        markupRatio = parsed.markup_ratio
       }
     } catch (error) {
       // eslint-disable-next-line no-console
@@ -247,6 +254,7 @@ export function transformChannelToFormDefaults(
     key_mode: 'append', // Default to append mode for editing multi-key channels
     // Channel extra settings
     ...extraSettings,
+    markup_ratio: markupRatio,
     // Type-specific settings
     is_enterprise_account: isEnterpriseAccount,
     vertex_key_type: vertexKeyType,
@@ -269,13 +277,17 @@ export function transformChannelToFormDefaults(
  * Build the setting JSON string from form extra settings
  */
 function buildSettingJSON(formData: ChannelFormValues): string {
-  const settingObj = {
+  const settingObj: Record<string, unknown> = {
     force_format: formData.force_format || false,
     thinking_to_content: formData.thinking_to_content || false,
     proxy: formData.proxy || '',
     pass_through_body_enabled: formData.pass_through_body_enabled || false,
     system_prompt: formData.system_prompt || '',
     system_prompt_override: formData.system_prompt_override || false,
+  }
+  const mr = formData.markup_ratio
+  if (typeof mr === 'number' && mr > 0 && mr !== 1) {
+    settingObj.markup_ratio = mr
   }
   return JSON.stringify(settingObj)
 }

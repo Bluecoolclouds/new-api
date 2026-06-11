@@ -4548,6 +4548,8 @@
     "Zero retention": "Không lưu dữ liệu",
     "Zhipu": "Zhipu",
     "Zhipu V4": "Zhipu V4",
-    "Zoom": "Zoom"
+    "Zoom": "Zoom",
+    "Markup Ratio": "Tỷ lệ tăng giá",
+    "Multiplier applied to the cost of all requests through this channel (e.g. 1.2 = +20%). Use 1 to disable.": "Hệ số nhân áp dụng cho chi phí của tất cả yêu cầu qua kênh này (vd: 1.2 = +20%). Dùng 1 để tắt."
   }
 }

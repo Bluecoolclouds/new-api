@@ -4548,6 +4548,8 @@
     "Zero retention": "零数据保留",
     "Zhipu": "智谱",
     "Zhipu V4": "智谱 V4",
-    "Zoom": "缩放"
+    "Zoom": "缩放",
+    "Markup Ratio": "加价倍率",
+    "Multiplier applied to the cost of all requests through this channel (e.g. 1.2 = +20%). Use 1 to disable.": "应用于该渠道所有请求费用的倍率（如 1.2 = +20%）。设为 1 则不加价。"
   }
 }
