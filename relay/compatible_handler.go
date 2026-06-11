@@ -185,12 +185,13 @@ func TextHelper(c *gin.Context, info *relaycommon.RelayInfo) (newAPIError *types
                         v := capper.MaxTokensCap()
                         maxTokensCapValue = &v
                 }
-                logger.LogInfo(c, fmt.Sprintf("[cap-debug] channelId=%d MaxTokensCap=%v max_tokens_in_json=%v", info.ChannelId, maxTokensCapValue, gjson.GetBytes(jsonData, "max_tokens")))
                 if maxTokensCapValue != nil {
-                        if cur := gjson.GetBytes(jsonData, "max_tokens"); cur.Exists() && cur.Uint() > uint64(*maxTokensCapValue) {
+                        cur := gjson.GetBytes(jsonData, "max_tokens")
+                        curUint := cur.Uint()
+                        // Apply cap if: max_tokens missing/null/0 (MiniMax requires [1,N]), or exceeds cap
+                        if !cur.Exists() || curUint == 0 || curUint > uint64(*maxTokensCapValue) {
                                 if patched, patchErr := sjson.SetBytes(jsonData, "max_tokens", *maxTokensCapValue); patchErr == nil {
                                         jsonData = patched
-                                        logger.LogInfo(c, fmt.Sprintf("[cap-debug] capped max_tokens to %d", *maxTokensCapValue))
                                 }
                         }
                 }
