@@ -46,3 +46,8 @@ build = ["bash", "-c", "cd web/default && bun install && DISABLE_ESLINT_PLUGIN=t
 [postMerge]
 path = "scripts/post-merge.sh"
 timeoutMs = 180000
+
+[userenv]
+
+[userenv.shared]
+TASK_PRICE_PATCH = "veo-3.1-generate-preview,veo-3.1-fast-generate-preview"
