@@ -320,6 +320,10 @@ var defaultModelPrice = map[string]float64{
         "doubao-seedance-1-5-pro-251215":  0.20,
         "doubao-seedance-2-0-260128":      0.23,
         "doubao-seedance-2-0-fast-260128": 0.185,
+        "seedream-4-0-250828":             0.035,
+        "doubao-seedream-4-0-250828":      0.035,
+        "seedream-4-5-251128":             0.045,
+        "doubao-seedream-4-5-251128":      0.045,
 }
 
 var defaultAudioRatio = map[string]float64{
