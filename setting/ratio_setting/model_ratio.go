@@ -372,7 +372,15 @@ func ModelPrice2JSONString() string {
 }
 
 func UpdateModelPriceByJSONString(jsonStr string) error {
-        return types.LoadFromJsonStringWithCallback(modelPriceMap, jsonStr, InvalidateExposedDataCache)
+        if err := types.LoadFromJsonStringWithCallback(modelPriceMap, jsonStr, InvalidateExposedDataCache); err != nil {
+                return err
+        }
+        for k, v := range defaultModelPrice {
+                if _, ok := modelPriceMap.Get(k); !ok {
+                        modelPriceMap.Set(k, v)
+                }
+        }
+        return nil
 }
 
 // GetModelPrice 返回模型的价格，如果模型不存在则返回-1，false
