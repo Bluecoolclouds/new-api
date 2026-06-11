@@ -4,3 +4,5 @@
 - [Heleket API sign formula](heleket-sign.md) — sign = md5(base64(body) + apiKey) with NO colon; amount in topup APIs is USD not credits; unitPrice multiplied not divided
 - [FreeKassa nonce is int32](freekassa-nonce-int32.md) — nonce stored as signed int32; sending ms/ns nonce clamps to int32 max and permanently locks shop; use Unix seconds; recover via API-key regen
 - [i18n translation namespace](i18n-translation-namespace.md) — locale JSON uses a `translation` namespace; new keys must go under data.translation, NOT root, or they won't resolve
+- [V-API / Kling provider](vapi-kling-provider.md) — api.gpt.ge aggregator: all endpoints translated (video, image, audio, 3D); connect via Kling channel with sk-* key + base URL https://api.gpt.ge
+- [MiniMax max_tokens cap](minimax-max-tokens.md) — MiniMax API accepts max_tokens [1, 32768] only; adaptor caps at 32768 to prevent 400 errors from channel param_override injecting larger values
