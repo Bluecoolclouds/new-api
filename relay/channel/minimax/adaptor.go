@@ -101,11 +101,11 @@ func (a *Adaptor) ConvertOpenAIRequest(c *gin.Context, info *relaycommon.RelayIn
         if request == nil {
                 return nil, errors.New("request is nil")
         }
-        if request.MaxTokens != nil && *request.MaxTokens > 32768 {
-                capped := uint(32768)
-                request.MaxTokens = &capped
-        }
         return request, nil
+}
+
+func (a *Adaptor) MaxTokensCap() uint {
+        return 32768
 }
 
 func (a *Adaptor) ConvertRerankRequest(c *gin.Context, relayMode int, request dto.RerankRequest) (any, error) {
