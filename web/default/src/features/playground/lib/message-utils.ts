@@ -59,11 +59,15 @@ export function updateCurrentVersionContent(
 /**
  * Create a user message
  */
-export function createUserMessage(content: string): Message {
+export function createUserMessage(
+  content: string,
+  attachedFiles?: import('../types').AttachedFile[]
+): Message {
   return {
     key: nanoid(),
     from: MESSAGE_ROLES.USER,
     versions: [createMessageVersion(content)],
+    attachedFiles: attachedFiles?.length ? attachedFiles : undefined,
   }
 }
 
@@ -131,6 +135,19 @@ export function getTextContent(content: string | ContentPart[]): string {
  */
 export function formatMessageForAPI(message: Message): ChatCompletionMessage {
   const currentVersion = getCurrentVersion(message)
+  const imageFiles = message.attachedFiles?.filter((f) => f.type === 'image')
+
+  if (imageFiles && imageFiles.length > 0) {
+    const parts: ContentPart[] = []
+    if (currentVersion.content) {
+      parts.push({ type: 'text', text: currentVersion.content })
+    }
+    for (const img of imageFiles) {
+      parts.push({ type: 'image_url', image_url: { url: img.dataUrl } })
+    }
+    return { role: message.from, content: parts }
+  }
+
   return {
     role: message.from,
     content: currentVersion.content,

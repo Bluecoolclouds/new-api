@@ -16,7 +16,7 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 For commercial licensing, please contact support@quantumnous.com
 */
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import {
   PaperclipIcon,
   FileIcon,
@@ -31,7 +31,9 @@ import {
   NotepadTextIcon,
   CodeSquareIcon,
   GraduationCapIcon,
+  XIcon,
 } from 'lucide-react'
+import { nanoid } from 'nanoid'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 import {
@@ -50,10 +52,20 @@ import {
 } from '@/components/ai-elements/prompt-input'
 import { Suggestion, Suggestions } from '@/components/ai-elements/suggestion'
 import { ModelGroupSelector } from '@/components/model-group-selector'
-import type { ModelOption, GroupOption } from '../types'
+import type { AttachedFile, ModelOption, GroupOption } from '../types'
+
+const MAX_FILE_SIZE_MB = 20
+const ACCEPTED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp']
+const ACCEPTED_FILE_TYPES = [
+  ...ACCEPTED_IMAGE_TYPES,
+  'application/pdf',
+  'text/plain',
+  'text/csv',
+  'application/json',
+]
 
 interface PlaygroundInputProps {
-  onSubmit: (text: string) => void
+  onSubmit: (text: string, files?: AttachedFile[]) => void
   onStop?: () => void
   disabled?: boolean
   isGenerating?: boolean
@@ -75,6 +87,12 @@ const suggestions = [
   { icon: null, text: 'More' },
 ]
 
+function formatBytes(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
+}
+
 export function PlaygroundInput({
   onSubmit,
   onStop,
@@ -90,21 +108,67 @@ export function PlaygroundInput({
 }: PlaygroundInputProps) {
   const { t } = useTranslation()
   const [text, setText] = useState('')
+  const [attachedFiles, setAttachedFiles] = useState<AttachedFile[]>([])
+
+  const imageInputRef = useRef<HTMLInputElement>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  const cameraInputRef = useRef<HTMLInputElement>(null)
 
   const isModelSelectDisabled =
     disabled || isModelLoading || models.length === 0
   const isGroupSelectDisabled = disabled || groups.length === 0
 
-  const handleSubmit = (message: PromptInputMessage) => {
-    if (!message.text?.trim() || disabled) return
-    onSubmit(message.text)
-    setText('')
+  const readFileAsDataUrl = (file: File): Promise<string> =>
+    new Promise((resolve, reject) => {
+      const reader = new FileReader()
+      reader.onload = () => resolve(reader.result as string)
+      reader.onerror = reject
+      reader.readAsDataURL(file)
+    })
+
+  const processFiles = async (files: FileList | null, allowedTypes: string[]) => {
+    if (!files || files.length === 0) return
+
+    const newFiles: AttachedFile[] = []
+    for (const file of Array.from(files)) {
+      if (!allowedTypes.includes(file.type)) {
+        toast.error(t('Unsupported file type: {{name}}', { name: file.name }))
+        continue
+      }
+      if (file.size > MAX_FILE_SIZE_MB * 1024 * 1024) {
+        toast.error(t('File too large (max {{mb}}MB): {{name}}', { mb: MAX_FILE_SIZE_MB, name: file.name }))
+        continue
+      }
+      try {
+        const dataUrl = await readFileAsDataUrl(file)
+        const isImage = ACCEPTED_IMAGE_TYPES.includes(file.type)
+        newFiles.push({
+          id: nanoid(),
+          name: file.name,
+          type: isImage ? 'image' : 'file',
+          mimeType: file.type,
+          dataUrl,
+          size: file.size,
+        })
+      } catch {
+        toast.error(t('Failed to read file: {{name}}', { name: file.name }))
+      }
+    }
+
+    if (newFiles.length > 0) {
+      setAttachedFiles((prev) => [...prev, ...newFiles])
+    }
   }
 
-  const handleFileAction = (action: string) => {
-    toast.info(t('Feature in development'), {
-      description: action,
-    })
+  const removeFile = (id: string) => {
+    setAttachedFiles((prev) => prev.filter((f) => f.id !== id))
+  }
+
+  const handleSubmit = (message: PromptInputMessage) => {
+    if ((!message.text?.trim() && attachedFiles.length === 0) || disabled) return
+    onSubmit(message.text || '', attachedFiles.length > 0 ? attachedFiles : undefined)
+    setText('')
+    setAttachedFiles([])
   }
 
   const handleSuggestionClick = (suggestion: string) => {
@@ -114,6 +178,67 @@ export function PlaygroundInput({
   return (
     <div className='grid shrink-0 gap-4 px-1 md:pb-4'>
       <PromptInput groupClassName='rounded-xl' onSubmit={handleSubmit}>
+        {attachedFiles.length > 0 && (
+          <div className='flex flex-wrap gap-2 px-3 pt-3'>
+            {attachedFiles.map((f) => (
+              <div
+                key={f.id}
+                className='relative flex items-center gap-1.5 rounded-lg border bg-muted/50 px-2 py-1.5 text-xs'
+              >
+                {f.type === 'image' ? (
+                  <img
+                    src={f.dataUrl}
+                    alt={f.name}
+                    className='h-8 w-8 rounded object-cover'
+                  />
+                ) : (
+                  <FileIcon size={16} className='shrink-0 text-muted-foreground' />
+                )}
+                <div className='min-w-0'>
+                  <div className='max-w-[120px] truncate font-medium'>{f.name}</div>
+                  <div className='text-muted-foreground'>{formatBytes(f.size)}</div>
+                </div>
+                <button
+                  type='button'
+                  onClick={() => removeFile(f.id)}
+                  className='ml-1 rounded-full p-0.5 hover:bg-muted'
+                  aria-label={t('Remove file')}
+                >
+                  <XIcon size={12} />
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+
+        <input
+          ref={imageInputRef}
+          type='file'
+          accept={ACCEPTED_IMAGE_TYPES.join(',')}
+          multiple
+          className='hidden'
+          onChange={(e) => processFiles(e.target.files, ACCEPTED_IMAGE_TYPES)}
+          onClick={(e) => { (e.target as HTMLInputElement).value = '' }}
+        />
+        <input
+          ref={fileInputRef}
+          type='file'
+          accept={ACCEPTED_FILE_TYPES.join(',')}
+          multiple
+          className='hidden'
+          onChange={(e) => processFiles(e.target.files, ACCEPTED_FILE_TYPES)}
+          onClick={(e) => { (e.target as HTMLInputElement).value = '' }}
+        />
+        <input
+          ref={cameraInputRef}
+          type='file'
+          accept='image/*'
+          capture='environment'
+          className='hidden'
+          onChange={(e) => processFiles(e.target.files, ACCEPTED_IMAGE_TYPES)}
+          onClick={(e) => { (e.target as HTMLInputElement).value = '' }}
+        />
+
         <PromptInputTextarea
           autoComplete='off'
           autoCorrect='off'
@@ -143,27 +268,21 @@ export function PlaygroundInput({
                 <span className='sr-only sm:hidden'>{t('Attach')}</span>
               </DropdownMenuTrigger>
               <DropdownMenuContent align='start'>
-                <DropdownMenuItem
-                  onClick={() => handleFileAction('upload-file')}
-                >
+                <DropdownMenuItem onClick={() => fileInputRef.current?.click()}>
                   <FileIcon className='mr-2' size={16} />
                   {t('Upload file')}
                 </DropdownMenuItem>
-                <DropdownMenuItem
-                  onClick={() => handleFileAction('upload-photo')}
-                >
+                <DropdownMenuItem onClick={() => imageInputRef.current?.click()}>
                   <ImageIcon className='mr-2' size={16} />
                   {t('Upload photo')}
                 </DropdownMenuItem>
                 <DropdownMenuItem
-                  onClick={() => handleFileAction('take-screenshot')}
+                  onClick={() => toast.info(t('Feature in development'), { description: 'take-screenshot' })}
                 >
                   <ScreenShareIcon className='mr-2' size={16} />
                   {t('Take screenshot')}
                 </DropdownMenuItem>
-                <DropdownMenuItem
-                  onClick={() => handleFileAction('take-photo')}
-                >
+                <DropdownMenuItem onClick={() => cameraInputRef.current?.click()}>
                   <CameraIcon className='mr-2' size={16} />
                   {t('Take photo')}
                 </DropdownMenuItem>
@@ -206,7 +325,7 @@ export function PlaygroundInput({
             ) : (
               <PromptInputButton
                 className='text-foreground font-medium'
-                disabled={disabled || !text.trim()}
+                disabled={disabled || (!text.trim() && attachedFiles.length === 0)}
                 type='submit'
                 variant='secondary'
               >

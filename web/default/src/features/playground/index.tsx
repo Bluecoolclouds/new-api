@@ -114,8 +114,8 @@ export function Playground() {
     }
   }, [groupsData, setGroups, config.group, updateConfig])
 
-  const handleSendMessage = (text: string) => {
-    const userMessage = createUserMessage(text)
+  const handleSendMessage = (text: string, files?: import('./types').AttachedFile[]) => {
+    const userMessage = createUserMessage(text, files)
     const assistantMessage = createLoadingAssistantMessage()
 
     const newMessages = [...messages, userMessage, assistantMessage]
@@ -219,7 +219,7 @@ export function Playground() {
           onGroupChange={(value) => updateConfig('group', value)}
           onModelChange={(value) => updateConfig('model', value)}
           onStop={stopGeneration}
-          onSubmit={handleSendMessage}
+          onSubmit={(text, files) => handleSendMessage(text, files)}
         />
       </div>
     </div>

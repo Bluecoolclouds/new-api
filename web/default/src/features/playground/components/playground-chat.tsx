@@ -156,6 +156,49 @@ export function PlaygroundChat({
                               </Button>
                             </div>
                           </div>
+                        ) : message.from === MESSAGE_ROLES.USER && message.attachedFiles?.length ? (
+                          <div className='space-y-2'>
+                            <div className='flex flex-wrap gap-2'>
+                              {message.attachedFiles.map((f) =>
+                                f.type === 'image' ? (
+                                  <img
+                                    key={f.id}
+                                    src={f.dataUrl}
+                                    alt={f.name}
+                                    className='max-h-48 max-w-xs rounded-lg border object-contain'
+                                  />
+                                ) : (
+                                  <div
+                                    key={f.id}
+                                    className='flex items-center gap-1.5 rounded-lg border bg-muted/50 px-2 py-1.5 text-xs'
+                                  >
+                                    <span className='font-medium'>{f.name}</span>
+                                  </div>
+                                )
+                              )}
+                            </div>
+                            {version.content && (
+                              <MessageContent
+                                variant='flat'
+                                className={cn(getMessageContentStyles())}
+                              >
+                                <Response>{version.content}</Response>
+                              </MessageContent>
+                            )}
+                            <MessageActions
+                              message={message}
+                              onCopy={onCopyMessage}
+                              onRegenerate={onRegenerateMessage}
+                              onEdit={onEditMessage}
+                              onDelete={onDeleteMessage}
+                              isGenerating={isGenerating}
+                              alwaysVisible={
+                                messageIndex === messages.length - 1 &&
+                                message.from === MESSAGE_ROLES.ASSISTANT
+                              }
+                              className='mt-1'
+                            />
+                          </div>
                         ) : (
                           <>
                             {(() => {

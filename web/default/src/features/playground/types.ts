@@ -21,6 +21,17 @@ export type MessageRole = 'user' | 'assistant' | 'system'
 
 export type MessageStatus = 'loading' | 'streaming' | 'complete' | 'error'
 
+export type AttachedFileType = 'image' | 'file'
+
+export interface AttachedFile {
+  id: string
+  name: string
+  type: AttachedFileType
+  mimeType: string
+  dataUrl: string
+  size: number
+}
+
 export interface MessageVersion {
   id: string
   content: string
@@ -30,6 +41,7 @@ export interface Message {
   key: string
   from: MessageRole
   versions: MessageVersion[]
+  attachedFiles?: AttachedFile[]
   sources?: { href: string; title: string }[]
   reasoning?: {
     content: string
