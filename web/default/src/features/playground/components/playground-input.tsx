@@ -55,6 +55,8 @@ import { ModelGroupSelector } from '@/components/model-group-selector'
 import type { AttachedFile, ModelOption, GroupOption } from '../types'
 
 const MAX_FILE_SIZE_MB = 20
+const MAX_IMAGE_DIMENSION = 1024
+const IMAGE_QUALITY = 0.85
 const ACCEPTED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp']
 const ACCEPTED_FILE_TYPES = [
   ...ACCEPTED_IMAGE_TYPES,
@@ -126,6 +128,37 @@ export function PlaygroundInput({
       reader.readAsDataURL(file)
     })
 
+  const compressImage = (file: File): Promise<string> =>
+    new Promise((resolve, reject) => {
+      const reader = new FileReader()
+      reader.onerror = reject
+      reader.onload = () => {
+        const img = new Image()
+        img.onerror = reject
+        img.onload = () => {
+          let { width, height } = img
+          if (width > MAX_IMAGE_DIMENSION || height > MAX_IMAGE_DIMENSION) {
+            if (width >= height) {
+              height = Math.round((height * MAX_IMAGE_DIMENSION) / width)
+              width = MAX_IMAGE_DIMENSION
+            } else {
+              width = Math.round((width * MAX_IMAGE_DIMENSION) / height)
+              height = MAX_IMAGE_DIMENSION
+            }
+          }
+          const canvas = document.createElement('canvas')
+          canvas.width = width
+          canvas.height = height
+          const ctx = canvas.getContext('2d')
+          if (!ctx) { reject(new Error('canvas ctx unavailable')); return }
+          ctx.drawImage(img, 0, 0, width, height)
+          resolve(canvas.toDataURL('image/jpeg', IMAGE_QUALITY))
+        }
+        img.src = reader.result as string
+      }
+      reader.readAsDataURL(file)
+    })
+
   const processFiles = async (files: FileList | null, allowedTypes: string[]) => {
     if (!files || files.length === 0) return
 
@@ -139,14 +172,16 @@ export function PlaygroundInput({
         toast.error(t('File too large (max {{mb}}MB): {{name}}', { mb: MAX_FILE_SIZE_MB, name: file.name }))
         continue
       }
+      const isImage = ACCEPTED_IMAGE_TYPES.includes(file.type)
       try {
-        const dataUrl = await readFileAsDataUrl(file)
-        const isImage = ACCEPTED_IMAGE_TYPES.includes(file.type)
+        const dataUrl = isImage
+          ? await compressImage(file)
+          : await readFileAsDataUrl(file)
         newFiles.push({
           id: nanoid(),
           name: file.name,
           type: isImage ? 'image' : 'file',
-          mimeType: file.type,
+          mimeType: isImage ? 'image/jpeg' : file.type,
           dataUrl,
           size: file.size,
         })
