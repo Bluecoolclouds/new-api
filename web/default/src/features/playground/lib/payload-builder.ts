@@ -64,11 +64,8 @@ export function buildChatCompletionPayload(
   })
 
   if (config.webSearch) {
-    const isClaudeModel = config.model.toLowerCase().startsWith('claude')
-    if (isClaudeModel) {
-      payload.tools = [{ type: 'web_search_20250305', name: 'web_search' }]
-    } else {
-      payload.web_search_options = {}
+    payload.web_search_options = {
+      search_context_size: config.webSearchContextSize ?? 'medium',
     }
   }
 

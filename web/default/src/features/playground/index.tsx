@@ -222,6 +222,8 @@ export function Playground() {
           onSubmit={(text, files) => handleSendMessage(text, files)}
           webSearch={config.webSearch}
           onWebSearchChange={(value) => updateConfig('webSearch', value)}
+          webSearchContextSize={config.webSearchContextSize}
+          onWebSearchContextSizeChange={(value) => updateConfig('webSearchContextSize', value)}
         />
       </div>
     </div>

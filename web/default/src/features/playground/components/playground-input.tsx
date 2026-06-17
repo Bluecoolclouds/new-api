@@ -40,6 +40,7 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import {
@@ -80,6 +81,8 @@ interface PlaygroundInputProps {
   onGroupChange: (value: string) => void
   webSearch?: boolean
   onWebSearchChange?: (value: boolean) => void
+  webSearchContextSize?: 'low' | 'medium' | 'high'
+  onWebSearchContextSizeChange?: (value: 'low' | 'medium' | 'high') => void
 }
 
 const suggestions = [
@@ -111,6 +114,8 @@ export function PlaygroundInput({
   onGroupChange,
   webSearch = false,
   onWebSearchChange,
+  webSearchContextSize = 'medium',
+  onWebSearchContextSizeChange,
 }: PlaygroundInputProps) {
   const { t } = useTranslation()
   const [text, setText] = useState('')
@@ -328,17 +333,44 @@ export function PlaygroundInput({
               </DropdownMenuContent>
             </DropdownMenu>
 
-            <PromptInputButton
-              className={webSearch ? 'border font-medium bg-primary/10 text-primary border-primary/30' : 'border font-medium'}
-              disabled={disabled}
-              onClick={() => onWebSearchChange?.(!webSearch)}
-              variant='outline'
-              title={webSearch ? t('Web search enabled') : t('Enable web search')}
-            >
-              <GlobeIcon size={16} />
-              <span className='hidden sm:inline'>{t('Search')}</span>
-              <span className='sr-only sm:hidden'>{t('Search')}</span>
-            </PromptInputButton>
+            <DropdownMenu>
+              <DropdownMenuTrigger
+                render={
+                  <PromptInputButton
+                    className={webSearch ? 'border font-medium bg-primary/10 text-primary border-primary/30' : 'border font-medium'}
+                    disabled={disabled}
+                    variant='outline'
+                    title={webSearch ? t('Web search enabled ({{size}})', { size: webSearchContextSize }) : t('Enable web search')}
+                  />
+                }
+              >
+                <GlobeIcon size={16} />
+                <span className='hidden sm:inline'>{t('Search')}</span>
+                <span className='sr-only sm:hidden'>{t('Search')}</span>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align='start'>
+                <DropdownMenuItem onClick={() => onWebSearchChange?.(!webSearch)}>
+                  <GlobeIcon className='mr-2' size={16} />
+                  {webSearch ? t('Disable web search') : t('Enable web search')}
+                </DropdownMenuItem>
+                {webSearch && (
+                  <>
+                    <DropdownMenuSeparator />
+                    {(['low', 'medium', 'high'] as const).map((size) => (
+                      <DropdownMenuItem
+                        key={size}
+                        onClick={() => onWebSearchContextSizeChange?.(size)}
+                        className={webSearchContextSize === size ? 'font-medium text-primary' : ''}
+                      >
+                        {webSearchContextSize === size && <span className='mr-1.5'>✓</span>}
+                        {webSearchContextSize !== size && <span className='mr-1.5 opacity-0'>✓</span>}
+                        {t('Context: {{size}}', { size })}
+                      </DropdownMenuItem>
+                    ))}
+                  </>
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
           </PromptInputTools>
 
           <div className='flex items-center gap-1.5 md:gap-2'>

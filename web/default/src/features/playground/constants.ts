@@ -55,6 +55,7 @@ export const DEFAULT_CONFIG: PlaygroundConfig = {
   seed: null,
   stream: true,
   webSearch: false,
+  webSearchContextSize: 'medium',
 }
 
 export const DEFAULT_PARAMETER_ENABLED: ParameterEnabled = {

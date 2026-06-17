@@ -121,6 +121,8 @@ export interface ChatCompletionResponse {
 }
 
 // Configuration types
+export type WebSearchContextSize = 'low' | 'medium' | 'high'
+
 export interface PlaygroundConfig {
   model: string
   group: string
@@ -132,6 +134,7 @@ export interface PlaygroundConfig {
   seed: number | null
   stream: boolean
   webSearch: boolean
+  webSearchContextSize: WebSearchContextSize
 }
 
 export interface ParameterEnabled {
