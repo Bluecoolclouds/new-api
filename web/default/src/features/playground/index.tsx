@@ -220,6 +220,8 @@ export function Playground() {
           onModelChange={(value) => updateConfig('model', value)}
           onStop={stopGeneration}
           onSubmit={(text, files) => handleSendMessage(text, files)}
+          webSearch={config.webSearch}
+          onWebSearchChange={(value) => updateConfig('webSearch', value)}
         />
       </div>
     </div>

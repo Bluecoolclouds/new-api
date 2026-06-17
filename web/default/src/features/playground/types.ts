@@ -79,6 +79,7 @@ export interface ChatCompletionRequest {
   frequency_penalty?: number
   presence_penalty?: number
   seed?: number
+  web_search_options?: Record<string, unknown>
 }
 
 export interface ChatCompletionChunk {
@@ -129,6 +130,7 @@ export interface PlaygroundConfig {
   presence_penalty: number
   seed: number | null
   stream: boolean
+  webSearch: boolean
 }
 
 export interface ParameterEnabled {

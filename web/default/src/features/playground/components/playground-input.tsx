@@ -78,6 +78,8 @@ interface PlaygroundInputProps {
   groups: GroupOption[]
   groupValue: string
   onGroupChange: (value: string) => void
+  webSearch?: boolean
+  onWebSearchChange?: (value: boolean) => void
 }
 
 const suggestions = [
@@ -107,6 +109,8 @@ export function PlaygroundInput({
   groups,
   groupValue,
   onGroupChange,
+  webSearch = false,
+  onWebSearchChange,
 }: PlaygroundInputProps) {
   const { t } = useTranslation()
   const [text, setText] = useState('')
@@ -325,10 +329,11 @@ export function PlaygroundInput({
             </DropdownMenu>
 
             <PromptInputButton
-              className='border font-medium'
+              className={webSearch ? 'border font-medium bg-primary/10 text-primary border-primary/30' : 'border font-medium'}
               disabled={disabled}
-              onClick={() => toast.info(t('Search feature in development'))}
+              onClick={() => onWebSearchChange?.(!webSearch)}
               variant='outline'
+              title={webSearch ? t('Web search enabled') : t('Enable web search')}
             >
               <GlobeIcon size={16} />
               <span className='hidden sm:inline'>{t('Search')}</span>

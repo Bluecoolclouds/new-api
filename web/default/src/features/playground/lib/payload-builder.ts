@@ -63,5 +63,9 @@ export function buildChatCompletionPayload(
     }
   })
 
+  if (config.webSearch) {
+    payload.web_search_options = {}
+  }
+
   return payload
 }
