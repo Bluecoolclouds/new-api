@@ -80,6 +80,7 @@ export interface ChatCompletionRequest {
   presence_penalty?: number
   seed?: number
   web_search_options?: Record<string, unknown>
+  tools?: Array<Record<string, unknown>>
 }
 
 export interface ChatCompletionChunk {
