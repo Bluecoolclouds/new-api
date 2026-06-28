@@ -19,6 +19,13 @@ For commercial licensing, please contact support@quantumnous.com
 import { z } from 'zod'
 import { CHANNEL_STATUS, MODEL_FETCHABLE_TYPES } from '../constants'
 import type { Channel } from '../types'
+import {
+  CHANNEL_TYPE_ADVANCED_CUSTOM,
+  advancedCustomConfigUsesRelativeUpstreamPath,
+  parseAdvancedCustomConfig,
+  stringifyAdvancedCustomConfig,
+  validateAdvancedCustomConfig,
+} from './advanced-custom'
 
 // ============================================================================
 // Form Validation Schema
@@ -78,7 +85,40 @@ export const channelFormSchema = z.object({
   upstream_model_update_check_enabled: z.boolean().optional(),
   upstream_model_update_auto_sync_enabled: z.boolean().optional(),
   upstream_model_update_ignored_models: z.string().optional(),
+  advanced_custom: z.string().optional(),
   markup_ratio: z.number().min(1).optional(),
+}).superRefine((data, ctx) => {
+  const addRequiredIssue = (c: typeof ctx, path: string, message: string) => {
+    c.addIssue({ code: z.ZodIssueCode.custom, message, path: [path] })
+  }
+
+  if (data.type === CHANNEL_TYPE_ADVANCED_CUSTOM) {
+    const advancedCustomConfig = parseAdvancedCustomConfig(data.advanced_custom)
+    const advancedCustomError = validateAdvancedCustomConfig(advancedCustomConfig)
+    if (advancedCustomError) {
+      addRequiredIssue(ctx, 'advanced_custom', advancedCustomError.message)
+    }
+    if (
+      advancedCustomConfig?.advanced_fallback?.enabled === true &&
+      !data.base_url?.trim()
+    ) {
+      addRequiredIssue(
+        ctx,
+        'base_url',
+        'Base URL is required when fallback is enabled'
+      )
+    }
+    if (
+      advancedCustomConfigUsesRelativeUpstreamPath(advancedCustomConfig) &&
+      !data.base_url?.trim()
+    ) {
+      addRequiredIssue(
+        ctx,
+        'base_url',
+        'Base URL is required when an advanced route uses an upstream path'
+      )
+    }
+  }
 })
 
 export type ChannelFormValues = z.infer<typeof channelFormSchema>
@@ -136,6 +176,7 @@ export const CHANNEL_FORM_DEFAULT_VALUES: ChannelFormValues = {
   upstream_model_update_check_enabled: false,
   upstream_model_update_auto_sync_enabled: false,
   upstream_model_update_ignored_models: '',
+  advanced_custom: '',
   markup_ratio: 1,
 }
 
@@ -196,6 +237,7 @@ export function transformChannelToFormDefaults(
   let upstreamModelUpdateCheckEnabled = false
   let upstreamModelUpdateAutoSyncEnabled = false
   let upstreamModelUpdateIgnoredModels = ''
+  let advancedCustom = ''
 
   if (channel.settings) {
     try {
@@ -220,6 +262,9 @@ export function transformChannelToFormDefaults(
       )
         ? parsed.upstream_model_update_ignored_models.join(',')
         : ''
+      if (parsed.advanced_custom) {
+        advancedCustom = stringifyAdvancedCustomConfig(parsed.advanced_custom)
+      }
     } catch (error) {
       // eslint-disable-next-line no-console
       console.error('Failed to parse channel settings:', error)
@@ -270,6 +315,7 @@ export function transformChannelToFormDefaults(
     upstream_model_update_check_enabled: upstreamModelUpdateCheckEnabled,
     upstream_model_update_auto_sync_enabled: upstreamModelUpdateAutoSyncEnabled,
     upstream_model_update_ignored_models: upstreamModelUpdateIgnoredModels,
+    advanced_custom: advancedCustom,
   }
 }
 
@@ -396,6 +442,15 @@ function buildSettingsJSON(formData: ChannelFormValues): string {
     if (typeof settingsObj.upstream_model_update_last_check_time !== 'number') {
       settingsObj.upstream_model_update_last_check_time = 0
     }
+  }
+
+  if (formData.type === CHANNEL_TYPE_ADVANCED_CUSTOM) {
+    const advancedCustomConfig = parseAdvancedCustomConfig(formData.advanced_custom)
+    if (advancedCustomConfig) {
+      settingsObj.advanced_custom = advancedCustomConfig
+    }
+  } else if ('advanced_custom' in settingsObj) {
+    delete settingsObj.advanced_custom
   }
 
   return JSON.stringify(settingsObj)

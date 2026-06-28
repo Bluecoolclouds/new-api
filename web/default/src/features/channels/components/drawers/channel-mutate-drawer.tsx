@@ -126,8 +126,10 @@ import {
 import { useChannelMutateForm } from '../../hooks/use-channel-mutate-form'
 import {
   CHANNEL_FORM_DEFAULT_VALUES,
+  CHANNEL_TYPE_ADVANCED_CUSTOM,
   channelFormSchema,
   channelsQueryKeys,
+  getAdvancedCustomStats,
   transformChannelToFormDefaults,
   type ChannelFormValues,
   deduplicateKeys,
@@ -147,6 +149,7 @@ import {
 } from '../../lib/status-code-risk-guard'
 import type { Channel } from '../../types'
 import { useChannels } from '../channels-provider'
+import { AdvancedCustomEditorDialog } from '../dialogs/advanced-custom-editor-dialog'
 import { CodexOAuthDialog } from '../dialogs/codex-oauth-dialog'
 import { FetchModelsDialog } from '../dialogs/fetch-models-dialog'
 import {
@@ -207,6 +210,7 @@ function hasAdvancedSettingsValues(values: ChannelFormValues): boolean {
     values.model_mapping?.trim() ||
     values.param_override?.trim() ||
     values.header_override?.trim() ||
+    values.advanced_custom?.trim() ||
     values.status_code_mapping?.trim() ||
     values.tag?.trim() ||
     values.remark?.trim() ||
@@ -302,6 +306,8 @@ export function ChannelMutateDrawer({
   >(null)
   const [advancedSettingsOpen, setAdvancedSettingsOpen] = useState(false)
   const [paramOverrideEditorOpen, setParamOverrideEditorOpen] = useState(false)
+  const [advancedCustomEditorOpen, setAdvancedCustomEditorOpen] =
+    useState(false)
 
   const isEditing = Boolean(currentRow)
   const channelId = currentRow?.id ?? null
@@ -378,6 +384,7 @@ export function ChannelMutateDrawer({
     'upstream_model_update_check_enabled'
   )
   const currentSettings = form.watch('settings')
+  const currentAdvancedCustom = form.watch('advanced_custom')
   const {
     unlocked: doubaoApiEditUnlocked,
     handleClick: handleApiConfigSecretClick,
@@ -400,6 +407,11 @@ export function ChannelMutateDrawer({
   const isBatchMode =
     multiKeyMode === 'batch' || multiKeyMode === 'multi_to_single'
   const isChannelDetailLoading = isEditing && isChannelLoading
+
+  const advancedCustomStats = useMemo(
+    () => getAdvancedCustomStats(currentAdvancedCustom),
+    [currentAdvancedCustom]
+  )
 
   // Get all models list
   const allModelsList = useMemo(
@@ -2904,6 +2916,77 @@ export function ChannelMutateDrawer({
                             </FormItem>
                           )}
                         />
+
+                        {currentType === CHANNEL_TYPE_ADVANCED_CUSTOM && (
+                          <FormField
+                            control={form.control}
+                            name='advanced_custom'
+                            render={({ field }) => (
+                              <FormItem className='space-y-3 border-t pt-4'>
+                                <div className='flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between'>
+                                  <div className='space-y-1'>
+                                    <FormLabel>
+                                      {t('Advanced Custom Routes')}
+                                    </FormLabel>
+                                    <FormDescription>
+                                      {t(
+                                        'Configure advanced routing rules for this channel'
+                                      )}
+                                    </FormDescription>
+                                  </div>
+                                  <div className='flex flex-wrap items-center gap-2'>
+                                    {advancedCustomStats.routeCount > 0 && (
+                                      <Badge
+                                        variant={
+                                          advancedCustomStats.valid
+                                            ? 'secondary'
+                                            : 'destructive'
+                                        }
+                                      >
+                                        {advancedCustomStats.routeCount}{' '}
+                                        {advancedCustomStats.routeCount === 1
+                                          ? t('route')
+                                          : t('routes')}
+                                      </Badge>
+                                    )}
+                                    <Button
+                                      type='button'
+                                      variant='outline'
+                                      size='sm'
+                                      onClick={() =>
+                                        setAdvancedCustomEditorOpen(true)
+                                      }
+                                    >
+                                      <Wand2 className='mr-2 h-4 w-4' />
+                                      {t('Visual edit')}
+                                    </Button>
+                                    <Button
+                                      type='button'
+                                      variant='ghost'
+                                      size='sm'
+                                      onClick={() => field.onChange('')}
+                                    >
+                                      {t('Clear')}
+                                    </Button>
+                                  </div>
+                                </div>
+                                <FormControl>
+                                  <Textarea
+                                    value={field.value || ''}
+                                    onChange={field.onChange}
+                                    disabled={isSubmitting}
+                                    rows={8}
+                                    placeholder={t(
+                                      'Advanced custom routes JSON configuration'
+                                    )}
+                                    className='max-h-72 min-h-40 resize-y overflow-auto font-mono text-xs'
+                                  />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        )}
                       </div>
                     </div>
 
@@ -3433,6 +3516,20 @@ export function ChannelMutateDrawer({
           onOpenChange={setParamOverrideEditorOpen}
           onSave={(nextValue) => {
             form.setValue('param_override', nextValue, {
+              shouldDirty: true,
+              shouldValidate: true,
+            })
+          }}
+        />
+      )}
+
+      {advancedCustomEditorOpen && (
+        <AdvancedCustomEditorDialog
+          open={advancedCustomEditorOpen}
+          value={form.watch('advanced_custom') || ''}
+          onOpenChange={setAdvancedCustomEditorOpen}
+          onSave={(nextValue) => {
+            form.setValue('advanced_custom', nextValue, {
               shouldDirty: true,
               shouldValidate: true,
             })

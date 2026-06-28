@@ -16,7 +16,7 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 For commercial licensing, please contact support@quantumnous.com
 */
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import type {
   ColumnFiltersState,
   OnChangeFn,
@@ -97,7 +97,22 @@ export function useTableUrlState(
   const pageKey = paginationCfg?.pageKey ?? ('page' as string)
   const pageSizeKey = paginationCfg?.pageSizeKey ?? ('pageSize' as string)
   const defaultPage = paginationCfg?.defaultPage ?? 1
-  const defaultPageSize = paginationCfg?.defaultPageSize ?? 20
+  const STORAGE_KEY = 'page-size'
+  const storedPageSize = useMemo(() => {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY)
+      if (raw !== null) {
+        const n = parseInt(raw, 10)
+        if (Number.isFinite(n) && n > 0) return n
+      }
+    } catch {
+      // ignore
+    }
+    return null
+  }, [])
+  const defaultPageSize =
+    storedPageSize ?? paginationCfg?.defaultPageSize ?? 20
+  const lastWrittenPageSizeRef = useRef<number | null>(null)
 
   const globalFilterKey = globalFilterCfg?.key ?? ('filter' as string)
   const globalFilterEnabled = globalFilterCfg?.enabled ?? true
@@ -147,6 +162,14 @@ export function useTableUrlState(
     const next = typeof updater === 'function' ? updater(pagination) : updater
     const nextPage = next.pageIndex + 1
     const nextPageSize = next.pageSize
+    if (nextPageSize !== lastWrittenPageSizeRef.current) {
+      lastWrittenPageSizeRef.current = nextPageSize
+      try {
+        localStorage.setItem(STORAGE_KEY, String(nextPageSize))
+      } catch {
+        // ignore
+      }
+    }
     navigate({
       search: (prev) => ({
         ...(prev as SearchRecord),
