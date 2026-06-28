@@ -952,6 +952,17 @@ func selectChannelsForAutomaticTest(channels []*model.Channel, mode string) []*m
         return selected
 }
 
+func resolveChannelTestUserID(c *gin.Context) (int, error) {
+        if c != nil {
+                if id, exists := c.Get("id"); exists {
+                        if userID, ok := id.(int); ok {
+                                return userID, nil
+                        }
+                }
+        }
+        return 1, nil
+}
+
 func testAllChannels(notify bool) error {
         testUserID, err := resolveChannelTestUserID(nil)
         if err != nil {
