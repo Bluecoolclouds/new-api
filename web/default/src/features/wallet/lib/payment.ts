@@ -113,6 +113,10 @@ export function isPallyPayment(paymentType: string): boolean {
   return paymentType === PAYMENT_TYPES.PALLY
 }
 
+export function isPlategalPayment(paymentType: string): boolean {
+  return paymentType === PAYMENT_TYPES.PLATEGAL
+}
+
 /**
  * Get default payment type from topup info
  */
@@ -182,6 +186,15 @@ export function getMinTopupAmount(topupInfo: TopupInfo | null): number {
     const rubPerUsd = pallyUnitPrice * 500000
     if (rubPerUsd > 0 && topupInfo.pally_min_topup) {
       return Math.max(1, Math.ceil(topupInfo.pally_min_topup / rubPerUsd))
+    }
+    return DEFAULT_MIN_TOPUP
+  }
+
+  if (topupInfo.enable_plategal_topup) {
+    const plategalUnitPrice = topupInfo.plategal_unit_price || 0.0002
+    const rubPerUsd = plategalUnitPrice * 500000
+    if (rubPerUsd > 0 && topupInfo.plategal_min_topup) {
+      return Math.max(1, Math.ceil(topupInfo.plategal_min_topup / rubPerUsd))
     }
     return DEFAULT_MIN_TOPUP
   }

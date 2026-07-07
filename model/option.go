@@ -143,6 +143,10 @@ func InitOptionMap() {
         common.OptionMap["PallyShopID"] = setting.PallyShopID
         common.OptionMap["PallyUnitPrice"] = strconv.FormatFloat(setting.PallyUnitPrice, 'f', -1, 64)
         common.OptionMap["PallyMinTopUp"] = strconv.Itoa(setting.PallyMinTopUp)
+        common.OptionMap["PlategalMerchantId"] = setting.PlategalMerchantId
+        common.OptionMap["PlategalApiSecret"] = setting.PlategalApiSecret
+        common.OptionMap["PlategalUnitPrice"] = strconv.FormatFloat(setting.PlategalUnitPrice, 'f', -1, 64)
+        common.OptionMap["PlategalMinTopUp"] = strconv.Itoa(setting.PlategalMinTopUp)
         common.OptionMap["TopupGroupRatio"] = common.TopupGroupRatio2JSONString()
         common.OptionMap["Chats"] = setting.Chats2JsonString()
         common.OptionMap["AutoGroups"] = setting.AutoGroups2JsonString()
@@ -550,6 +554,14 @@ func updateOptionMap(key string, value string) (err error) {
                 setting.PallyUnitPrice, _ = strconv.ParseFloat(value, 64)
         case "PallyMinTopUp":
                 setting.PallyMinTopUp, _ = strconv.Atoi(value)
+        case "PlategalMerchantId":
+                setting.PlategalMerchantId = value
+        case "PlategalApiSecret":
+                setting.PlategalApiSecret = value
+        case "PlategalUnitPrice":
+                setting.PlategalUnitPrice, _ = strconv.ParseFloat(value, 64)
+        case "PlategalMinTopUp":
+                setting.PlategalMinTopUp, _ = strconv.Atoi(value)
         case "TopupGroupRatio":
                 err = common.UpdateTopupGroupRatioByJSONString(value)
         case "GitHubClientId":

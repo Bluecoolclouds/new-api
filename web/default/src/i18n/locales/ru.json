@@ -4757,6 +4757,16 @@
     "Gemini Generate Content": "Gemini Generate Content",
     "Gemini Embed Content": "Gemini Embed Content",
     "Gemini Batch Embed Contents": "Gemini Batch Embed Contents",
-    "Add route": "Добавить маршрут"
+    "Add route": "Добавить маршрут",
+    "Platega Payment (RUB)": "Оплата через Platega (RUB)",
+    "Platega settings saved": "Настройки Platega сохранены",
+    "Failed to save Platega settings": "Ошибка сохранения настроек Platega",
+    "Save Platega settings": "Сохранить настройки Platega",
+    "Accept RUB payments (СБП / Card) via Platega. Get your credentials at platega.io.": "Принимайте оплату в рублях (СБП / карта) через Platega. Получите учётные данные на platega.io.",
+    "Merchant ID (X-MerchantId)": "Merchant ID (X-MerchantId)",
+    "API Secret (X-Secret)": "API Secret (X-Secret)",
+    "Your Platega API secret": "Ваш API-секрет Platega",
+    "Callback URL:": "Callback URL:",
+    "Set this URL in Platega personal account: Settings → Callback URLs.": "Установите этот URL в личном кабинете Platega: Настройки → Callback URLs."
   }
 }

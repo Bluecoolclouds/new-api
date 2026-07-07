@@ -208,6 +208,12 @@ const BILLING_SECTIONS = [
           PallyUnitPrice: settings.PallyUnitPrice ?? 0.0002,
           PallyMinTopUp: settings.PallyMinTopUp ?? 50,
         }}
+        plategalDefaultValues={{
+          PlategalMerchantId: settings.PlategalMerchantId ?? '',
+          PlategalApiSecret: settings.PlategalApiSecret ?? '',
+          PlategalUnitPrice: settings.PlategalUnitPrice ?? 0.0002,
+          PlategalMinTopUp: settings.PlategalMinTopUp ?? 100,
+        }}
         complianceDefaults={{
           confirmed: settings['payment_setting.compliance_confirmed'] ?? false,
           termsVersion:

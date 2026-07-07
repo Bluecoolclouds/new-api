@@ -116,6 +116,25 @@ func GetTopUpInfo(c *gin.Context) {
         }
 
         // If Pally is enabled, add it to pay methods
+        enablePlategal := isPlategalTopUpEnabled()
+        if enablePlategal {
+                hasPlategal := false
+                for _, method := range payMethods {
+                        if method["type"] == model.PaymentMethodPlategal {
+                                hasPlategal = true
+                                break
+                        }
+                }
+                if !hasPlategal {
+                        payMethods = append(payMethods, map[string]string{
+                                "name":      "Platega (СБП / Карта)",
+                                "type":      model.PaymentMethodPlategal,
+                                "color":     "#7C3AED",
+                                "min_topup": strconv.Itoa(setting.PlategalMinTopUp),
+                        })
+                }
+        }
+
         enablePally := isPallyTopUpEnabled()
         if enablePally {
                 hasPally := false
@@ -192,6 +211,9 @@ func GetTopUpInfo(c *gin.Context) {
                 "enable_pally_topup":        enablePally,
                 "pally_min_topup":           setting.PallyMinTopUp,
                 "pally_unit_price":          setting.PallyUnitPrice,
+                "enable_plategal_topup":     enablePlategal,
+                "plategal_min_topup":        setting.PlategalMinTopUp,
+                "plategal_unit_price":       setting.PlategalUnitPrice,
         }
         common.ApiSuccess(c, data)
 }

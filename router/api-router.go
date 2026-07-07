@@ -65,6 +65,7 @@ func SetApiRouter(router *gin.Engine) {
                 apiRouter.POST("/waffo-pancake/webhook/:env", anonymousRequestBodyLimit, controller.WaffoPancakeWebhook)
                 apiRouter.POST("/heleket/webhook", anonymousRequestBodyLimit, controller.HeleketWebhook)
                 apiRouter.POST("/pally/webhook", anonymousRequestBodyLimit, controller.PallyWebhook)
+			apiRouter.POST("/plategal/webhook", anonymousRequestBodyLimit, controller.PlategalWebhook)
 
                 // Universal secure verification routes
                 apiRouter.POST("/verify", middleware.UserAuth(), middleware.CriticalRateLimit(), controller.UniversalVerify)
@@ -118,6 +119,8 @@ func SetApiRouter(router *gin.Engine) {
                                         selfRoute.POST("/heleket/pay", middleware.CriticalRateLimit(), controller.RequestHeleketPay)
                                         selfRoute.POST("/pally/amount", controller.RequestPallyAmount)
                                         selfRoute.POST("/pally/pay", middleware.CriticalRateLimit(), controller.RequestPallyPay)
+                                        selfRoute.POST("/plategal/amount", controller.RequestPlategalAmount)
+                                        selfRoute.POST("/plategal/pay", middleware.CriticalRateLimit(), controller.RequestPlategalPay)
                                 selfRoute.POST("/aff_transfer", controller.TransferAffQuota)
                                 selfRoute.PUT("/setting", controller.UpdateUserSetting)
 

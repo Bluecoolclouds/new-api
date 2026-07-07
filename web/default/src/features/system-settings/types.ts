@@ -292,6 +292,10 @@ export type BillingSettings = {
   PallyShopID: string
   PallyUnitPrice: number
   PallyMinTopUp: number
+  PlategalMerchantId: string
+  PlategalApiSecret: string
+  PlategalUnitPrice: number
+  PlategalMinTopUp: number
   'checkin_setting.enabled': boolean
   'checkin_setting.min_quota': number
   'checkin_setting.max_quota': number

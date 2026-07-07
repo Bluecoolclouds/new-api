@@ -86,6 +86,10 @@ import {
   PallySettingsSection,
   type PallySettingsValues,
 } from './pally-settings-section'
+import {
+  PlategalSettingsSection,
+  type PlategalSettingsValues,
+} from './platega-settings-section'
 
 const paymentSchema = z.object({
   PayAddress: z.string().refine((value) => {
@@ -173,6 +177,7 @@ type PaymentSettingsSectionProps = {
   freeKassaDefaultValues: FreeKassaSettingsValues
   heleketDefaultValues: HeleketSettingsValues
   pallyDefaultValues: PallySettingsValues
+  plategalDefaultValues: PlategalSettingsValues
   complianceDefaults: PaymentComplianceDefaults
 }
 
@@ -185,6 +190,7 @@ export function PaymentSettingsSection({
   freeKassaDefaultValues,
   heleketDefaultValues,
   pallyDefaultValues,
+  plategalDefaultValues,
   complianceDefaults,
 }: PaymentSettingsSectionProps) {
   const { t } = useTranslation()
@@ -1272,6 +1278,9 @@ export function PaymentSettingsSection({
       <Separator />
 
       <PallySettingsSection defaultValues={pallyDefaultValues} />
+
+      <Separator />
+      <PlategalSettingsSection defaultValues={plategalDefaultValues} />
       {/* eslint-enable react-hooks/refs */}
     </SettingsSection>
   )

@@ -76,6 +76,7 @@ function getMethodSubtitle(type: string, t: (key: string) => string): string {
     creem: t('Creem'),
     heleket: t('Cryptocurrency'),
     pally: t('СБП / Карта (RUB)'),
+    plategal: t('СБП / Карта (RUB)'),
   }
   return map[type] || ''
 }
@@ -214,6 +215,7 @@ interface RechargeFormCardProps {
   freekassaCbrRate?: number
   enableHeleketTopup?: boolean
   enablePallyTopup?: boolean
+  enablePlategalTopup?: boolean
 }
 
 // ============================================================================
@@ -260,6 +262,7 @@ export function RechargeFormCard({
   freekassaCbrRate = 0,
   enableHeleketTopup,
   enablePallyTopup,
+  enablePlategalTopup,
 }: RechargeFormCardProps) {
   const { t } = useTranslation()
 
@@ -314,7 +317,8 @@ export function RechargeFormCard({
     enableWaffoPancakeTopup ||
     enableFreeKassaTopup ||
     enableHeleketTopup ||
-    enablePallyTopup
+    enablePallyTopup ||
+    enablePlategalTopup
   const hasAnyTopup = hasConfigurableTopup || enableCreemTopup
   const hasStandardPaymentMethods =
     Array.isArray(topupInfo?.pay_methods) && topupInfo.pay_methods.length > 0
@@ -342,6 +346,12 @@ export function RechargeFormCard({
   // Build unified methods list
   const allMethodCards = useMemo(() => {
     const methods: { method: PaymentMethod; waffoIndex?: number }[] = []
+
+    if (enablePlategalTopup) {
+      methods.push({
+        method: { type: 'plategal', name: 'Platega' },
+      })
+    }
 
     if (enablePallyTopup) {
       methods.push({
@@ -380,7 +390,7 @@ export function RechargeFormCard({
     }
 
     return methods
-  }, [enableFreeKassaTopup, freekassaCardEnabled, freekassaCryptoEnabled, freekassaID32Enabled, freekassaID32Name, enableHeleketTopup, enablePallyTopup, t])
+  }, [enableFreeKassaTopup, freekassaCardEnabled, freekassaCryptoEnabled, freekassaID32Enabled, freekassaID32Name, enableHeleketTopup, enablePallyTopup, enablePlategalTopup, t])
 
   const handleAmountChange = (value: string) => {
     setLocalAmount(value)
@@ -741,6 +751,12 @@ export function RechargeFormCard({
                                   <img
                                     src='/images/heleket-logo.svg'
                                     alt='Heleket'
+                                    className='h-5 w-5 object-contain'
+                                  />
+                                ) : method.type === 'plategal' ? (
+                                  <img
+                                    src='/images/sbp-logo.svg'
+                                    alt='Platega'
                                     className='h-5 w-5 object-contain'
                                   />
                                 ) : method.type === 'pally' ? (

@@ -136,6 +136,18 @@ func isEpayTopUpEnabled() bool {
         return isEpayWebhookConfigured() && len(operation_setting.PayMethods) > 0
 }
 
+func isPlategalTopUpEnabled() bool {
+        if !isPaymentComplianceConfirmed() {
+                return false
+        }
+        return strings.TrimSpace(setting.PlategalMerchantId) != "" &&
+                strings.TrimSpace(setting.PlategalApiSecret) != ""
+}
+
+func isPlategalWebhookEnabled() bool {
+        return isPlategalTopUpEnabled()
+}
+
 func isEpayWebhookConfigured() bool {
         return strings.TrimSpace(operation_setting.PayAddress) != "" &&
                 strings.TrimSpace(operation_setting.EpayId) != "" &&

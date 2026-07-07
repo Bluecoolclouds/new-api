@@ -42,6 +42,7 @@ export const PAYMENT_TYPES = {
   FREEKASSA_ID32: 'freekassa_id32',
   HELEKET: 'heleket',
   PALLY: 'pally',
+  PLATEGAL: 'plategal',
 } as const
 
 /**
@@ -65,6 +66,7 @@ export const PAYMENT_ICON_COLORS = {
   [PAYMENT_TYPES.FREEKASSA_ID32]: '#8B5CF6',
   [PAYMENT_TYPES.HELEKET]: '#F7931A',
   [PAYMENT_TYPES.PALLY]: '#6366F1',
+  [PAYMENT_TYPES.PLATEGAL]: '#7C3AED',
 } as const
 
 /**

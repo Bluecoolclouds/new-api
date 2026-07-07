@@ -132,6 +132,21 @@ export interface PallyPaymentRequest {
 export type PallyPaymentResponse = ApiResponse<{ pay_link: string; order_id: string }>
 
 /**
+ * Platega payment request
+ */
+export interface PlategalPaymentRequest {
+  /** Amount to top up (quota units) */
+  amount: number
+  /** Payment method identifier */
+  payment_method: 'plategal'
+}
+
+/**
+ * Platega payment response
+ */
+export type PlategalPaymentResponse = ApiResponse<{ pay_link: string; order_id: string }>
+
+/**
  * Payment method configuration
  */
 export interface PaymentMethod {
@@ -217,6 +232,12 @@ export interface TopupInfo {
   pally_min_topup?: number
   /** Pally unit price (₽ per credit) */
   pally_unit_price?: number
+  /** Whether Platega topup is enabled */
+  enable_plategal_topup?: boolean
+  /** Minimum topup amount for Platega */
+  plategal_min_topup?: number
+  /** Platega unit price (₽ per credit) */
+  plategal_unit_price?: number
   /** Whether redemption code usage is enabled */
   enable_redemption?: boolean
   /** Whether compliance confirmation has been completed */

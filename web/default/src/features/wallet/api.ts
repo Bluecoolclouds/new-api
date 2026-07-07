@@ -44,6 +44,8 @@ import type {
   HeleketPaymentResponse,
   PallyPaymentRequest,
   PallyPaymentResponse,
+  PlategalPaymentRequest,
+  PlategalPaymentResponse,
 } from './types'
 
 // ============================================================================
@@ -229,6 +231,30 @@ export async function calculatePallyAmount(
   request: AmountRequest
 ): Promise<AmountResponse> {
   const res = await api.post('/api/user/pally/amount', request, {
+    skipBusinessError: true,
+  } as Record<string, unknown>)
+  return res.data
+}
+
+/**
+ * Calculate payment amount for Platega payment
+ */
+export async function calculatePlategalAmount(
+  request: AmountRequest
+): Promise<AmountResponse> {
+  const res = await api.post('/api/user/plategal/amount', request, {
+    skipBusinessError: true,
+  } as Record<string, unknown>)
+  return res.data
+}
+
+/**
+ * Request Platega payment
+ */
+export async function requestPlategalPayment(
+  request: PlategalPaymentRequest
+): Promise<PlategalPaymentResponse> {
+  const res = await api.post('/api/user/plategal/pay', request, {
     skipBusinessError: true,
   } as Record<string, unknown>)
   return res.data
