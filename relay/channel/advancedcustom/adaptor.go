@@ -15,8 +15,8 @@ import (
 	"github.com/QuantumNous/new-api/relay/channel/gemini"
 	"github.com/QuantumNous/new-api/relay/channel/openai"
 	relaycommon "github.com/QuantumNous/new-api/relay/common"
-	"github.com/QuantumNous/new-api/service"
 	relayconstant "github.com/QuantumNous/new-api/relay/constant"
+	"github.com/QuantumNous/new-api/service"
 	"github.com/QuantumNous/new-api/types"
 	"github.com/gin-gonic/gin"
 	"github.com/samber/lo"
@@ -108,7 +108,11 @@ func (a *Adaptor) ConvertOpenAIResponsesRequest(c *gin.Context, info *relaycommo
 	case dto.AdvancedCustomConverterNone:
 		return a.convertOpenAICompatibleResponsesRequest(c, info, request)
 	case dto.AdvancedCustomConverterOpenAIResponsesToOpenAIChatCompletions:
-		return nil, errors.New("converter openai_responses_to_openai_chat_completions is not supported in this build")
+		chatReq, err := service.ResponsesRequestToChatCompletionsRequest(&request)
+		if err != nil {
+			return nil, err
+		}
+		return a.convertOpenAICompatibleRequest(c, info, chatReq)
 	default:
 		return nil, fmt.Errorf("converter %q does not support OpenAI Responses requests", converter)
 	}
@@ -226,7 +230,10 @@ func (a *Adaptor) DoResponse(c *gin.Context, resp *http.Response, info *relaycom
 		}
 		return openai.OaiResponsesToChatHandler(c, info, resp)
 	case dto.AdvancedCustomConverterOpenAIResponsesToOpenAIChatCompletions:
-		return nil, types.NewOpenAIError(errors.New("converter openai_responses_to_openai_chat_completions is not supported in this build"), types.ErrorCodeInvalidRequest, http.StatusBadRequest, types.ErrOptionWithSkipRetry())
+		if info.IsStream {
+			return openai.OaiChatToResponsesStreamHandler(c, info, resp)
+		}
+		return openai.OaiChatToResponsesHandler(c, info, resp)
 	default:
 		return nil, types.NewOpenAIError(fmt.Errorf("unsupported advanced custom converter: %s", a.converter), types.ErrorCodeInvalidRequest, http.StatusBadRequest, types.ErrOptionWithSkipRetry())
 	}
