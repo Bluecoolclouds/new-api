@@ -346,6 +346,12 @@ export function RechargeFormCard({
       if (topupInfo.enable_pally_topup && topupInfo.pally_min_topup) {
         return topupInfo.pally_min_topup / rubRate
       }
+      const hasPlategal = topupInfo.pay_methods?.some((m) =>
+        ['plategal_card', 'plategal_intl', 'plategal_sbp', 'plategal'].includes(m.type)
+      )
+      if (hasPlategal && topupInfo.plategal_min_topup) {
+        return topupInfo.plategal_min_topup / rubRate
+      }
     }
     return getMinTopupAmount(topupInfo)
   }, [topupInfo, localCurrency, rubRate])
@@ -510,6 +516,11 @@ export function RechargeFormCard({
     totalCreditsM > 0 && paymentAmount > 0
       ? paymentAmount / totalCreditsM
       : null
+
+  const isRubGateway =
+    localSelectedMethod != null &&
+    ['plategal_card', 'plategal_intl', 'plategal_sbp', 'plategal', 'pally',
+     'freekassa', 'freekassa_card'].includes(localSelectedMethod.type)
 
   const canProceed =
     !!localSelectedMethod &&
@@ -943,6 +954,11 @@ export function RechargeFormCard({
                             {topupAmount > 0 ? formatCurrency(topupAmount) : '—'}
                           </span>
                         </div>
+                      )}
+                      {isRubGateway && paymentAmount > 0 && !calculating && (
+                        <p className='mt-0.5 text-xs text-muted-foreground'>
+                          {t('To pay')}: <span className='font-semibold text-foreground'>₽{paymentAmount.toFixed(2)}</span>
+                        </p>
                       )}
                     </div>
                     <Button
