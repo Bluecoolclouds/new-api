@@ -4569,6 +4569,26 @@
     "Zoom": "Zoom",
     "Markup Ratio": "Coefficient de majoration",
     "Multiplier applied to the cost of all requests through this channel (e.g. 1.2 = +20%). Use 1 to disable.": "Multiplicateur appliqué au coût de toutes les requêtes sur ce canal (ex. 1.2 = +20%). Utilisez 1 pour désactiver.",
-    "To pay": "À payer"
+    "To pay": "À payer",
+    "No models matched your search.": "Aucun modèle ne correspond à votre recherche.",
+    "Password must be between 8 and 20 characters": "Le mot de passe doit comporter entre 8 et 20 caractères",
+    "Protect login and registration with Cloudflare Turnstile": "Protéger la connexion et l'inscription avec Cloudflare Turnstile",
+    "Send reset email": "Envoyer l'e-mail de réinitialisation",
+    "This channel has no configured models.": "Ce canal n'a aucun modèle configuré.",
+    "Updating...": "Mise à jour...",
+    "Waffo": "Waffo",
+    "API key is loading, please try again in a moment": "La clé API est en cours de chargement, veuillez réessayer dans un instant",
+    "Failed to create account": "Échec de la création du compte",
+    "Failed to load playground groups": "Échec du chargement des groupes du playground",
+    "Failed to load playground models": "Échec du chargement des modèles du playground",
+    "Failed to send reset email": "Échec de l'envoi de l'e-mail de réinitialisation",
+    "Failed to send verification email": "Échec de l'envoi de l'e-mail de vérification",
+    "Fetch available models from upstream": "Récupérer les modèles disponibles en amont",
+    "Model mapping must be a valid JSON object": "Le mapping des modèles doit être un objet JSON valide",
+    "Model mapping must be valid JSON format": "Le mapping des modèles doit être au format JSON valide",
+    "No model price changes to save": "Aucun changement de prix de modèle à sauvegarder",
+    "Skip async task polling delay": "Ignorer le délai de polling des tâches asynchrones",
+    "Do not wait one second between polling async tasks for this channel": "Ne pas attendre une seconde entre les interrogations des tâches asynchrones pour ce canal",
+    "Drawing task polling": "Interrogation des tâches de dessin"
   }
 }

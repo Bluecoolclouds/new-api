@@ -4569,6 +4569,26 @@
     "Zoom": "ズーム",
     "Markup Ratio": "マークアップ倍率",
     "Multiplier applied to the cost of all requests through this channel (e.g. 1.2 = +20%). Use 1 to disable.": "このチャンネルの全リクエストコストに適用される倍率（例: 1.2 = +20%）。1 で無効化。",
-    "To pay": "支払い金額"
+    "To pay": "支払い金額",
+    "No models matched your search.": "検索に一致するモデルがありませんでした。",
+    "Password must be between 8 and 20 characters": "パスワードは8〜20文字で入力してください",
+    "Protect login and registration with Cloudflare Turnstile": "Cloudflare Turnstileでログインと登録を保護する",
+    "Send reset email": "リセットメールを送信",
+    "This channel has no configured models.": "このチャンネルには設定されたモデルがありません。",
+    "Updating...": "更新中...",
+    "Waffo": "Waffo",
+    "API key is loading, please try again in a moment": "APIキーを読み込み中です。しばらくしてからもう一度お試しください",
+    "Failed to create account": "アカウントの作成に失敗しました",
+    "Failed to load playground groups": "プレイグラウンドグループの読み込みに失敗しました",
+    "Failed to load playground models": "プレイグラウンドモデルの読み込みに失敗しました",
+    "Failed to send reset email": "リセットメールの送信に失敗しました",
+    "Failed to send verification email": "確認メールの送信に失敗しました",
+    "Fetch available models from upstream": "上流から利用可能なモデルを取得する",
+    "Model mapping must be a valid JSON object": "モデルマッピングは有効なJSONオブジェクトである必要があります",
+    "Model mapping must be valid JSON format": "モデルマッピングは有効なJSON形式である必要があります",
+    "No model price changes to save": "保存するモデル価格の変更はありません",
+    "Skip async task polling delay": "非同期タスクのポーリング遅延をスキップ",
+    "Do not wait one second between polling async tasks for this channel": "このチャネルの非同期タスクをポーリングする間に1秒待機しない",
+    "Drawing task polling": "描画タスクのポーリング"
   }
 }

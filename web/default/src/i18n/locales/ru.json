@@ -4778,6 +4778,26 @@
     "Международные платежи": "Международные платежи",
     "МИР": "МИР",
     "VISA / Mastercard": "VISA / Mastercard",
-    "To pay": "К оплате"
+    "To pay": "К оплате",
+    "No models matched your search.": "Нет моделей, соответствующих вашему запросу.",
+    "Password must be between 8 and 20 characters": "Пароль должен содержать от 8 до 20 символов",
+    "Protect login and registration with Cloudflare Turnstile": "Защита входа и регистрации с помощью Cloudflare Turnstile",
+    "Send reset email": "Отправить письмо для сброса",
+    "This channel has no configured models.": "В этом канале нет настроенных моделей.",
+    "Updating...": "Обновление...",
+    "Waffo": "Waffo",
+    "API key is loading, please try again in a moment": "API-ключ загружается, повторите попытку через момент",
+    "Failed to create account": "Не удалось создать аккаунт",
+    "Failed to load playground groups": "Не удалось загрузить группы площадки",
+    "Failed to load playground models": "Не удалось загрузить модели площадки",
+    "Failed to send reset email": "Не удалось отправить письмо для сброса",
+    "Failed to send verification email": "Не удалось отправить письмо с подтверждением",
+    "Fetch available models from upstream": "Получить доступные модели из upstream",
+    "Model mapping must be a valid JSON object": "Маппинг модели должен быть валидным объектом JSON",
+    "Model mapping must be valid JSON format": "Маппинг модели должен быть в корректном формате JSON",
+    "No model price changes to save": "Нет изменений цен моделей для сохранения",
+    "Skip async task polling delay": "Пропускать задержку опроса асинхронных задач",
+    "Do not wait one second between polling async tasks for this channel": "Не ждать одну секунду между опросами асинхронных задач для этого канала",
+    "Drawing task polling": "Опрос задач рисования"
   }
 }

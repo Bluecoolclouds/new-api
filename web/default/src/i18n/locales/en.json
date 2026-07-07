@@ -4723,6 +4723,26 @@
     "Международные платежи": "International payments",
     "МИР": "MIR",
     "VISA / Mastercard": "VISA / Mastercard",
-    "To pay": "To pay"
+    "To pay": "To pay",
+    "No models matched your search.": "No models matched your search.",
+    "Password must be between 8 and 20 characters": "Password must be between 8 and 20 characters",
+    "Protect login and registration with Cloudflare Turnstile": "Protect login and registration with Cloudflare Turnstile",
+    "Send reset email": "Send reset email",
+    "This channel has no configured models.": "This channel has no configured models.",
+    "Updating...": "Updating...",
+    "Waffo": "Waffo",
+    "API key is loading, please try again in a moment": "API key is loading, please try again in a moment",
+    "Failed to create account": "Failed to create account",
+    "Failed to load playground groups": "Failed to load playground groups",
+    "Failed to load playground models": "Failed to load playground models",
+    "Failed to send reset email": "Failed to send reset email",
+    "Failed to send verification email": "Failed to send verification email",
+    "Fetch available models from upstream": "Fetch available models from upstream",
+    "Model mapping must be a valid JSON object": "Model mapping must be a valid JSON object",
+    "Model mapping must be valid JSON format": "Model mapping must be valid JSON format",
+    "No model price changes to save": "No model price changes to save",
+    "Skip async task polling delay": "Skip async task polling delay",
+    "Do not wait one second between polling async tasks for this channel": "Do not wait one second between polling async tasks for this channel",
+    "Drawing task polling": "Drawing task polling"
   }
 }

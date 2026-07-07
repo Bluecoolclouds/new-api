@@ -3218,6 +3218,33 @@ export function ChannelMutateDrawer({
                               </>
                             )}
                           </div>
+
+                          <div className='divide-border space-y-0 divide-y border-y'>
+                            <FormField
+                              control={form.control}
+                              name='disable_task_polling_sleep'
+                              render={({ field }) => (
+                                <FormItem className='flex items-center justify-between px-4 py-3'>
+                                  <div className='space-y-0.5'>
+                                    <FormLabel>
+                                      {t('Skip async task polling delay')}
+                                    </FormLabel>
+                                    <FormDescription>
+                                      {t(
+                                        'Do not wait one second between polling async tasks for this channel'
+                                      )}
+                                    </FormDescription>
+                                  </div>
+                                  <FormControl>
+                                    <Switch
+                                      checked={field.value}
+                                      onCheckedChange={field.onChange}
+                                    />
+                                  </FormControl>
+                                </FormItem>
+                              )}
+                            />
+                          </div>
                         </div>
                       )}
 
