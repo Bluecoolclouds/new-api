@@ -346,12 +346,6 @@ export function RechargeFormCard({
       if (topupInfo.enable_pally_topup && topupInfo.pally_min_topup) {
         return topupInfo.pally_min_topup / rubRate
       }
-      const hasPlategal = topupInfo.pay_methods?.some((m) =>
-        ['plategal_card', 'plategal_intl', 'plategal_sbp', 'plategal'].includes(m.type)
-      )
-      if (hasPlategal && topupInfo.plategal_min_topup) {
-        return topupInfo.plategal_min_topup / rubRate
-      }
     }
     return getMinTopupAmount(topupInfo)
   }, [topupInfo, localCurrency, rubRate])
@@ -522,6 +516,12 @@ export function RechargeFormCard({
     ['plategal_card', 'plategal_intl', 'plategal_sbp', 'plategal', 'pally',
      'freekassa', 'freekassa_card'].includes(localSelectedMethod.type)
 
+  // Real gateway rate: RUB per 1 USD of credits (from actual backend calculation)
+  const rubPerDollar =
+    isRubGateway && paymentAmount > 0 && topupAmount > 0
+      ? paymentAmount / topupAmount
+      : null
+
   const canProceed =
     !!localSelectedMethod &&
     topupAmount >= minTopup &&
@@ -674,6 +674,10 @@ export function RechargeFormCard({
                         const isSelected = selectedPreset === preset.value
 
                         // payAmt: what the user actually pays in local currency
+                        // For RUB gateways: use real gateway rate (not generic rubRate)
+                        const rubPayAmt = rubPerDollar != null
+                          ? Math.round(rubPerDollar * preset.value * (hasPresetDiscount ? preset.discount! : 1))
+                          : null
                         const payAmt = hasPresetDiscount
                           ? Math.round(displayAmt * preset.discount!)
                           : displayAmt
@@ -708,11 +712,19 @@ export function RechargeFormCard({
                               {/* Payment info in local currency */}
                               <div className='mt-2 space-y-0.5'>
                                 <div className='text-[11px] leading-tight text-muted-foreground'>
-                                  {t('preset_pay_label', { amount: `${displaySymbol}${hasPresetDiscount ? payAmt : displayAmt}` })}
+                                  {t('preset_pay_label', {
+                                    amount: rubPayAmt != null
+                                      ? `₽${rubPayAmt}`
+                                      : `${displaySymbol}${hasPresetDiscount ? payAmt : displayAmt}`
+                                  })}
                                 </div>
                                 {hasPresetDiscount && (
                                   <div className='text-[10px] leading-tight text-emerald-500 font-medium'>
-                                    {t('preset_save_label', { savings: `${displaySymbol}${savingsAmt}` })}
+                                    {t('preset_save_label', {
+                                      savings: rubPerDollar != null
+                                        ? `₽${Math.round(rubPerDollar * preset.value * (1 - preset.discount!))}`
+                                        : `${displaySymbol}${savingsAmt}`
+                                    })}
                                   </div>
                                 )}
                               </div>
