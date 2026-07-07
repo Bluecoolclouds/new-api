@@ -123,9 +123,8 @@ func GetTopUpInfo(c *gin.Context) {
                         name   string
                         color  string
                 }{
-                        {model.PaymentMethodPlategalSBP, "СБП", "#4F46E5"},
-                        {model.PaymentMethodPlategalCard, "Банковская карта", "#7C3AED"},
-                        {model.PaymentMethodPlategalIntl, "Международная оплата", "#0EA5E9"},
+                        {model.PaymentMethodPlategalCard, "Банковская карта (МИР)", "#7C3AED"},
+                        {model.PaymentMethodPlategalIntl, "Международные платежи VISA MASTERCARD", "#0EA5E9"},
                 }
                 for _, pt := range plategalTypes {
                         found := false

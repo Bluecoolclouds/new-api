@@ -4718,6 +4718,10 @@
     "Visa / Mastercard / Мир": "Visa / Mastercard / Mir",
     "Банковская карта": "Bank card",
     "Международная оплата": "International payment",
-    "СБП": "SBP"
+    "СБП": "SBP",
+    "Банковская карта (МИР)": "Bank card (MIR)",
+    "Международные платежи": "International payments",
+    "МИР": "MIR",
+    "VISA / Mastercard": "VISA / Mastercard"
   }
 }
