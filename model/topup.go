@@ -34,6 +34,9 @@ const (
         PaymentMethodHeleket      = "heleket"
         PaymentMethodPally        = "pally"
         PaymentMethodPlategal     = "plategal"
+        PaymentMethodPlategalSBP  = "plategal_sbp"
+        PaymentMethodPlategalCard = "plategal_card"
+        PaymentMethodPlategalIntl = "plategal_intl"
 )
 
 const (

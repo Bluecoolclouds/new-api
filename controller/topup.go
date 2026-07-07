@@ -118,20 +118,31 @@ func GetTopUpInfo(c *gin.Context) {
         // If Pally is enabled, add it to pay methods
         enablePlategal := isPlategalTopUpEnabled()
         if enablePlategal {
-                hasPlategal := false
-                for _, method := range payMethods {
-                        if method["type"] == model.PaymentMethodPlategal {
-                                hasPlategal = true
-                                break
-                        }
+                plategalTypes := []struct {
+                        method string
+                        name   string
+                        color  string
+                }{
+                        {model.PaymentMethodPlategalSBP, "СБП", "#4F46E5"},
+                        {model.PaymentMethodPlategalCard, "Банковская карта", "#7C3AED"},
+                        {model.PaymentMethodPlategalIntl, "Международная оплата", "#0EA5E9"},
                 }
-                if !hasPlategal {
-                        payMethods = append(payMethods, map[string]string{
-                                "name":      "Platega (СБП / Карта)",
-                                "type":      model.PaymentMethodPlategal,
-                                "color":     "#7C3AED",
-                                "min_topup": strconv.Itoa(setting.PlategalMinTopUp),
-                        })
+                for _, pt := range plategalTypes {
+                        found := false
+                        for _, method := range payMethods {
+                                if method["type"] == pt.method {
+                                        found = true
+                                        break
+                                }
+                        }
+                        if !found {
+                                payMethods = append(payMethods, map[string]string{
+                                        "name":      pt.name,
+                                        "type":      pt.method,
+                                        "color":     pt.color,
+                                        "min_topup": strconv.Itoa(setting.PlategalMinTopUp),
+                                })
+                        }
                 }
         }
 

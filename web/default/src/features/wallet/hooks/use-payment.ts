@@ -42,6 +42,7 @@ import {
   isHeleketPayment,
   isPallyPayment,
   isPlategalPayment,
+  isPlategalSubPayment,
   submitPaymentForm,
 } from '../lib'
 
@@ -66,6 +67,7 @@ export function usePayment() {
         const isHeleket = isHeleketPayment(paymentType)
         const isPally = isPallyPayment(paymentType)
         const isPlategal = isPlategalPayment(paymentType)
+        const isPlategalSub = isPlategalSubPayment(paymentType)
         const response = isStripe
           ? await calculateStripeAmount({ amount: topupAmount })
           : isPancake
@@ -76,7 +78,7 @@ export function usePayment() {
                 ? await calculateHeleketAmount({ amount: topupAmount })
                 : isPally
                   ? await calculatePallyAmount({ amount: topupAmount })
-                  : isPlategal
+                  : isPlategal || isPlategalSub
                     ? await calculatePlategalAmount({ amount: topupAmount })
                   : await calculateAmount({ amount: topupAmount })
 
@@ -110,6 +112,7 @@ export function usePayment() {
         const isHeleket = isHeleketPayment(paymentType)
         const isPally = isPallyPayment(paymentType)
         const isPlategal = isPlategalPayment(paymentType)
+        const isPlategalSub = isPlategalSubPayment(paymentType)
         const amount = Math.floor(topupAmount)
 
         // Handle FreeKassa payment
@@ -167,10 +170,11 @@ export function usePayment() {
         }
 
         // Handle Platega payment
-        if (isPlategal) {
+        if (isPlategal || isPlategalSub) {
           const response = await requestPlategalPayment({
             amount,
             payment_method: 'plategal',
+            sub_method: isPlategalSub ? (paymentType as 'plategal_sbp' | 'plategal_card' | 'plategal_intl') : 'plategal_sbp',
           })
           if (!isApiSuccess(response)) {
             toast.error(response.message || i18next.t('Payment request failed'))

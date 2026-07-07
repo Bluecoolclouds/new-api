@@ -117,6 +117,14 @@ export function isPlategalPayment(paymentType: string): boolean {
   return paymentType === PAYMENT_TYPES.PLATEGAL
 }
 
+export function isPlategalSubPayment(paymentType: string): boolean {
+  return (
+    paymentType === PAYMENT_TYPES.PLATEGAL_SBP ||
+    paymentType === PAYMENT_TYPES.PLATEGAL_CARD ||
+    paymentType === PAYMENT_TYPES.PLATEGAL_INTL
+  )
+}
+
 /**
  * Get default payment type from topup info
  */
@@ -190,7 +198,12 @@ export function getMinTopupAmount(topupInfo: TopupInfo | null): number {
     return DEFAULT_MIN_TOPUP
   }
 
-  if (topupInfo.enable_plategal_topup) {
+  if (
+    topupInfo.enable_plategal_topup ||
+    topupInfo.pay_methods?.some((m) =>
+      ['plategal_sbp', 'plategal_card', 'plategal_intl'].includes(m.type)
+    )
+  ) {
     const plategalUnitPrice = topupInfo.plategal_unit_price || 0.0002
     const rubPerUsd = plategalUnitPrice * 500000
     if (rubPerUsd > 0 && topupInfo.plategal_min_topup) {

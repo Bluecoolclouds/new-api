@@ -335,6 +335,9 @@ export function Wallet(props: WalletProps) {
                   enableHeleketTopup={topupInfo?.enable_heleket_topup}
                   enablePallyTopup={topupInfo?.enable_pally_topup}
                   enablePlategalTopup={topupInfo?.enable_plategal_topup}
+                  enablePlategalSBP={topupInfo?.pay_methods?.some((m) => m.type === 'plategal_sbp')}
+                  enablePlategalCard={topupInfo?.pay_methods?.some((m) => m.type === 'plategal_card')}
+                  enablePlategalIntl={topupInfo?.pay_methods?.some((m) => m.type === 'plategal_intl')}
                   onMethodChange={handleMethodChange}
                   discountRate={getDiscountRate()}
                 />

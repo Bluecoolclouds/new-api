@@ -43,6 +43,9 @@ export const PAYMENT_TYPES = {
   HELEKET: 'heleket',
   PALLY: 'pally',
   PLATEGAL: 'plategal',
+  PLATEGAL_SBP: 'plategal_sbp',
+  PLATEGAL_CARD: 'plategal_card',
+  PLATEGAL_INTL: 'plategal_intl',
 } as const
 
 /**
@@ -67,6 +70,9 @@ export const PAYMENT_ICON_COLORS = {
   [PAYMENT_TYPES.HELEKET]: '#F7931A',
   [PAYMENT_TYPES.PALLY]: '#6366F1',
   [PAYMENT_TYPES.PLATEGAL]: '#7C3AED',
+  [PAYMENT_TYPES.PLATEGAL_SBP]: '#4F46E5',
+  [PAYMENT_TYPES.PLATEGAL_CARD]: '#7C3AED',
+  [PAYMENT_TYPES.PLATEGAL_INTL]: '#0EA5E9',
 } as const
 
 /**

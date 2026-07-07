@@ -139,6 +139,7 @@ export interface PlategalPaymentRequest {
   amount: number
   /** Payment method identifier */
   payment_method: 'plategal'
+  sub_method: 'plategal_sbp' | 'plategal_card' | 'plategal_intl'
 }
 
 /**

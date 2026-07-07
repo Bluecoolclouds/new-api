@@ -4767,6 +4767,12 @@
     "API Secret (X-Secret)": "API Secret (X-Secret)",
     "Your Platega API secret": "Ваш API-секрет Platega",
     "Callback URL:": "Callback URL:",
-    "Set this URL in Platega personal account: Settings → Callback URLs.": "Установите этот URL в личном кабинете Platega: Настройки → Callback URLs."
+    "Set this URL in Platega personal account: Settings → Callback URLs.": "Установите этот URL в личном кабинете Platega: Настройки → Callback URLs.",
+    "Быстрый перевод (RUB)": "Быстрый перевод (RUB)",
+    "Банковская карта (RUB)": "Банковская карта (RUB)",
+    "Visa / Mastercard / Мир": "Visa / Mastercard / Мир",
+    "Банковская карта": "Банковская карта",
+    "Международная оплата": "Международная оплата",
+    "СБП": "СБП"
   }
 }

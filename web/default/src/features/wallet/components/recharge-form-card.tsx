@@ -77,6 +77,9 @@ function getMethodSubtitle(type: string, t: (key: string) => string): string {
     heleket: t('Cryptocurrency'),
     pally: t('СБП / Карта (RUB)'),
     plategal: t('СБП / Карта (RUB)'),
+    plategal_sbp: t('Быстрый перевод (RUB)'),
+    plategal_card: t('Банковская карта (RUB)'),
+    plategal_intl: t('Visa / Mastercard / Мир'),
   }
   return map[type] || ''
 }
@@ -216,6 +219,9 @@ interface RechargeFormCardProps {
   enableHeleketTopup?: boolean
   enablePallyTopup?: boolean
   enablePlategalTopup?: boolean
+  enablePlategalSBP?: boolean
+  enablePlategalCard?: boolean
+  enablePlategalIntl?: boolean
 }
 
 // ============================================================================
@@ -263,6 +269,9 @@ export function RechargeFormCard({
   enableHeleketTopup,
   enablePallyTopup,
   enablePlategalTopup,
+  enablePlategalSBP,
+  enablePlategalCard,
+  enablePlategalIntl,
 }: RechargeFormCardProps) {
   const { t } = useTranslation()
 
@@ -318,7 +327,10 @@ export function RechargeFormCard({
     enableFreeKassaTopup ||
     enableHeleketTopup ||
     enablePallyTopup ||
-    enablePlategalTopup
+    enablePlategalTopup ||
+    enablePlategalSBP ||
+    enablePlategalCard ||
+    enablePlategalIntl
   const hasAnyTopup = hasConfigurableTopup || enableCreemTopup
   const hasStandardPaymentMethods =
     Array.isArray(topupInfo?.pay_methods) && topupInfo.pay_methods.length > 0
@@ -347,7 +359,25 @@ export function RechargeFormCard({
   const allMethodCards = useMemo(() => {
     const methods: { method: PaymentMethod; waffoIndex?: number }[] = []
 
-    if (enablePlategalTopup) {
+    if (enablePlategalSBP) {
+      methods.push({
+        method: { type: 'plategal_sbp', name: 'СБП' },
+      })
+    }
+
+    if (enablePlategalCard) {
+      methods.push({
+        method: { type: 'plategal_card', name: 'Банковская карта' },
+      })
+    }
+
+    if (enablePlategalIntl) {
+      methods.push({
+        method: { type: 'plategal_intl', name: 'Международная оплата' },
+      })
+    }
+
+    if (enablePlategalTopup && !enablePlategalSBP && !enablePlategalCard && !enablePlategalIntl) {
       methods.push({
         method: { type: 'plategal', name: 'Platega' },
       })
@@ -390,7 +420,7 @@ export function RechargeFormCard({
     }
 
     return methods
-  }, [enableFreeKassaTopup, freekassaCardEnabled, freekassaCryptoEnabled, freekassaID32Enabled, freekassaID32Name, enableHeleketTopup, enablePallyTopup, enablePlategalTopup, t])
+  }, [enableFreeKassaTopup, freekassaCardEnabled, freekassaCryptoEnabled, freekassaID32Enabled, freekassaID32Name, enableHeleketTopup, enablePallyTopup, enablePlategalTopup, enablePlategalSBP, enablePlategalCard, enablePlategalIntl, t])
 
   const handleAmountChange = (value: string) => {
     setLocalAmount(value)
@@ -753,6 +783,16 @@ export function RechargeFormCard({
                                     alt='Heleket'
                                     className='h-5 w-5 object-contain'
                                   />
+                                ) : method.type === 'plategal_sbp' ? (
+                                  <img
+                                    src='/images/sbp-logo.svg'
+                                    alt='СБП'
+                                    className='h-5 w-5 object-contain'
+                                  />
+                                ) : method.type === 'plategal_card' ? (
+                                  <svg xmlns='http://www.w3.org/2000/svg' className='h-5 w-5' viewBox='0 0 24 24' fill='none' stroke='currentColor' strokeWidth='2' strokeLinecap='round' strokeLinejoin='round'><rect width='20' height='14' x='2' y='5' rx='2'/><line x1='2' x2='22' y1='10' y2='10'/></svg>
+                                ) : method.type === 'plategal_intl' ? (
+                                  <svg xmlns='http://www.w3.org/2000/svg' className='h-5 w-5' viewBox='0 0 24 24' fill='none' stroke='currentColor' strokeWidth='2' strokeLinecap='round' strokeLinejoin='round'><circle cx='12' cy='12' r='10'/><line x1='2' x2='22' y1='12' y2='12'/><path d='M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z'/></svg>
                                 ) : method.type === 'plategal' ? (
                                   <img
                                     src='/images/sbp-logo.svg'
