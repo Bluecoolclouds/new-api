@@ -144,3 +144,9 @@ id = "K-tENWvSdAGrmwkXRYRyN"
 uri = "file://apinet-screencast.zip"
 type = "unspecified"
 title = "APINET.CLOUD — Скринкаст (реальный интерфейс)"
+
+[[outputs]]
+id = "I_apQQzR9FbHvqiAhYC5e"
+uri = "file://APINET_INTEGRATION_API.md"
+type = "text"
+title = "APINET Integration API — документация для разработчика"
