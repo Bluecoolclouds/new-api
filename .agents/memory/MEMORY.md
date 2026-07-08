@@ -6,3 +6,5 @@
 - [i18n translation namespace](i18n-translation-namespace.md) — locale JSON uses a `translation` namespace; new keys must go under data.translation, NOT root, or they won't resolve
 - [V-API / Kling provider](vapi-kling-provider.md) — api.gpt.ge aggregator: all endpoints translated (video, image, audio, 3D); connect via Kling channel with sk-* key + base URL https://api.gpt.ge
 - [MiniMax max_tokens cap](minimax-max-tokens.md) — MiniMax API accepts max_tokens [1, 32768] only; adaptor caps at 32768 to prevent 400 errors from channel param_override injecting larger values
+
+- [Bulk upstream sync verification](bulk-upstream-sync-verification.md) — commit-range diff isn't enough; always full-build + hash-diff after bulk syncing many upstream commits at once
