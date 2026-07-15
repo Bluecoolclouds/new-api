@@ -359,24 +359,6 @@ export function RechargeFormCard({
   const allMethodCards = useMemo(() => {
     const methods: { method: PaymentMethod; waffoIndex?: number }[] = []
 
-    if (enablePlategalCard) {
-      methods.push({
-        method: { type: 'plategal_card', name: t('Банковская карта (МИР)') },
-      })
-    }
-
-    if (enablePlategalIntl) {
-      methods.push({
-        method: { type: 'plategal_intl', name: t('Международные платежи') },
-      })
-    }
-
-    if (enablePlategalTopup && !enablePlategalSBP && !enablePlategalCard && !enablePlategalIntl) {
-      methods.push({
-        method: { type: 'plategal', name: 'Platega' },
-      })
-    }
-
     if (enablePallyTopup) {
       methods.push({
         method: { type: 'pally', name: 'Pally' },
@@ -410,6 +392,24 @@ export function RechargeFormCard({
     if (enableHeleketTopup) {
       methods.push({
         method: { type: 'heleket', name: 'Heleket' },
+      })
+    }
+
+    if (enablePlategalCard) {
+      methods.push({
+        method: { type: 'plategal_card', name: t('Банковская карта (МИР)') },
+      })
+    }
+
+    if (enablePlategalIntl) {
+      methods.push({
+        method: { type: 'plategal_intl', name: t('Международные платежи') },
+      })
+    }
+
+    if (enablePlategalTopup && !enablePlategalSBP && !enablePlategalCard && !enablePlategalIntl) {
+      methods.push({
+        method: { type: 'plategal', name: 'Platega' },
       })
     }
 

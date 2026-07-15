@@ -9,6 +9,7 @@ import (
         "fmt"
         "io"
         "net/http"
+        "regexp"
         "strings"
         "time"
 
@@ -32,11 +33,27 @@ func heleketSign(jsonBody []byte, apiKey string) string {
         return fmt.Sprintf("%x", md5.Sum([]byte(raw)))
 }
 
-// heleketWebhookSign computes the webhook verification signature.
-// Formula: md5(uuid + ":" + order_id + ":" + status + ":" + api_key)
-func heleketWebhookSign(uuid, orderID, status, apiKey string) string {
-        raw := uuid + ":" + orderID + ":" + status + ":" + apiKey
-        return fmt.Sprintf("%x", md5.Sum([]byte(raw)))
+// heleketSignKeyRe matches the "sign" field in a raw JSON webhook body so it
+// can be removed before signature verification.
+var heleketSignKeyRe = regexp.MustCompile(`"sign"\s*:\s*"[^"]*"`)
+
+// heleketStripSign removes the "sign" field from a raw JSON body while keeping
+// the remaining bytes (including PHP-style escaped slashes) intact, then
+// repairs any dangling commas. Heleket signs the body WITHOUT the sign field,
+// so verification must run against this byte-exact representation rather than a
+// re-marshalled JSON (Go would reorder keys and unescape slashes).
+func heleketStripSign(body []byte) []byte {
+        s := heleketSignKeyRe.ReplaceAllString(string(body), "")
+        s = strings.ReplaceAll(s, ",}", "}")
+        s = strings.ReplaceAll(s, "{,", "{")
+        s = strings.ReplaceAll(s, ",,", ",")
+        return []byte(s)
+}
+
+// heleketWebhookSign computes the webhook verification signature using the same
+// scheme as outgoing requests: md5(base64(body_without_sign) + api_key).
+func heleketWebhookSign(body []byte, apiKey string) string {
+        return heleketSign(heleketStripSign(body), apiKey)
 }
 
 // ─── Amount ────────────────────────────────────────────────────────────────
@@ -305,7 +322,7 @@ func HeleketWebhook(c *gin.Context) {
         }
 
         // Verify signature
-        expectedSign := heleketWebhookSign(payload.UUID, payload.OrderID, payload.Status, setting.HeleketApiKey)
+        expectedSign := heleketWebhookSign(bodyBytes, setting.HeleketApiKey)
         if !strings.EqualFold(expectedSign, payload.Sign) {
                 logger.LogWarn(c.Request.Context(), fmt.Sprintf("Heleket webhook неверная подпись order_id=%s uuid=%s status=%s expected=%s got=%s", payload.OrderID, payload.UUID, payload.Status, expectedSign, payload.Sign))
                 c.AbortWithStatus(http.StatusUnauthorized)

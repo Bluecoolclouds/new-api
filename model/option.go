@@ -116,6 +116,40 @@ func InitOptionMap() {
 	common.OptionMap["WaffoPancakeMinTopUp"] = strconv.Itoa(setting.WaffoPancakeMinTopUp)
 	common.OptionMap["WaffoPancakeStoreID"] = setting.WaffoPancakeStoreID
 	common.OptionMap["WaffoPancakeProductID"] = setting.WaffoPancakeProductID
+	// APINET custom: FreeKassa / Heleket / Pally option registration
+	common.OptionMap["FreeKassaMerchantId"] = setting.FreeKassaMerchantId
+	common.OptionMap["FreeKassaSecretWord1"] = setting.FreeKassaSecretWord1
+	common.OptionMap["FreeKassaSecretWord2"] = setting.FreeKassaSecretWord2
+	common.OptionMap["FreeKassaCurrency"] = setting.FreeKassaCurrency
+	common.OptionMap["FreeKassaUnitPrice"] = strconv.FormatFloat(setting.FreeKassaUnitPrice, 'f', -1, 64)
+	common.OptionMap["FreeKassaMinTopUp"] = strconv.Itoa(setting.FreeKassaMinTopUp)
+	common.OptionMap["FreeKassaReturnURL"] = setting.FreeKassaReturnURL
+	common.OptionMap["FreeKassaPaymentSystemId"] = setting.FreeKassaPaymentSystemId
+	common.OptionMap["FreeKassaCBRMarkup"] = strconv.FormatFloat(setting.FreeKassaCBRMarkup, 'f', -1, 64)
+	common.OptionMap["FreeKassaCBRAutoSync"] = strconv.FormatBool(setting.FreeKassaCBRAutoSync)
+	common.OptionMap["FreeKassaCardPaymentSystemId"] = setting.FreeKassaCardPaymentSystemId
+	common.OptionMap["FreeKassaCryptoPaymentSystemId"] = setting.FreeKassaCryptoPaymentSystemId
+	common.OptionMap["FreeKassaFallbackEmail"] = setting.FreeKassaFallbackEmail
+	common.OptionMap["FreeKassaApiKey"] = setting.FreeKassaApiKey
+	common.OptionMap["FreeKassaEnableSBP"] = strconv.FormatBool(setting.FreeKassaEnableSBP)
+	common.OptionMap["FreeKassaEnableCard"] = strconv.FormatBool(setting.FreeKassaEnableCard)
+	common.OptionMap["FreeKassaEnableCrypto"] = strconv.FormatBool(setting.FreeKassaEnableCrypto)
+	common.OptionMap["FreeKassaEnableID32"] = strconv.FormatBool(setting.FreeKassaEnableID32)
+	common.OptionMap["FreeKassaID32Name"] = setting.FreeKassaID32Name
+	common.OptionMap["HeleketApiKey"] = setting.HeleketApiKey
+	common.OptionMap["HeleketMerchantUUID"] = setting.HeleketMerchantUUID
+	common.OptionMap["HeleketCurrency"] = setting.HeleketCurrency
+	common.OptionMap["HeleketUnitPrice"] = strconv.FormatFloat(setting.HeleketUnitPrice, 'f', -1, 64)
+	common.OptionMap["HeleketMinTopUp"] = strconv.Itoa(setting.HeleketMinTopUp)
+	common.OptionMap["HeleketReturnURL"] = setting.HeleketReturnURL
+	common.OptionMap["PallyApiToken"] = setting.PallyApiToken
+	common.OptionMap["PallyShopID"] = setting.PallyShopID
+	common.OptionMap["PallyUnitPrice"] = strconv.FormatFloat(setting.PallyUnitPrice, 'f', -1, 64)
+	common.OptionMap["PallyMinTopUp"] = strconv.Itoa(setting.PallyMinTopUp)
+	common.OptionMap["PlategalMerchantId"] = setting.PlategalMerchantId
+	common.OptionMap["PlategalApiSecret"] = setting.PlategalApiSecret
+	common.OptionMap["PlategalUnitPrice"] = strconv.FormatFloat(setting.PlategalUnitPrice, 'f', -1, 64)
+	common.OptionMap["PlategalMinTopUp"] = strconv.Itoa(setting.PlategalMinTopUp)
 	common.OptionMap["TopupGroupRatio"] = common.TopupGroupRatio2JSONString()
 	common.OptionMap["Chats"] = setting.Chats2JsonString()
 	common.OptionMap["AutoGroups"] = setting.AutoGroups2JsonString()
@@ -125,6 +159,7 @@ func InitOptionMap() {
 	common.OptionMap["GitHubClientSecret"] = ""
 	common.OptionMap["TelegramBotToken"] = ""
 	common.OptionMap["TelegramBotName"] = ""
+	common.OptionMap["TelegramBotSecret"] = ""
 	common.OptionMap["WeChatServerAddress"] = ""
 	common.OptionMap["WeChatServerToken"] = ""
 	common.OptionMap["WeChatAccountQRCodeImageURL"] = ""
@@ -468,6 +503,73 @@ func updateOptionMap(key string, value string) (err error) {
 		setting.WaffoPancakeUnitPrice, _ = strconv.ParseFloat(value, 64)
 	case "WaffoPancakeMinTopUp":
 		setting.WaffoPancakeMinTopUp, _ = strconv.Atoi(value)
+	// APINET custom: FreeKassa / Heleket / Pally option loading
+	case "FreeKassaMerchantId":
+		setting.FreeKassaMerchantId = value
+	case "FreeKassaSecretWord1":
+		setting.FreeKassaSecretWord1 = value
+	case "FreeKassaSecretWord2":
+		setting.FreeKassaSecretWord2 = value
+	case "FreeKassaCurrency":
+		setting.FreeKassaCurrency = value
+	case "FreeKassaUnitPrice":
+		setting.FreeKassaUnitPrice, _ = strconv.ParseFloat(value, 64)
+	case "FreeKassaMinTopUp":
+		setting.FreeKassaMinTopUp, _ = strconv.Atoi(value)
+	case "FreeKassaReturnURL":
+		setting.FreeKassaReturnURL = value
+	case "FreeKassaPaymentSystemId":
+		setting.FreeKassaPaymentSystemId = value
+	case "FreeKassaCBRMarkup":
+		setting.FreeKassaCBRMarkup, _ = strconv.ParseFloat(value, 64)
+	case "FreeKassaCBRAutoSync":
+		setting.FreeKassaCBRAutoSync = value == "true"
+	case "FreeKassaCardPaymentSystemId":
+		setting.FreeKassaCardPaymentSystemId = value
+	case "FreeKassaCryptoPaymentSystemId":
+		setting.FreeKassaCryptoPaymentSystemId = value
+	case "FreeKassaFallbackEmail":
+		setting.FreeKassaFallbackEmail = value
+	case "FreeKassaApiKey":
+		setting.FreeKassaApiKey = value
+	case "FreeKassaEnableSBP":
+		setting.FreeKassaEnableSBP = value == "true"
+	case "FreeKassaEnableCard":
+		setting.FreeKassaEnableCard = value == "true"
+	case "FreeKassaEnableCrypto":
+		setting.FreeKassaEnableCrypto = value == "true"
+	case "FreeKassaEnableID32":
+		setting.FreeKassaEnableID32 = value == "true"
+	case "FreeKassaID32Name":
+		setting.FreeKassaID32Name = value
+	case "HeleketApiKey":
+		setting.HeleketApiKey = value
+	case "HeleketMerchantUUID":
+		setting.HeleketMerchantUUID = value
+	case "HeleketCurrency":
+		setting.HeleketCurrency = value
+	case "HeleketUnitPrice":
+		setting.HeleketUnitPrice, _ = strconv.ParseFloat(value, 64)
+	case "HeleketMinTopUp":
+		setting.HeleketMinTopUp, _ = strconv.Atoi(value)
+	case "HeleketReturnURL":
+		setting.HeleketReturnURL = value
+	case "PallyApiToken":
+		setting.PallyApiToken = value
+	case "PallyShopID":
+		setting.PallyShopID = value
+	case "PallyUnitPrice":
+		setting.PallyUnitPrice, _ = strconv.ParseFloat(value, 64)
+	case "PallyMinTopUp":
+		setting.PallyMinTopUp, _ = strconv.Atoi(value)
+	case "PlategalMerchantId":
+		setting.PlategalMerchantId = value
+	case "PlategalApiSecret":
+		setting.PlategalApiSecret = value
+	case "PlategalUnitPrice":
+		setting.PlategalUnitPrice, _ = strconv.ParseFloat(value, 64)
+	case "PlategalMinTopUp":
+		setting.PlategalMinTopUp, _ = strconv.Atoi(value)
 	case "TopupGroupRatio":
 		err = common.UpdateTopupGroupRatioByJSONString(value)
 	case "GitHubClientId":
@@ -496,6 +598,8 @@ func updateOptionMap(key string, value string) (err error) {
 		common.TelegramBotToken = value
 	case "TelegramBotName":
 		common.TelegramBotName = value
+	case "TelegramBotSecret":
+		common.TelegramBotSecret = strings.TrimSpace(value)
 	case "TurnstileSiteKey":
 		common.TurnstileSiteKey = value
 	case "TurnstileSecretKey":

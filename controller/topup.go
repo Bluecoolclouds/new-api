@@ -95,12 +95,108 @@ func GetTopUpInfo(c *gin.Context) {
 		}
 	}
 
+	// APINET custom: If FreeKassa is enabled, add it to pay methods
+	enableFreeKassa := isFreeKassaTopUpEnabled()
+	if enableFreeKassa {
+		hasFreeKassa := false
+		for _, method := range payMethods {
+			if method["type"] == model.PaymentMethodFreeKassa {
+				hasFreeKassa = true
+				break
+			}
+		}
+		if !hasFreeKassa {
+			payMethods = append(payMethods, map[string]string{
+				"name":      "FreeKassa",
+				"type":      model.PaymentMethodFreeKassa,
+				"color":     "#10B981",
+				"min_topup": strconv.Itoa(setting.FreeKassaMinTopUp),
+			})
+		}
+	}
+
+	// APINET custom: If Pally is enabled, add it to pay methods
+	enablePally := isPallyTopUpEnabled()
+	if enablePally {
+		hasPally := false
+		for _, method := range payMethods {
+			if method["type"] == model.PaymentMethodPally {
+				hasPally = true
+				break
+			}
+		}
+		if !hasPally {
+			payMethods = append(payMethods, map[string]string{
+				"name":      "Pally (СБП / Карта)",
+				"type":      model.PaymentMethodPally,
+				"color":     "#6366F1",
+				"min_topup": strconv.Itoa(setting.PallyMinTopUp),
+			})
+		}
+	}
+
+	// APINET custom: If Heleket is enabled, add it to pay methods
+	enableHeleket := isHeleketTopUpEnabled()
+	if enableHeleket {
+		hasHeleket := false
+		for _, method := range payMethods {
+			if method["type"] == model.PaymentMethodHeleket {
+				hasHeleket = true
+				break
+			}
+		}
+		if !hasHeleket {
+			payMethods = append(payMethods, map[string]string{
+				"name":      "Heleket (Crypto)",
+				"type":      model.PaymentMethodHeleket,
+				"color":     "#F7931A",
+				"min_topup": strconv.Itoa(setting.HeleketMinTopUp),
+			})
+		}
+	}
+
+	// APINET custom: If Platega is enabled, add its sub-methods to pay methods.
+	// Platega выставляем как МИР (card) + Visa/Mastercard (intl), без СБП.
+	enablePlategal := isPlategalTopUpEnabled()
+	if enablePlategal {
+		hasPlategalCard := false
+		hasPlategalIntl := false
+		for _, method := range payMethods {
+			switch method["type"] {
+			case model.PaymentMethodPlategalCard:
+				hasPlategalCard = true
+			case model.PaymentMethodPlategalIntl:
+				hasPlategalIntl = true
+			}
+		}
+		if !hasPlategalCard {
+			payMethods = append(payMethods, map[string]string{
+				"name":      "Карта МИР",
+				"type":      model.PaymentMethodPlategalCard,
+				"color":     "#1B8F4C",
+				"min_topup": strconv.Itoa(setting.PlategalMinTopUp),
+			})
+		}
+		if !hasPlategalIntl {
+			payMethods = append(payMethods, map[string]string{
+				"name":      "Visa / Mastercard",
+				"type":      model.PaymentMethodPlategalIntl,
+				"color":     "#0EA5E9",
+				"min_topup": strconv.Itoa(setting.PlategalMinTopUp),
+			})
+		}
+	}
+
 	data := gin.H{
 		"enable_online_topup":              isEpayTopUpEnabled(),
 		"enable_stripe_topup":              isStripeTopUpEnabled(),
 		"enable_creem_topup":               isCreemTopUpEnabled(),
 		"enable_waffo_topup":               enableWaffo,
 		"enable_waffo_pancake_topup":       enableWaffoPancake,
+		"enable_freekassa_topup":           enableFreeKassa && setting.FreeKassaEnableSBP,
+		"enable_heleket_topup":             enableHeleket,
+		"enable_pally_topup":               enablePally,
+		"enable_plategal_topup":            enablePlategal,
 		"enable_redemption":                complianceConfirmed,
 		"payment_compliance_confirmed":     complianceConfirmed,
 		"payment_compliance_terms_version": operation_setting.CurrentComplianceTermsVersion,
@@ -119,6 +215,19 @@ func GetTopUpInfo(c *gin.Context) {
 		"amount_options":          operation_setting.GetPaymentSetting().AmountOptions,
 		"discount":                operation_setting.GetPaymentSetting().AmountDiscount,
 		"topup_link":              common.TopUpLink,
+		// APINET custom: FreeKassa/Pally/Heleket storefront fields
+		"freekassa_unit_price":     setting.FreeKassaUnitPrice,
+		"freekassa_cbr_rate":       lastCBRRate,
+		"freekassa_card_enabled":   enableFreeKassa && setting.FreeKassaEnableCard,
+		"freekassa_crypto_enabled": enableFreeKassa && setting.FreeKassaEnableCrypto,
+		"freekassa_id32_enabled":   enableFreeKassa && setting.FreeKassaEnableID32,
+		"freekassa_id32_name":      setting.FreeKassaID32Name,
+		"freekassa_min_topup":      setting.FreeKassaMinTopUp,
+		"heleket_min_topup":        setting.HeleketMinTopUp,
+		"pally_min_topup":          setting.PallyMinTopUp,
+		"pally_unit_price":         setting.PallyUnitPrice,
+		"plategal_min_topup":       setting.PlategalMinTopUp,
+		"plategal_unit_price":      setting.PlategalUnitPrice,
 	}
 	common.ApiSuccess(c, data)
 }

@@ -27,7 +27,9 @@ function RechargeContent() {
   const { topupInfo, presetAmounts, loading: topupLoading } = useTopupInfo()
 
   const effectiveUsdExchangeRate =
-    currency?.quotaDisplayType === 'USD' ? 1 : currency?.usdExchangeRate || 1
+    currency?.usdExchangeRate && currency.usdExchangeRate > 0
+      ? currency.usdExchangeRate
+      : 1
 
   const {
     amount: paymentAmount,

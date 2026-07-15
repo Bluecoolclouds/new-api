@@ -50,6 +50,10 @@ func SetApiRouter(router *gin.Engine) {
 		apiRouter.POST("/oauth/wechat/bind", middleware.CriticalRateLimit(), anonymousRequestBodyLimit, controller.WeChatBind)
 		apiRouter.GET("/oauth/telegram/login", middleware.CriticalRateLimit(), controller.TelegramLogin)
 		apiRouter.GET("/oauth/telegram/bind", middleware.CriticalRateLimit(), controller.TelegramBind)
+		// APINET custom: Telegram bot login flow (bot deep-link + poll/confirm)
+		apiRouter.POST("/auth/tgbot/init", middleware.CriticalRateLimit(), controller.TgBotInitSession)
+		apiRouter.POST("/auth/tgbot/confirm", middleware.CriticalRateLimit(), anonymousRequestBodyLimit, controller.TgBotConfirmSession)
+		apiRouter.GET("/auth/tgbot/poll", controller.TgBotPollSession)
 		// Standard OAuth providers (GitHub, Discord, OIDC, LinuxDO) - unified route
 		apiRouter.GET("/oauth/:provider", middleware.CriticalRateLimit(), controller.HandleOAuth)
 		apiRouter.GET("/ratio_config", middleware.CriticalRateLimit(), controller.GetRatioConfig)
@@ -60,6 +64,12 @@ func SetApiRouter(router *gin.Engine) {
 		// :env separates test vs prod URLs so the operator can register each
 		// in Pancake's matching webhook slot; handler enforces env match.
 		apiRouter.POST("/waffo-pancake/webhook/:env", anonymousRequestBodyLimit, controller.WaffoPancakeWebhook)
+		// APINET custom: payment gateway webhooks/callbacks (no auth)
+		apiRouter.POST("/heleket/webhook", anonymousRequestBodyLimit, controller.HeleketWebhook)
+		apiRouter.POST("/pally/webhook", anonymousRequestBodyLimit, controller.PallyWebhook)
+		apiRouter.POST("/plategal/webhook", anonymousRequestBodyLimit, controller.PlategalWebhook)
+		apiRouter.POST("/user/freekassa/notify", anonymousRequestBodyLimit, controller.FreeKassaNotify)
+		apiRouter.GET("/user/freekassa/notify", controller.FreeKassaNotify)
 
 		// Universal secure verification routes
 		apiRouter.POST("/verify", middleware.UserAuth(), middleware.CriticalRateLimit(), controller.UniversalVerify)
@@ -105,6 +115,15 @@ func SetApiRouter(router *gin.Engine) {
 				selfRoute.POST("/waffo/pay", middleware.CriticalRateLimit(), controller.RequestWaffoPay)
 				selfRoute.POST("/waffo-pancake/amount", controller.RequestWaffoPancakeAmount)
 				selfRoute.POST("/waffo-pancake/pay", middleware.CriticalRateLimit(), controller.RequestWaffoPancakePay)
+				// APINET custom: FreeKassa / Heleket / Pally / Plategal payment endpoints
+				selfRoute.POST("/freekassa/amount", controller.RequestFreeKassaAmount)
+				selfRoute.POST("/freekassa/pay", middleware.CriticalRateLimit(), controller.RequestFreeKassaPay)
+				selfRoute.POST("/heleket/amount", controller.RequestHeleketAmount)
+				selfRoute.POST("/heleket/pay", middleware.CriticalRateLimit(), controller.RequestHeleketPay)
+				selfRoute.POST("/pally/amount", controller.RequestPallyAmount)
+				selfRoute.POST("/pally/pay", middleware.CriticalRateLimit(), controller.RequestPallyPay)
+				selfRoute.POST("/plategal/amount", controller.RequestPlategalAmount)
+				selfRoute.POST("/plategal/pay", middleware.CriticalRateLimit(), controller.RequestPlategalPay)
 				selfRoute.POST("/aff_transfer", controller.TransferAffQuota)
 				selfRoute.PUT("/setting", controller.UpdateUserSetting)
 
@@ -122,6 +141,10 @@ func SetApiRouter(router *gin.Engine) {
 				// Custom OAuth bindings
 				selfRoute.GET("/oauth/bindings", controller.GetUserOAuthBindings)
 				selfRoute.DELETE("/oauth/bindings/:provider_id", controller.UnbindCustomOAuth)
+
+				// Withdrawal (user)
+				selfRoute.POST("/withdrawal", middleware.CriticalRateLimit(), controller.SubmitWithdrawal)
+				selfRoute.GET("/withdrawal", controller.GetUserWithdrawals)
 			}
 
 			adminRoute := userRoute.Group("/")
@@ -144,6 +167,10 @@ func SetApiRouter(router *gin.Engine) {
 				// Admin 2FA routes
 				adminRoute.GET("/2fa/stats", controller.Admin2FAStats)
 				adminRoute.DELETE("/:id/2fa", controller.AdminDisable2FA)
+
+				// Withdrawal (admin)
+				adminRoute.GET("/withdrawal/admin", controller.AdminGetWithdrawals)
+				adminRoute.PUT("/withdrawal/admin/:id", controller.AdminUpdateWithdrawal)
 			}
 		}
 

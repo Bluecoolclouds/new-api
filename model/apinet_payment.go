@@ -1,5 +1,10 @@
 package model
 
+import (
+	"github.com/QuantumNous/new-api/common"
+	"github.com/shopspring/decimal"
+)
+
 const (
         PaymentMethodFreeKassa = "freekassa"
         PaymentMethodHeleket   = "heleket"
@@ -44,19 +49,26 @@ func RechargePlategal(tradeNo string, callerIp string) error {
 }
 
 func completePendingTopUp(tradeNo string, provider string, callerIp string, providerName string) error {
-        topUp := GetTopUpByTradeNo(tradeNo)
-        if topUp == nil {
-                return nil
-        }
-        if topUp.Status != "pending" {
-                return nil
-        }
-        if err := UpdatePendingTopUpStatus(tradeNo, provider, "success"); err != nil {
-                return err
-        }
-        if err := IncreaseUserQuota(topUp.UserId, int(topUp.Amount), true); err != nil {
-                return err
-        }
-        RecordTopupLog(topUp.UserId, providerName+"充值成功", callerIp, topUp.PaymentMethod, provider)
-        return nil
+	topUp := GetTopUpByTradeNo(tradeNo)
+	if topUp == nil {
+		return nil
+	}
+	if topUp.Status != "pending" {
+		return nil
+	}
+	if err := UpdatePendingTopUpStatus(tradeNo, provider, "success"); err != nil {
+		return err
+	}
+	dAmount := decimal.NewFromInt(topUp.Amount)
+	dQuotaPerUnit := decimal.NewFromFloat(common.QuotaPerUnit)
+	quotaToAdd := int(dAmount.Mul(dQuotaPerUnit).IntPart())
+	if quotaToAdd <= 0 {
+		return nil
+	}
+	if err := IncreaseUserQuota(topUp.UserId, quotaToAdd, true); err != nil {
+		return err
+	}
+	RecordTopupLog(topUp.UserId, providerName+"充值成功", callerIp, topUp.PaymentMethod, provider)
+	RewardReferralChain(topUp.UserId, quotaToAdd)
+	return nil
 }

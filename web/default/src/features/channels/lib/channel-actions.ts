@@ -25,6 +25,7 @@ import {
   deleteChannel,
   testChannel,
   updateChannel,
+  updateChannelStatus,
   batchDeleteChannels,
   batchSetChannelTag,
   enableTagChannels,
@@ -65,7 +66,7 @@ export async function handleEnableChannel(
   onSuccess?: () => void
 ): Promise<void> {
   try {
-    const response = await updateChannel(id, { status: CHANNEL_STATUS.ENABLED })
+    const response = await updateChannelStatus(id, CHANNEL_STATUS.ENABLED)
     if (response.success) {
       toast.success(i18next.t(SUCCESS_MESSAGES.ENABLED))
       queryClient?.invalidateQueries({ queryKey: channelsQueryKeys.lists() })
@@ -87,9 +88,10 @@ export async function handleDisableChannel(
   onSuccess?: () => void
 ): Promise<void> {
   try {
-    const response = await updateChannel(id, {
-      status: CHANNEL_STATUS.MANUAL_DISABLED,
-    })
+    const response = await updateChannelStatus(
+      id,
+      CHANNEL_STATUS.MANUAL_DISABLED
+    )
     if (response.success) {
       toast.success(i18next.t(SUCCESS_MESSAGES.DISABLED))
       queryClient?.invalidateQueries({ queryKey: channelsQueryKeys.lists() })
@@ -368,7 +370,7 @@ export async function handleBatchEnable(
   try {
     // Update each channel individually
     const promises = ids.map((id) =>
-      updateChannel(id, { status: CHANNEL_STATUS.ENABLED })
+      updateChannelStatus(id, CHANNEL_STATUS.ENABLED)
     )
     const results = await Promise.allSettled(promises)
 
@@ -411,7 +413,7 @@ export async function handleBatchDisable(
   try {
     // Update each channel individually
     const promises = ids.map((id) =>
-      updateChannel(id, { status: CHANNEL_STATUS.MANUAL_DISABLED })
+      updateChannelStatus(id, CHANNEL_STATUS.MANUAL_DISABLED)
     )
     const results = await Promise.allSettled(promises)
 

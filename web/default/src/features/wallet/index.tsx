@@ -81,12 +81,13 @@ export function Wallet(props: WalletProps) {
   const { currency } = useSystemConfig()
   const { topupInfo, presetAmounts, loading: topupLoading } = useTopupInfo()
 
-  // Calculate effective exchange rate - when display type is USD, use rate of 1
+  // Use the real configured USD exchange rate for recharge display toggle.
+  // The $/₽ switch is a payment display control, not the global quotaDisplayType.
   const effectiveUsdExchangeRate = useMemo(() => {
-    return currency?.quotaDisplayType === 'USD'
-      ? 1
-      : currency?.usdExchangeRate || 1
-  }, [currency?.quotaDisplayType, currency?.usdExchangeRate])
+    return currency?.usdExchangeRate && currency.usdExchangeRate > 0
+      ? currency.usdExchangeRate
+      : 1
+  }, [currency?.usdExchangeRate])
   const {
     amount: paymentAmount,
     calculating,
