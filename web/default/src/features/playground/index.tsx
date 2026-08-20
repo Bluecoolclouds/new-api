@@ -39,6 +39,7 @@ export function Playground() {
     setModels,
     setGroups,
     updateConfig,
+    clearMessages,
   } = usePlaygroundState()
 
   const { sendChat, stopGeneration, isGenerating } = useChatHandler({
@@ -187,6 +188,16 @@ export function Playground() {
     const newMessages = messages.filter((m) => m.key !== message.key)
     updateMessages(newMessages)
   }
+  const handleClearAll = useCallback(() => {
+    if (messages.length === 0 || isGenerating) return
+    if (
+      window.confirm(
+        t('Clear the entire conversation? This cannot be undone.')
+      )
+    ) {
+      clearMessages()
+    }
+  }, [messages.length, isGenerating, clearMessages, t])
 
   return (
     <div className='relative flex size-full flex-col overflow-hidden'>
@@ -224,6 +235,8 @@ export function Playground() {
           onWebSearchChange={(value) => updateConfig('webSearch', value)}
           webSearchContextSize={config.webSearchContextSize}
           onWebSearchContextSizeChange={(value) => updateConfig('webSearchContextSize', value)}
+          onClearAll={handleClearAll}
+          hasMessages={messages.length > 0}
         />
       </div>
     </div>

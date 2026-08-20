@@ -32,6 +32,7 @@ import {
   CodeSquareIcon,
   GraduationCapIcon,
   XIcon,
+  Trash2Icon,
 } from 'lucide-react'
 import { nanoid } from 'nanoid'
 import { useTranslation } from 'react-i18next'
@@ -83,6 +84,8 @@ interface PlaygroundInputProps {
   onWebSearchChange?: (value: boolean) => void
   webSearchContextSize?: 'low' | 'medium' | 'high'
   onWebSearchContextSizeChange?: (value: 'low' | 'medium' | 'high') => void
+  onClearAll?: () => void
+  hasMessages?: boolean
 }
 
 const suggestions = [
@@ -116,6 +119,8 @@ export function PlaygroundInput({
   onWebSearchChange,
   webSearchContextSize = 'medium',
   onWebSearchContextSizeChange,
+  onClearAll,
+  hasMessages = false,
 }: PlaygroundInputProps) {
   const { t } = useTranslation()
   const [text, setText] = useState('')
@@ -371,6 +376,17 @@ export function PlaygroundInput({
                 )}
               </DropdownMenuContent>
             </DropdownMenu>
+            <PromptInputButton
+              className='border font-medium'
+              disabled={disabled || !hasMessages}
+              variant='outline'
+              onClick={onClearAll}
+              title={t('Clear conversation')}
+            >
+              <Trash2Icon size={16} />
+              <span className='hidden sm:inline'>{t('Clear')}</span>
+              <span className='sr-only sm:hidden'>{t('Clear')}</span>
+            </PromptInputButton>
           </PromptInputTools>
 
           <div className='flex items-center gap-1.5 md:gap-2'>
