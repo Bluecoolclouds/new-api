@@ -72,6 +72,16 @@ func normalizeOpenAIUsage(usage *dto.Usage) {
 		usage.PromptTokensDetails.TextTokens = usage.InputTokensDetails.TextTokens
 		usage.PromptTokensDetails.AudioTokens = usage.InputTokensDetails.AudioTokens
 	}
+	if usage.OutputTokensDetails != nil {
+		// The OpenAI Images API reports the output split under
+		// output_tokens_details (text vs image). Map it onto the canonical
+		// completion_tokens_details so downstream billing (including the
+		// tiered img_o variable) can price image output separately from text.
+		usage.CompletionTokenDetails.TextTokens = usage.OutputTokensDetails.TextTokens
+		usage.CompletionTokenDetails.ImageTokens = usage.OutputTokensDetails.ImageTokens
+		usage.CompletionTokenDetails.AudioTokens = usage.OutputTokensDetails.AudioTokens
+		usage.CompletionTokenDetails.ReasoningTokens = usage.OutputTokensDetails.ReasoningTokens
+	}
 	if usage.TotalTokens == 0 {
 		usage.TotalTokens = usage.PromptTokens + usage.CompletionTokens
 	}
