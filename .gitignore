@@ -28,6 +28,8 @@ plans
 
 electron/node_modules
 electron/dist
+widget-bot/node_modules
+web/default/dist.bak-*
 data/
 .gomodcache/
 .gocache-temp

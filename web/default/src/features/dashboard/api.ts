@@ -17,7 +17,7 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 For commercial licensing, please contact support@quantumnous.com
 */
 import { api } from '@/lib/api'
-import type { QuotaDataItem, UptimeGroupResult } from './types'
+import type { QuotaDataItem, TopUpStats, UptimeGroupResult } from './types'
 
 // ============================================================================
 // Dashboard APIs
@@ -65,6 +65,19 @@ export async function getUserQuotaDataByUsers(params: {
 export async function getUptimeStatus() {
   const res = await api.get<{ success: boolean; data: UptimeGroupResult[] }>(
     '/api/uptime/status'
+  )
+  return res.data
+}
+
+// ----------------------------------------------------------------------------
+// Revenue / Top-up Stats (admin only)
+// ----------------------------------------------------------------------------
+
+// Get admin top-up revenue stats (successful orders only) for the given window
+export async function getTopUpStats(days = 30) {
+  const res = await api.get<{ success: boolean; data: TopUpStats }>(
+    '/api/user/topup/stats',
+    { params: { days } }
   )
   return res.data
 }

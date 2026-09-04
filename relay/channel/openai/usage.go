@@ -52,6 +52,11 @@ func applyUsagePostProcessing(info *relaycommon.RelayInfo, usage *dto.Usage, res
 		if usage.PromptTokensDetails.CachedCreationTokens == 0 && usage.ClaudeCacheCreation5mTokens == 0 && usage.ClaudeCacheCreation1hTokens == 0 {
 			if cacheCreationTokens, ok := extractCacheCreationTokensFromBody(responseBody); ok {
 				usage.PromptTokensDetails.CachedCreationTokens = cacheCreationTokens
+				// These upstreams report prompt_tokens using Claude semantics (already
+				// excluding cache/cache-creation tokens), not OpenAI semantics (where
+				// prompt_tokens includes them). Mark it so text_quota.go does not
+				// subtract cache-creation tokens from baseTokens a second time.
+				usage.NonStandardClaudeCacheCreation = true
 			}
 		}
 	}

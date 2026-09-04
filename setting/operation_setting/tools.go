@@ -23,7 +23,7 @@ var defaultToolPrices = map[string]float64{
 	"web_search":         10.0, // OpenAI web search (all models) / Claude web search
 	"web_search_preview": 10.0, // OpenAI web search preview (default: reasoning models)
 	"file_search":        2.5,  // OpenAI file search (Responses API)
-	"google_search":      14.0, // Gemini Grounding with Google Search
+	"google_search":      35.0, // Gemini Grounding with Google Search ($35/1000 requests, matches Google/upstream billing)
 }
 
 var defaultToolPriceOverrides = map[string]float64{

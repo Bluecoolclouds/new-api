@@ -113,6 +113,38 @@ export interface ProcessedUserChartData {
 }
 
 // ============================================================================
+// Revenue / Top-up Stats Types (admin only)
+// ============================================================================
+
+export interface TopUpDailyStat {
+  date: string
+  money: number
+  count: number
+}
+
+export interface TopUpProviderStat {
+  provider: string
+  money: number
+  count: number
+}
+
+export interface TopUpMonthlyStat {
+  month: string
+  money: number
+  count: number
+}
+
+export interface TopUpStats {
+  total_money: number
+  total_count: number
+  avg_order_value: number
+  days: number
+  daily: TopUpDailyStat[]
+  monthly: TopUpMonthlyStat[]
+  by_provider: TopUpProviderStat[]
+}
+
+// ============================================================================
 // Announcement Types
 // ============================================================================
 

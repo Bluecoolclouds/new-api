@@ -38,10 +38,7 @@ export const registerFormSchema = z
       .string()
       .min(1, 'Please enter your password')
       .min(8, 'Password must be at least 8 characters long')
-      .max(72, 'Password must be at most 72 characters long')
-      .regex(/[A-Z]/, 'Password must contain at least one uppercase letter')
-      .regex(/[0-9]/, 'Password must contain at least one digit')
-      .regex(/[^A-Za-z0-9]/, 'Password must contain at least one special character'),
+      .max(72, 'Password must be at most 72 characters long'),
     confirmPassword: z.string().min(1, 'Please confirm your password'),
   })
   .refine((data) => data.password === data.confirmPassword, {

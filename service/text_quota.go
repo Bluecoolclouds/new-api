@@ -78,6 +78,9 @@ func isLegacyClaudeDerivedOpenAIUsage(relayInfo *relaycommon.RelayInfo, usage *d
 	if usage.UsageSource != "" || usage.UsageSemantic != "" {
 		return false
 	}
+	if usage.NonStandardClaudeCacheCreation {
+		return true
+	}
 	return usage.ClaudeCacheCreation5mTokens > 0 || usage.ClaudeCacheCreation1hTokens > 0
 }
 
@@ -100,6 +103,18 @@ func calculateTextToolCallSurcharge(ctx *gin.Context, relayInfo *relaycommon.Rel
 	} else if strings.HasSuffix(summary.ModelName, "search-preview") {
 		summary.WebSearchCallCount = 1
 		summary.WebSearchPrice = operation_setting.GetToolPriceForModel("web_search_preview", summary.ModelName)
+		surcharge = surcharge.Add(decimal.NewFromFloat(summary.WebSearchPrice).
+			Div(decimal.NewFromInt(1000)).
+			Mul(dGroupRatio).
+			Mul(dQuotaPerUnit))
+	} else if strings.HasPrefix(summary.ModelName, "gemini") && strings.HasSuffix(summary.ModelName, "-search") {
+		// Gemini "Grounding with Google Search": upstream charges a flat per-request
+		// fee (Google: $35/1000 requests) on top of token costs. Our token-only
+		// ModelRatio/CompletionRatio never reflected this, so every *-search call
+		// was billed far below actual upstream cost. Charge it as a per-call
+		// surcharge, same mechanism as OpenAI/Claude web search.
+		summary.WebSearchCallCount = 1
+		summary.WebSearchPrice = operation_setting.GetToolPriceForModel("google_search", summary.ModelName)
 		surcharge = surcharge.Add(decimal.NewFromFloat(summary.WebSearchPrice).
 			Div(decimal.NewFromInt(1000)).
 			Mul(dGroupRatio).
@@ -259,20 +274,24 @@ func calculateTextQuotaSummary(ctx *gin.Context, relayInfo *relaycommon.RelayInf
 			cachedTokensWithRatio = dCacheTokens.Mul(dCacheRatio)
 		}
 
+		cacheWriteTokens := cacheWriteTokensTotal(summary)
+		if cacheWriteTokens > 0 && !summary.IsClaudeUsageSemantic && !legacyClaudeDerived {
+			baseTokens = baseTokens.Sub(decimal.NewFromInt(int64(cacheWriteTokens)))
+		}
+
 		var cachedCreationTokensWithRatio decimal.Decimal
 		hasSplitCacheCreationTokens := summary.CacheCreationTokens5m > 0 || summary.CacheCreationTokens1h > 0
 		if !dCachedCreationTokens.IsZero() || hasSplitCacheCreationTokens {
-			if !summary.IsClaudeUsageSemantic && !legacyClaudeDerived {
-				baseTokens = baseTokens.Sub(dCachedCreationTokens)
-				cachedCreationTokensWithRatio = dCachedCreationTokens.Mul(dCacheCreationRatio)
-			} else {
-				remaining := summary.CacheCreationTokens - summary.CacheCreationTokens5m - summary.CacheCreationTokens1h
+			if hasSplitCacheCreationTokens {
+				remaining := cacheWriteTokens - summary.CacheCreationTokens5m - summary.CacheCreationTokens1h
 				if remaining < 0 {
 					remaining = 0
 				}
 				cachedCreationTokensWithRatio = decimal.NewFromInt(int64(remaining)).Mul(dCacheCreationRatio)
 				cachedCreationTokensWithRatio = cachedCreationTokensWithRatio.Add(decimal.NewFromInt(int64(summary.CacheCreationTokens5m)).Mul(dCacheCreationRatio5m))
 				cachedCreationTokensWithRatio = cachedCreationTokensWithRatio.Add(decimal.NewFromInt(int64(summary.CacheCreationTokens1h)).Mul(dCacheCreationRatio1h))
+			} else {
+				cachedCreationTokensWithRatio = dCachedCreationTokens.Mul(dCacheCreationRatio)
 			}
 		}
 

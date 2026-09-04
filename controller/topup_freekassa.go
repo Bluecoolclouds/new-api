@@ -147,7 +147,18 @@ type freeKassaApiOrderResponse struct {
 func requestFreeKassaPayViaAPI(c *gin.Context, shopId int, apiKey string, paymentSystemId int,
         email string, ip string, amountStr string, currency string, tradeNo string) (string, error) {
 
-        nonce := time.Now().Unix()
+        // nonce must be milliseconds since epoch, matching FreeKassa's reference SDK (Date.now()).
+        nonce := time.Now().UnixMilli()
+
+        var successURL, failureURL string
+        if setting.FreeKassaReturnURL != "" {
+                successURL = strings.TrimRight(setting.FreeKassaReturnURL, "/") + "?status=success"
+                failureURL = strings.TrimRight(setting.FreeKassaReturnURL, "/") + "?status=failed"
+        }
+
+        // The signature must cover exactly the same set of fields that end up in the
+        // request body (including optional success_url/failure_url when present).
+        // Signing over a smaller field set than what's actually sent causes "Wrong signature".
         fields := map[string]string{
                 "shopId":    fmt.Sprintf("%d", shopId),
                 "nonce":     fmt.Sprintf("%d", nonce),
@@ -158,11 +169,9 @@ func requestFreeKassaPayViaAPI(c *gin.Context, shopId int, apiKey string, paymen
                 "amount":    amountStr,
                 "currency":  currency,
         }
-
-        var successURL, failureURL string
-        if setting.FreeKassaReturnURL != "" {
-                successURL = strings.TrimRight(setting.FreeKassaReturnURL, "/") + "?status=success"
-                failureURL = strings.TrimRight(setting.FreeKassaReturnURL, "/") + "?status=failed"
+        if successURL != "" {
+                fields["success_url"] = successURL
+                fields["failure_url"] = failureURL
         }
 
         sig := freeKassaApiSign(fields, apiKey)

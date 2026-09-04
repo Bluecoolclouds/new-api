@@ -3,6 +3,8 @@ package model
 import (
 	"errors"
 	"fmt"
+	"sort"
+	"time"
 
 	"github.com/QuantumNous/new-api/common"
 	"github.com/QuantumNous/new-api/logger"
@@ -230,6 +232,133 @@ func GetAllTopUps(pageInfo *common.PageInfo) (topups []*TopUp, total int64, err 
 	}
 
 	return topups, total, nil
+}
+
+// TopUpDailyStat 单日充值统计
+type TopUpDailyStat struct {
+	Date  string  `json:"date"`
+	Money float64 `json:"money"`
+	Count int     `json:"count"`
+}
+
+// TopUpProviderStat 按支付渠道的充值统计
+type TopUpProviderStat struct {
+	Provider string  `json:"provider"`
+	Money    float64 `json:"money"`
+	Count    int     `json:"count"`
+}
+
+// TopUpMonthlyStat 按月充值统计
+type TopUpMonthlyStat struct {
+	Month string  `json:"month"`
+	Money float64 `json:"money"`
+	Count int     `json:"count"`
+}
+
+// TopUpStats 管理员充值统计概览
+type TopUpStats struct {
+	TotalMoney    float64             `json:"total_money"`
+	TotalCount    int                 `json:"total_count"`
+	AvgOrderValue float64             `json:"avg_order_value"`
+	Days          int                 `json:"days"`
+	Daily         []TopUpDailyStat    `json:"daily"`
+	Monthly       []TopUpMonthlyStat  `json:"monthly"`
+	ByProvider    []TopUpProviderStat `json:"by_provider"`
+}
+
+// GetTopUpStats 管理员获取充值统计（仅统计 status=success 的订单）
+// days 指定统计窗口天数（默认 30 天）。因主库支持多种数据库（MySQL/SQLite/PostgreSQL/ClickHouse），
+// 为避免使用各数据库方言不同的日期截断函数，这里直接拉取窗口内的成功订单，在应用层聚合。
+func GetTopUpStats(days int) (*TopUpStats, error) {
+	if days <= 0 {
+		days = 30
+	}
+	cutoff := common.GetTimestamp() - int64(days)*24*60*60
+
+	type topUpStatRow struct {
+		Money           float64
+		CreateTime      int64
+		PaymentProvider string
+	}
+	var rows []topUpStatRow
+	err := DB.Model(&TopUp{}).
+		Select("money, create_time, payment_provider").
+		Where("status = ? AND create_time >= ?", common.TopUpStatusSuccess, cutoff).
+		Find(&rows).Error
+	if err != nil {
+		return nil, err
+	}
+
+	dailyMap := make(map[string]*TopUpDailyStat)
+	monthlyMap := make(map[string]*TopUpMonthlyStat)
+	providerMap := make(map[string]*TopUpProviderStat)
+	var totalMoney float64
+
+	for _, r := range rows {
+		totalMoney += r.Money
+
+		t := time.Unix(r.CreateTime, 0).UTC()
+		day := t.Format("2006-01-02")
+		if d, ok := dailyMap[day]; ok {
+			d.Money += r.Money
+			d.Count++
+		} else {
+			dailyMap[day] = &TopUpDailyStat{Date: day, Money: r.Money, Count: 1}
+		}
+
+		month := t.Format("2006-01")
+		if m, ok := monthlyMap[month]; ok {
+			m.Money += r.Money
+			m.Count++
+		} else {
+			monthlyMap[month] = &TopUpMonthlyStat{Month: month, Money: r.Money, Count: 1}
+		}
+
+		provider := r.PaymentProvider
+		if provider == "" {
+			provider = "unknown"
+		}
+		if p, ok := providerMap[provider]; ok {
+			p.Money += r.Money
+			p.Count++
+		} else {
+			providerMap[provider] = &TopUpProviderStat{Provider: provider, Money: r.Money, Count: 1}
+		}
+	}
+
+	daily := make([]TopUpDailyStat, 0, len(dailyMap))
+	for _, d := range dailyMap {
+		daily = append(daily, *d)
+	}
+	sort.Slice(daily, func(i, j int) bool { return daily[i].Date < daily[j].Date })
+
+	monthly := make([]TopUpMonthlyStat, 0, len(monthlyMap))
+	for _, m := range monthlyMap {
+		monthly = append(monthly, *m)
+	}
+	sort.Slice(monthly, func(i, j int) bool { return monthly[i].Month < monthly[j].Month })
+
+	byProvider := make([]TopUpProviderStat, 0, len(providerMap))
+	for _, p := range providerMap {
+		byProvider = append(byProvider, *p)
+	}
+	sort.Slice(byProvider, func(i, j int) bool { return byProvider[i].Money > byProvider[j].Money })
+
+	totalCount := len(rows)
+	var avgOrderValue float64
+	if totalCount > 0 {
+		avgOrderValue = totalMoney / float64(totalCount)
+	}
+
+	return &TopUpStats{
+		TotalMoney:    totalMoney,
+		TotalCount:    totalCount,
+		AvgOrderValue: avgOrderValue,
+		Days:          days,
+		Daily:         daily,
+		Monthly:       monthly,
+		ByProvider:    byProvider,
+	}, nil
 }
 
 // searchTopUpCountHardLimit 搜索充值记录时 COUNT 的安全上限，

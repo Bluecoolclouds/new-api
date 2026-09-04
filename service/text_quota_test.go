@@ -70,7 +70,7 @@ func TestCalculateTextQuotaSummaryUnifiedForClaudeSemantic(t *testing.T) {
 	require.Equal(t, 1488, chatSummary.Quota)
 }
 
-func TestCalculateTextQuotaSummaryUsesSplitClaudeCacheCreationRatios(t *testing.T) {
+func TestCalculateTextQuotaSummaryUsesSplitClaudeCacheCreationRatiosWithoutAggregateTotal(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	w := httptest.NewRecorder()
 	ctx, _ := gin.CreateTestContext(w)
@@ -96,17 +96,19 @@ func TestCalculateTextQuotaSummaryUsesSplitClaudeCacheCreationRatios(t *testing.
 	usage := &dto.Usage{
 		PromptTokens:     100,
 		CompletionTokens: 0,
-		PromptTokensDetails: dto.InputTokenDetails{
-			CachedCreationTokens: 10,
-		},
+		PromptTokensDetails: dto.InputTokenDetails{},
 		ClaudeCacheCreation5mTokens: 2,
 		ClaudeCacheCreation1hTokens: 3,
 	}
 
 	summary := calculateTextQuotaSummary(ctx, relayInfo, usage)
 
-	// 100 + remaining(5)*1 + 2*2 + 3*3 = 118
-	require.Equal(t, 118, summary.Quota)
+	// Split-only cache creation should still be billed correctly:
+	// 100 + 2*2 + 3*3 = 113
+	require.Equal(t, 113, summary.Quota)
+	require.Equal(t, 0, summary.CacheCreationTokens)
+	require.Equal(t, 2, summary.CacheCreationTokens5m)
+	require.Equal(t, 3, summary.CacheCreationTokens1h)
 }
 
 func TestCalculateTextQuotaSummaryUsesAnthropicUsageSemanticFromUpstreamUsage(t *testing.T) {
@@ -207,6 +209,45 @@ func TestCalculateTextQuotaSummaryHandlesLegacyClaudeDerivedOpenAIUsage(t *testi
 
 	// 62 + 3544*0.1 + 586*1.25 + 95*5 = 1624.9 => 1624
 	require.Equal(t, 1624, summary.Quota)
+}
+
+func TestCalculateTextQuotaSummaryHandlesNonStandardClaudeCacheCreationFromBody(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	w := httptest.NewRecorder()
+	ctx, _ := gin.CreateTestContext(w)
+
+	// Reproduces vveai log id 2908750: OpenAI-compat envelope, but Claude
+	// semantics (prompt_tokens excludes cache/cache-creation), with cache
+	// creation tokens recovered from a non-standard body field.
+	relayInfo := &relaycommon.RelayInfo{
+		RelayFormat:     types.RelayFormatOpenAI,
+		OriginModelName: "claude-opus-4-8-xhigh",
+		PriceData: types.PriceData{
+			ModelRatio:         2.5,
+			CompletionRatio:    5,
+			CacheRatio:         1,
+			CacheCreationRatio: 1.25,
+			GroupRatioInfo:     types.GroupRatioInfo{GroupRatio: 1},
+		},
+		StartTime: time.Now(),
+	}
+
+	usage := &dto.Usage{
+		PromptTokens:     5,
+		CompletionTokens: 142,
+		PromptTokensDetails: dto.InputTokenDetails{
+			CachedTokens:         91356,
+			CachedCreationTokens: 10581,
+		},
+		NonStandardClaudeCacheCreation: true,
+	}
+
+	summary := calculateTextQuotaSummary(ctx, relayInfo, usage)
+
+	// baseTokens must NOT be reduced by cache/cache-creation tokens (Claude
+	// semantics already excludes them from prompt_tokens):
+	// quota = (5 + 91356*1 + 10581*1.25 + 142*5) * 2.5 = 263243.125 => 263243
+	require.Equal(t, 263243, summary.Quota)
 }
 
 func TestCalculateTextQuotaSummarySeparatesOpenRouterCacheReadFromPromptBilling(t *testing.T) {

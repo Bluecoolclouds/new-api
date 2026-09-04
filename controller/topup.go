@@ -596,6 +596,23 @@ func GetAllTopUps(c *gin.Context) {
 	common.ApiSuccess(c, pageInfo)
 }
 
+// GetTopUpStats 管理员获取充值统计概览（默认最近 30 天，仅统计 status=success 的订单）
+func GetTopUpStats(c *gin.Context) {
+	days := 30
+	if daysStr := c.Query("days"); daysStr != "" {
+		if d, err := strconv.Atoi(daysStr); err == nil && d > 0 && d <= 365 {
+			days = d
+		}
+	}
+
+	stats, err := model.GetTopUpStats(days)
+	if err != nil {
+		common.ApiError(c, err)
+		return
+	}
+	common.ApiSuccess(c, stats)
+}
+
 type AdminCompleteTopupRequest struct {
 	TradeNo string `json:"trade_no"`
 }

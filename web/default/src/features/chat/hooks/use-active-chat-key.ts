@@ -18,8 +18,30 @@ For commercial licensing, please contact support@quantumnous.com
 */
 import { useQuery } from '@tanstack/react-query'
 import { useAuthStore } from '@/stores/auth-store'
-import { fetchTokenKey, getApiKeys } from '@/features/keys/api'
+import { createApiKey, fetchTokenKey, getApiKeys } from '@/features/keys/api'
 import { API_KEY_STATUS } from '@/features/keys/constants'
+
+/** Name used for the key auto-provisioned for embedded web chat (e.g. LibreChat
+ * iframe). Kept distinct so it's recognizable in the key list and reused on
+ * subsequent calls instead of creating duplicates. */
+const IFRAME_CHAT_KEY_NAME = 'LibreChat (auto)'
+
+async function createIframeChatKey() {
+  const created = await createApiKey({
+    name: IFRAME_CHAT_KEY_NAME,
+    remain_quota: 0,
+    expired_time: -1,
+    unlimited_quota: true,
+    model_limits_enabled: false,
+    model_limits: '',
+    allow_ips: '',
+    group: '',
+    cross_group_retry: false,
+  })
+  if (!created.success) {
+    throw new Error(created.message || 'Failed to create API key')
+  }
+}
 
 export async function fetchActiveChatKey() {
   const result = await getApiKeys({ p: 1, size: 50 })
@@ -27,10 +49,22 @@ export async function fetchActiveChatKey() {
     throw new Error(result.message || 'Failed to load API keys')
   }
 
-  const items = result.data?.items ?? []
-  const active = items.find((item) => item.status === API_KEY_STATUS.ENABLED)
+  let items = result.data?.items ?? []
+  let active = items.find((item) => item.status === API_KEY_STATUS.ENABLED)
+
   if (!active) {
-    throw new Error('No enabled API keys found. Create or enable one first.')
+    // No usable key yet (e.g. first time opening the embedded chat) — provision
+    // an unlimited-quota key automatically so the iframe works out of the box.
+    await createIframeChatKey()
+    const retry = await getApiKeys({ p: 1, size: 50 })
+    if (!retry.success) {
+      throw new Error(retry.message || 'Failed to load API keys')
+    }
+    items = retry.data?.items ?? []
+    active = items.find((item) => item.status === API_KEY_STATUS.ENABLED)
+    if (!active) {
+      throw new Error('No enabled API keys found. Create or enable one first.')
+    }
   }
 
   const keyResult = await fetchTokenKey(active.id)

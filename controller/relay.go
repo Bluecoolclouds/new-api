@@ -330,6 +330,13 @@ func shouldRetry(c *gin.Context, openaiErr *types.NewAPIError, retryTimes int) b
 		return false
 	}
 	if types.IsChannelError(openaiErr) {
+		// A channel-level 429 is an upstream saturation/rate-limit response.
+		// Retrying it on the same request only creates a retry storm and keeps
+		// the pre-consume reservation open for ~45 seconds. Let the caller
+		// receive the 429 immediately; other channel errors still fail over.
+		if openaiErr.StatusCode == http.StatusTooManyRequests {
+			return false
+		}
 		return true
 	}
 	if types.IsSkipRetryError(openaiErr) {

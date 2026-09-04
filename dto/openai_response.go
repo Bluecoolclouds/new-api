@@ -228,6 +228,14 @@ type Usage struct {
 	UsageSemantic        string `json:"usage_semantic,omitempty"`
 	UsageSource          string `json:"usage_source,omitempty"`
 
+	// NonStandardClaudeCacheCreation marks usage where cache-creation tokens were
+	// recovered from a non-standard field of an OpenAI-compat response body (see
+	// extractCacheCreationTokensFromBody, e.g. vveai). Such upstreams report
+	// prompt_tokens using Claude semantics (excluding cache/cache-creation tokens),
+	// even though the response envelope looks OpenAI-compatible. Internal only,
+	// never serialized.
+	NonStandardClaudeCacheCreation bool `json:"-"`
+
 	PromptTokensDetails    InputTokenDetails  `json:"prompt_tokens_details"`
 	CompletionTokenDetails OutputTokenDetails `json:"completion_tokens_details"`
 	InputTokens            int                 `json:"input_tokens"`
