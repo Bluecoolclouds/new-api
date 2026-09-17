@@ -432,39 +432,13 @@ func FreeKassaNotify(c *gin.Context) {
         LockOrder(tradeNo)
         defer UnlockOrder(tradeNo)
 
-	topUp := model.GetTopUpByTradeNo(tradeNo)
-	if topUp == nil {
-		// Попробовать переслать на accountflow (проект на том же сервере)
-		logger.LogInfo(c.Request.Context(), fmt.Sprintf("FreeKassa webhook订单不在 apinet, 尝试转发到 accountflow trade_no=%s", tradeNo))
+        topUp := model.GetTopUpByTradeNo(tradeNo)
+        if topUp == nil {
+                logger.LogWarn(c.Request.Context(), fmt.Sprintf("FreeKassa webhook 订单不存在 trade_no=%s client_ip=%s", tradeNo, c.ClientIP()))
+                _, _ = c.Writer.WriteString("NO")
+                return
+        }
 
-		accountflowURL := "http://127.0.0.1:50001/api/payments/freekassa/notify"
-		formData := url.Values{}
-		formData.Set("MERCHANT_ID", merchantId)
-		formData.Set("AMOUNT", amountStr)
-		formData.Set("MERCHANT_ORDER_ID", tradeNo)
-		formData.Set("SIGN", sign)
-		if intid := c.Request.Form.Get("intid"); intid != "" {
-			formData.Set("intid", intid)
-		}
-
-		resp, err := http.PostForm(accountflowURL, formData)
-		if err == nil {
-			defer resp.Body.Close()
-			body, _ := io.ReadAll(resp.Body)
-			if resp.StatusCode == 200 && strings.HasPrefix(string(body), "OK") {
-				logger.LogInfo(c.Request.Context(), fmt.Sprintf("FreeKassa webhook转发到 accountflow 成功 trade_no=%s response=%s", tradeNo, string(body)))
-				_, _ = c.Writer.Write(body)
-				return
-			}
-			logger.LogWarn(c.Request.Context(), fmt.Sprintf("FreeKassa webhook accountflow 返回非 OK trade_no=%s status=%d response=%s", tradeNo, resp.StatusCode, string(body)))
-		} else {
-			logger.LogWarn(c.Request.Context(), fmt.Sprintf("FreeKassa webhook转发到 accountflow 失败 trade_no=%s error=%v", tradeNo, err))
-		}
-
-		logger.LogWarn(c.Request.Context(), fmt.Sprintf("FreeKassa webhook订单不存在(两个项目都没有) trade_no=%s client_ip=%s", tradeNo, c.ClientIP()))
-		_, _ = c.Writer.WriteString("NO")
-		return
-	}
         if topUp.PaymentProvider != model.PaymentProviderFreeKassa {
                 logger.LogWarn(c.Request.Context(), fmt.Sprintf("FreeKassa webhook 订单支付网关不匹配 trade_no=%s order_provider=%s client_ip=%s", tradeNo, topUp.PaymentProvider, c.ClientIP()))
                 _, _ = c.Writer.WriteString("NO")

@@ -171,6 +171,7 @@ func Relay(c *gin.Context, relayFormat types.RelayFormat) {
 		// Only return quota if downstream failed and quota was actually pre-consumed
 		if newAPIError != nil {
 			newAPIError = service.NormalizeViolationFeeError(newAPIError)
+			newAPIError = service.NormalizeUpstreamError(newAPIError)
 			if relayInfo.Billing != nil {
 				relayInfo.Billing.Refund(c)
 			}
@@ -227,6 +228,7 @@ func Relay(c *gin.Context, relayFormat types.RelayFormat) {
 		}
 
 		newAPIError = service.NormalizeViolationFeeError(newAPIError)
+		newAPIError = service.NormalizeUpstreamError(newAPIError)
 		relayInfo.LastError = newAPIError
 
 		processChannelError(c, *types.NewChannelError(channel.Id, channel.Type, channel.Name, channel.ChannelInfo.IsMultiKey, common.GetContextKeyString(c, constant.ContextKeyChannelKey), channel.GetAutoBan()), newAPIError)
@@ -334,8 +336,10 @@ func shouldRetry(c *gin.Context, openaiErr *types.NewAPIError, retryTimes int) b
 		// Retrying it on the same request only creates a retry storm and keeps
 		// the pre-consume reservation open for ~45 seconds. Let the caller
 		// receive the 429 immediately; other channel errors still fail over.
+		// 429 on a channel can fail over to an alternate channel, but ignoreChannelIds
+		// guarantees we never retry on the same saturated channel twice in one request.
 		if openaiErr.StatusCode == http.StatusTooManyRequests {
-			return false
+			return true
 		}
 		return true
 	}

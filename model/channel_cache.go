@@ -105,10 +105,10 @@ func SyncChannelCache(frequency int) {
 	}
 }
 
-func GetRandomSatisfiedChannel(group string, model string, retry int, requestPath string) (*Channel, error) {
+func GetRandomSatisfiedChannel(group string, model string, retry int, requestPath string, ignoreChannelIds ...int) (*Channel, error) {
 	// if memory cache is disabled, get channel directly from database
 	if !common.MemoryCacheEnabled {
-		return GetChannel(group, model, retry, requestPath)
+		return GetChannel(group, model, retry, requestPath, ignoreChannelIds...)
 	}
 
 	channelSyncLock.RLock()
@@ -121,6 +121,21 @@ func GetRandomSatisfiedChannel(group string, model string, retry int, requestPat
 	if len(channels) == 0 {
 		normalizedModel := ratio_setting.FormatMatchingModelName(model)
 		channels = filterChannelsByRequestPath(group2model2channels[group][normalizedModel], requestPath)
+	}
+
+	// Filter out already attempted channels in this request chain to prevent duplicate loops
+	if len(ignoreChannelIds) > 0 && len(channels) > 0 {
+		ignoreMap := make(map[int]bool, len(ignoreChannelIds))
+		for _, id := range ignoreChannelIds {
+			ignoreMap[id] = true
+		}
+		var filtered []int
+		for _, id := range channels {
+			if !ignoreMap[id] {
+				filtered = append(filtered, id)
+			}
+		}
+		channels = filtered
 	}
 
 	if len(channels) == 0 {
