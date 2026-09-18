@@ -534,6 +534,9 @@ func (t *Task) ToOpenAIVideo() *dto.OpenAIVideo {
 	openAIVideo.SetProgressStr(t.Progress)
 	openAIVideo.CreatedAt = t.CreatedAt
 	openAIVideo.CompletedAt = t.UpdatedAt
-	openAIVideo.SetMetadata("url", t.GetResultURL())
+	url := t.GetResultURL()
+	openAIVideo.VideoURL = url
+	openAIVideo.URL = url
+	openAIVideo.SetMetadata("url", url)
 	return openAIVideo
 }
