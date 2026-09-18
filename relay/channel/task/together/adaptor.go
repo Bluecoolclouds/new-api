@@ -24,11 +24,15 @@ import (
 const defaultSeedanceSeconds = 5
 const defaultSeedanceResolution = "720p"
 
+var _ channel.TaskAdaptor = (*TaskAdaptor)(nil)
+var _ channel.OpenAIVideoConverter = (*TaskAdaptor)(nil)
+
 // requestPayload matches Together's video create body.
 type requestPayload struct {
 	Model          string                 `json:"model"`
 	Prompt         string                 `json:"prompt"`
 	Resolution     string                 `json:"resolution,omitempty"`
+	Ratio          string                 `json:"ratio,omitempty"`
 	Seconds        string                 `json:"seconds,omitempty"`
 	Fps            int                    `json:"fps,omitempty"`
 	Steps          int                    `json:"steps,omitempty"`
@@ -62,9 +66,10 @@ type responsePayload struct {
 }
 
 type taskResultPayload struct {
-	State string `json:"state"`
-	ID    string `json:"id"`
-	Error *struct {
+	State   string `json:"state"`
+	Status  string `json:"status"`
+	ID      string `json:"id"`
+	Error   *struct {
 		Code    string `json:"code"`
 		Message string `json:"message"`
 	} `json:"error,omitempty"`
@@ -79,6 +84,14 @@ type TaskAdaptor struct {
 	ChannelType int
 	apiKey      string
 	baseURL     string
+}
+
+func (a *TaskAdaptor) ConvertToOpenAIVideo(originTask *model.Task) ([]byte, error) {
+	if originTask == nil {
+		return nil, fmt.Errorf("task is nil")
+	}
+	openAIVideo := originTask.ToOpenAIVideo()
+	return common.Marshal(openAIVideo)
 }
 
 func (a *TaskAdaptor) Init(info *relaycommon.RelayInfo) {
@@ -126,20 +139,69 @@ func (a *TaskAdaptor) EstimateBilling(c *gin.Context, info *relaycommon.RelayInf
 	}
 }
 
+func isWanModel(modelName string) bool {
+	m := strings.ToLower(modelName)
+	return strings.HasPrefix(m, "wan") || strings.Contains(m, "wan2")
+}
+
+func seedanceNormalizeResolution(size string, isWan bool) string {
+	size = strings.ToLower(strings.TrimSpace(size))
+	if size == "1920x1080" || size == "1080x1920" || size == "1080p" {
+		if isWan {
+			return "1080P"
+		}
+		return "1080p"
+	}
+	if size == "1280x720" || size == "720x1280" || size == "720p" {
+		if isWan {
+			return "720P"
+		}
+		return "720p"
+	}
+	if size == "640x480" || size == "854x480" || size == "480p" {
+		if isWan {
+			return "720P"
+		}
+		return "480p"
+	}
+	if isWan {
+		return "720P"
+	}
+	return defaultSeedanceResolution
+}
+
 func (a *TaskAdaptor) BuildRequestBody(c *gin.Context, info *relaycommon.RelayInfo) (io.Reader, error) {
 	req, err := relaycommon.GetTaskRequest(c)
 	if err != nil {
 		return nil, errors.Wrap(err, "get_task_request_failed")
 	}
 
+	wan := isWanModel(info.UpstreamModelName)
+
 	body := requestPayload{
 		Model:         info.UpstreamModelName,
 		Prompt:        req.Prompt,
-		Resolution:    seedanceNormalizeResolution(req.Size),
+		Resolution:    seedanceNormalizeResolution(req.Size, wan),
 		Seconds:       seedanceNormalizeSeconds(req),
 		OutputFormat:  "MP4",
 		OutputQuality: 20,
 		GenerateAudio: nil,
+	}
+
+	if wan {
+		if req.Metadata != nil {
+			if r, ok := req.Metadata["ratio"].(string); ok && r != "" {
+				body.Ratio = r
+			} else if r, ok := req.Metadata["aspect_ratio"].(string); ok && r != "" {
+				body.Ratio = r
+			}
+		}
+		if body.Ratio == "" && strings.Contains(req.Size, ":") {
+			body.Ratio = req.Size
+		}
+		if body.Ratio == "" {
+			body.Ratio = "16:9"
+		}
 	}
 
 	if media := seedanceBuildMedia(req); len(media) > 0 {
@@ -152,7 +214,7 @@ func (a *TaskAdaptor) BuildRequestBody(c *gin.Context, info *relaycommon.RelayIn
 		body.Model = "ByteDance/Seedance-2.5"
 	}
 	if body.Resolution == "" {
-		body.Resolution = defaultSeedanceResolution
+		body.Resolution = seedanceNormalizeResolution("", wan)
 	}
 	if body.Seconds == "" {
 		body.Seconds = strconv.Itoa(defaultSeedanceSeconds)
@@ -183,20 +245,14 @@ func seedanceNormalizeSeconds(req relaycommon.TaskSubmitReq) string {
 	return strconv.Itoa(seconds)
 }
 
-func seedanceNormalizeResolution(size string) string {
-	size = strings.ToLower(strings.TrimSpace(size))
-	if size == "480p" || size == "720p" {
-		return size
-	}
-	return defaultSeedanceResolution
-}
-
 func seedanceResolutionRatio(resolution string) float64 {
 	switch strings.ToLower(strings.TrimSpace(resolution)) {
 	case "480p":
 		return 1
 	case "720p":
 		return 2.1652173913
+	case "1080p":
+		return 3.5
 	default:
 		return 2.1652173913
 	}
@@ -205,8 +261,12 @@ func seedanceResolutionRatio(resolution string) float64 {
 func seedanceBuildMedia(req relaycommon.TaskSubmitReq) map[string]any {
 	media := map[string]any{}
 
-	if len(req.Images) > 0 {
-		media["frame_images"] = seedanceFrameImages(req.Images)
+	images := req.Images
+	if len(images) == 0 && req.Image != "" {
+		images = []string{req.Image}
+	}
+	if len(images) > 0 {
+		media["frame_images"] = seedanceFrameImages(images)
 	}
 
 	if req.Metadata != nil {
@@ -277,6 +337,7 @@ func (a *TaskAdaptor) DoResponse(c *gin.Context, resp *http.Response, info *rela
 	ov.Model = info.OriginModelName
 	ov.Seconds = r.Seconds
 	ov.Size = r.Size
+	ov.Status = "in_progress"
 	c.JSON(http.StatusOK, ov)
 	return r.ID, responseBody, nil
 }
@@ -306,7 +367,11 @@ func (a *TaskAdaptor) ParseTaskResult(respBody []byte) (*relaycommon.TaskInfo, e
 		return nil, err
 	}
 	ti := &relaycommon.TaskInfo{Code: 0}
-	switch strings.ToLower(strings.TrimSpace(r.State)) {
+	rawStatus := r.Status
+	if rawStatus == "" {
+		rawStatus = r.State
+	}
+	switch strings.ToLower(strings.TrimSpace(rawStatus)) {
 	case "queued", "pending":
 		ti.Status = model.TaskStatusQueued
 	case "processing", "in_progress":
@@ -314,6 +379,7 @@ func (a *TaskAdaptor) ParseTaskResult(respBody []byte) (*relaycommon.TaskInfo, e
 	case "completed", "success":
 		ti.Status = model.TaskStatusSuccess
 		if r.Outputs != nil {
+			ti.Url = r.Outputs.VideoURL
 			ti.RemoteUrl = r.Outputs.VideoURL
 		}
 	case "failed", "cancelled":
