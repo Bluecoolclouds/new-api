@@ -713,6 +713,7 @@ func (t *TaskSubmitReq) UnmarshalJSON(data []byte) error {
 	aux := &struct {
 		Metadata json.RawMessage `json:"metadata,omitempty"`
 		Duration json.RawMessage `json:"duration,omitempty"`
+		Seconds  json.RawMessage `json:"seconds,omitempty"`
 		*Alias
 	}{
 		Alias: (*Alias)(t),
@@ -734,6 +735,29 @@ func (t *TaskSubmitReq) UnmarshalJSON(data []byte) error {
 				}
 			}
 		}
+	}
+
+	if len(aux.Seconds) > 0 {
+		var secNum float64
+		if err := common.Unmarshal(aux.Seconds, &secNum); err == nil {
+			t.Seconds = strconv.Itoa(int(secNum))
+			if t.Duration == 0 {
+				t.Duration = int(secNum)
+			}
+		} else {
+			var secStr string
+			if err := common.Unmarshal(aux.Seconds, &secStr); err == nil && secStr != "" {
+				t.Seconds = secStr
+				if t.Duration == 0 {
+					if v, err := strconv.Atoi(secStr); err == nil {
+						t.Duration = v
+					}
+				}
+			}
+		}
+	}
+	if t.Seconds == "" && t.Duration > 0 {
+		t.Seconds = strconv.Itoa(t.Duration)
 	}
 
 	if len(aux.Metadata) > 0 {
