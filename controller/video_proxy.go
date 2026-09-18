@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"net/url"
 	"strings"
 	"time"
 
@@ -37,8 +36,17 @@ func VideoProxy(c *gin.Context) {
 		return
 	}
 
+	var task *model.Task
+	var exists bool
+	var err error
+
 	userID := c.GetInt("id")
-	task, exists, err := model.GetByTaskId(userID, taskID)
+	if userID > 0 {
+		task, exists, err = model.GetByTaskId(userID, taskID)
+	}
+	if !exists {
+		task, exists, err = model.GetByOnlyTaskId(taskID)
+	}
 	if err != nil {
 		logger.LogError(c.Request.Context(), fmt.Sprintf("Failed to query task %s: %s", taskID, err.Error()))
 		videoProxyError(c, http.StatusInternalServerError, "server_error", "Failed to query task")
@@ -117,6 +125,7 @@ func VideoProxy(c *gin.Context) {
 	default:
 		// Video URL is stored in PrivateData.ResultURL (fallback to FailReason for old data)
 		videoURL = task.GetResultURL()
+		req.Header.Del("Authorization")
 	}
 
 	videoURL = strings.TrimSpace(videoURL)
@@ -147,11 +156,14 @@ func VideoProxy(c *gin.Context) {
 		return
 	}
 
-	req.URL, err = url.Parse(videoURL)
+	req, err = http.NewRequestWithContext(ctx, http.MethodGet, videoURL, nil)
 	if err != nil {
 		logger.LogError(c.Request.Context(), fmt.Sprintf("Failed to parse URL %s: %s", videoURL, err.Error()))
 		videoProxyError(c, http.StatusInternalServerError, "server_error", "Failed to create proxy request")
 		return
+	}
+	if rangeHeader := c.GetHeader("Range"); rangeHeader != "" {
+		req.Header.Set("Range", rangeHeader)
 	}
 
 	resp, err := client.Do(req)

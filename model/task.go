@@ -4,12 +4,15 @@ import (
 	"bytes"
 	"database/sql/driver"
 	"encoding/json"
+	"fmt"
+	"strings"
 	"time"
 
 	"github.com/QuantumNous/new-api/common"
 	"github.com/QuantumNous/new-api/constant"
 	"github.com/QuantumNous/new-api/dto"
 	commonRelay "github.com/QuantumNous/new-api/relay/common"
+	"github.com/QuantumNous/new-api/setting/system_setting"
 )
 
 type TaskStatus string
@@ -134,6 +137,20 @@ func (t *Task) GetResultURL() string {
 		return t.PrivateData.ResultURL
 	}
 	return t.FailReason
+}
+
+// GetPublicResultURL returns the white-label proxied URL for this task
+func (t *Task) GetPublicResultURL() string {
+	raw := t.GetResultURL()
+	if raw == "" {
+		return ""
+	}
+	serverAddress := strings.TrimSpace(system_setting.ServerAddress)
+	if serverAddress == "" || strings.Contains(serverAddress, "localhost") {
+		serverAddress = "https://apinet.cloud"
+	}
+	serverAddress = strings.TrimSuffix(serverAddress, "/")
+	return fmt.Sprintf("%s/v1/videos/%s/content", serverAddress, t.TaskID)
 }
 
 // GenerateTaskID 生成对外暴露的 task_xxxx 格式 ID
@@ -534,9 +551,12 @@ func (t *Task) ToOpenAIVideo() *dto.OpenAIVideo {
 	openAIVideo.SetProgressStr(t.Progress)
 	openAIVideo.CreatedAt = t.CreatedAt
 	openAIVideo.CompletedAt = t.UpdatedAt
-	url := t.GetResultURL()
-	openAIVideo.VideoURL = url
-	openAIVideo.URL = url
-	openAIVideo.SetMetadata("url", url)
+	if t.GetResultURL() != "" {
+		publicURL := t.GetPublicResultURL()
+		openAIVideo.VideoURL = publicURL
+		openAIVideo.URL = publicURL
+		openAIVideo.SetMetadata("url", publicURL)
+		openAIVideo.SetMetadata("proxy_url", publicURL)
+	}
 	return openAIVideo
 }

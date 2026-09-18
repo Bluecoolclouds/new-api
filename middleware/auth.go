@@ -234,6 +234,42 @@ func TokenOrUserAuth() func(c *gin.Context) {
 	}
 }
 
+// TryTokenOrUserAuth attempts session or token auth, but continues even if unauthenticated.
+func TryTokenOrUserAuth() func(c *gin.Context) {
+	return func(c *gin.Context) {
+		session := sessions.Default(c)
+		if id := session.Get("id"); id != nil {
+			if status, ok := session.Get("status").(int); ok && status == common.UserStatusEnabled {
+				c.Set("id", id)
+				c.Next()
+				return
+			}
+		}
+		key := c.Request.Header.Get("Authorization")
+		if key == "" {
+			key = c.Query("token")
+			if key == "" {
+				key = c.Query("key")
+			}
+		}
+		if key != "" {
+			if strings.HasPrefix(key, "Bearer ") || strings.HasPrefix(key, "bearer ") {
+				key = strings.TrimSpace(key[7:])
+			}
+			key = strings.TrimPrefix(key, "sk-")
+			parts := strings.Split(key, "-")
+			key = parts[0]
+			token, err := model.GetTokenByKey(key, false)
+			if err == nil && token != nil {
+				c.Set("id", token.UserId)
+				c.Set("token_id", token.Id)
+				c.Set("token_name", token.Name)
+			}
+		}
+		c.Next()
+	}
+}
+
 // TokenAuthReadOnly 宽松版本的令牌认证中间件，用于只读查询接口。
 // 只验证令牌 key 是否存在，不检查令牌状态、过期时间和额度。
 // 即使令牌已过期、已耗尽或已禁用，也允许访问。
