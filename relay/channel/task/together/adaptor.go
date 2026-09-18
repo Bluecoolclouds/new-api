@@ -144,30 +144,53 @@ func isWanModel(modelName string) bool {
 	return strings.HasPrefix(m, "wan") || strings.Contains(m, "wan2")
 }
 
+func seedanceInferRatio(size string, metadata map[string]any) string {
+	if metadata != nil {
+		if r, ok := metadata["ratio"].(string); ok && r != "" {
+			return r
+		}
+		if r, ok := metadata["aspect_ratio"].(string); ok && r != "" {
+			return r
+		}
+	}
+	s := strings.ToLower(strings.TrimSpace(size))
+	s = strings.ReplaceAll(s, "*", "x")
+	if strings.Contains(s, ":") {
+		return s
+	}
+	switch s {
+	case "720x1280", "1080x1920", "480x854", "9x16":
+		return "9:16"
+	case "1280x720", "1920x1080", "854x480", "16x9":
+		return "16:9"
+	case "1:1", "1024x1024", "720x720":
+		return "1:1"
+	case "4:3", "960x720":
+		return "4:3"
+	case "3:4", "720x960":
+		return "3:4"
+	case "21:9":
+		return "21:9"
+	}
+	return "16:9"
+}
+
 func seedanceNormalizeResolution(size string, isWan bool) string {
 	size = strings.ToLower(strings.TrimSpace(size))
+	size = strings.ReplaceAll(size, "*", "x")
 	if size == "1920x1080" || size == "1080x1920" || size == "1080p" {
-		if isWan {
-			return "1080P"
-		}
-		return "1080p"
+		return "1080P"
 	}
 	if size == "1280x720" || size == "720x1280" || size == "720p" {
-		if isWan {
-			return "720P"
-		}
-		return "720p"
+		return "720P"
 	}
 	if size == "640x480" || size == "854x480" || size == "480p" {
 		if isWan {
 			return "720P"
 		}
-		return "480p"
+		return "480P"
 	}
-	if isWan {
-		return "720P"
-	}
-	return defaultSeedanceResolution
+	return "720P"
 }
 
 func (a *TaskAdaptor) BuildRequestBody(c *gin.Context, info *relaycommon.RelayInfo) (io.Reader, error) {
@@ -182,26 +205,11 @@ func (a *TaskAdaptor) BuildRequestBody(c *gin.Context, info *relaycommon.RelayIn
 		Model:         info.UpstreamModelName,
 		Prompt:        req.Prompt,
 		Resolution:    seedanceNormalizeResolution(req.Size, wan),
+		Ratio:         seedanceInferRatio(req.Size, req.Metadata),
 		Seconds:       seedanceNormalizeSeconds(req),
 		OutputFormat:  "MP4",
 		OutputQuality: 20,
 		GenerateAudio: nil,
-	}
-
-	if wan {
-		if req.Metadata != nil {
-			if r, ok := req.Metadata["ratio"].(string); ok && r != "" {
-				body.Ratio = r
-			} else if r, ok := req.Metadata["aspect_ratio"].(string); ok && r != "" {
-				body.Ratio = r
-			}
-		}
-		if body.Ratio == "" && strings.Contains(req.Size, ":") {
-			body.Ratio = req.Size
-		}
-		if body.Ratio == "" {
-			body.Ratio = "16:9"
-		}
 	}
 
 	if media := seedanceBuildMedia(req); len(media) > 0 {
@@ -246,7 +254,8 @@ func seedanceNormalizeSeconds(req relaycommon.TaskSubmitReq) string {
 }
 
 func seedanceResolutionRatio(resolution string) float64 {
-	switch strings.ToLower(strings.TrimSpace(resolution)) {
+	res := strings.ToLower(seedanceNormalizeResolution(resolution, false))
+	switch res {
 	case "480p":
 		return 1
 	case "720p":
@@ -264,6 +273,14 @@ func seedanceBuildMedia(req relaycommon.TaskSubmitReq) map[string]any {
 	images := req.Images
 	if len(images) == 0 && req.Image != "" {
 		images = []string{req.Image}
+	}
+	if len(images) == 0 && req.InputReference != "" {
+		images = []string{req.InputReference}
+	}
+	if len(images) == 0 && req.Metadata != nil {
+		if img, ok := req.Metadata["image_url"].(string); ok && img != "" {
+			images = []string{img}
+		}
 	}
 	if len(images) > 0 {
 		media["frame_images"] = seedanceFrameImages(images)
