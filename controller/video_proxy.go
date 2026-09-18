@@ -156,7 +156,11 @@ func VideoProxy(c *gin.Context) {
 		return
 	}
 
-	req, err = http.NewRequestWithContext(ctx, http.MethodGet, videoURL, nil)
+	method := c.Request.Method
+	if method != http.MethodHead {
+		method = http.MethodGet
+	}
+	req, err = http.NewRequestWithContext(ctx, method, videoURL, nil)
 	if err != nil {
 		logger.LogError(c.Request.Context(), fmt.Sprintf("Failed to parse URL %s: %s", videoURL, err.Error()))
 		videoProxyError(c, http.StatusInternalServerError, "server_error", "Failed to create proxy request")
@@ -174,7 +178,7 @@ func VideoProxy(c *gin.Context) {
 	}
 	defer resp.Body.Close()
 
-	if resp.StatusCode != http.StatusOK {
+	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusPartialContent {
 		logger.LogError(c.Request.Context(), fmt.Sprintf("Upstream returned status %d for %s", resp.StatusCode, videoURL))
 		videoProxyError(c, http.StatusBadGateway, "server_error",
 			fmt.Sprintf("Upstream service returned status %d", resp.StatusCode))
