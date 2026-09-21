@@ -91,14 +91,18 @@ func getPriority(group string, model string, retry int) (int, error) {
 }
 
 func getChannelQuery(group string, model string, retry int, ignoreChannelIds ...int) (*gorm.DB, error) {
-	maxPrioritySubQuery := DB.Model(&Ability{}).Select("MAX(priority)").Where(commonGroupCol+" = ? and model = ? and enabled = ?", group, model, true)
-	channelQuery := DB.Where(commonGroupCol+" = ? and model = ? and enabled = ? and priority = (?)", group, model, true, maxPrioritySubQuery)
+	// Subquery to restrict to channels that are currently enabled (status=1).
+	// Without this, disabled channels with enabled abilities still receive traffic
+	// when MemoryCacheEnabled is false (DB-path routing).
+	enabledChannelSubQuery := DB.Model(&Channel{}).Select("id").Where("status = ?", common.ChannelStatusEnabled)
+	maxPrioritySubQuery := DB.Model(&Ability{}).Select("MAX(priority)").Where(commonGroupCol+" = ? and model = ? and enabled = ? and channel_id IN (?)", group, model, true, enabledChannelSubQuery)
+	channelQuery := DB.Where(commonGroupCol+" = ? and model = ? and enabled = ? and channel_id IN (?) and priority = (?)", group, model, true, enabledChannelSubQuery, maxPrioritySubQuery)
 	if retry != 0 {
 		priority, err := getPriority(group, model, retry)
 		if err != nil {
 			return nil, err
 		} else {
-			channelQuery = DB.Where(commonGroupCol+" = ? and model = ? and enabled = ? and priority = ?", group, model, true, priority)
+			channelQuery = DB.Where(commonGroupCol+" = ? and model = ? and enabled = ? and channel_id IN (?) and priority = ?", group, model, true, enabledChannelSubQuery, priority)
 		}
 	}
 
