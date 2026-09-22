@@ -97,21 +97,29 @@ def select_probe_model(channel):
 
 
 def probe_channel(ch, model, timeout=10):
-    url = f"{ch['base_url']}/v1/chat/completions"
-    headers = {
-        "Authorization": f"Bearer {ch['key']}",
-        "Content-Type": "application/json",
-        "User-Agent": "Apinet-Canary/2026.09",
-    }
-    payload = json.dumps({
-        "model": model,
-        "messages": [{"role": "user", "content": "hi"}],
-        "max_tokens": 1,
-    }).encode("utf-8")
-
-    req = urllib.request.Request(
-        url, data=payload, headers=headers, method="POST"
-    )
+    is_media = any(k in ch["name"].lower() for k in ("img", "video", "image"))
+    if is_media:
+        url = f"{ch['base_url']}/v1/models"
+        headers = {
+            "Authorization": f"Bearer {ch['key']}",
+            "User-Agent": "Apinet-Canary/2026.09",
+        }
+        req = urllib.request.Request(url, headers=headers, method="GET")
+    else:
+        url = f"{ch['base_url']}/v1/chat/completions"
+        headers = {
+            "Authorization": f"Bearer {ch['key']}",
+            "Content-Type": "application/json",
+            "User-Agent": "Apinet-Canary/2026.09",
+        }
+        payload = json.dumps({
+            "model": model,
+            "messages": [{"role": "user", "content": "hi"}],
+            "max_tokens": 1,
+        }).encode("utf-8")
+        req = urllib.request.Request(
+            url, data=payload, headers=headers, method="POST"
+        )
     t0 = time.time()
     try:
         with urllib.request.urlopen(req, timeout=timeout) as resp:
@@ -127,7 +135,14 @@ def probe_channel(ch, model, timeout=10):
         body = e.read().decode("utf-8", errors="replace")[:200]
 
         # Check quota depletion
-        if "user quota is not enough" in body or "quota is not enough" in body:
+        body_lower = body.lower()
+        if (
+            "user quota is not enough" in body_lower
+            or "quota is not enough" in body_lower
+            or "insufficient_balance" in body_lower
+            or "insufficient account balance" in body_lower
+            or "balance is insufficient" in body_lower
+        ):
             return {
                 "status": "QUOTA_DEPLETED",
                 "http_code": e.code,
