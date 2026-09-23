@@ -345,21 +345,21 @@ export function ApiKeysMutateDrawer({
                     <FormItem>
                       <FormLabel>{t('Gateway selection')}</FormLabel>
                       <FormControl>
-                        <div className='grid gap-2 sm:grid-cols-2'>
+                        <div className='grid min-w-0 gap-2 sm:grid-cols-2'>
                           {(['ordered', 'cost'] as const).map((profile) => (
                             <Button
                               key={profile}
                               type='button'
                               variant={field.value === profile ? 'secondary' : 'outline'}
-                              className='h-auto justify-start px-3 py-2 text-left'
+                              className='h-auto min-w-0 w-full items-start justify-start whitespace-normal px-3 py-2 text-left'
                               onClick={() => field.onChange(profile)}
                               data-testid={`button-gateway-profile-${profile}`}
                             >
-                              <span className='flex flex-col gap-0.5'>
+                              <span className='flex min-w-0 flex-col gap-0.5'>
                                 <span className='text-sm font-medium'>
                                   {profile === 'ordered' ? t('Ordered') : t('Cost-aware')}
                                 </span>
-                                <span className='text-muted-foreground text-xs font-normal'>
+                                <span className='text-muted-foreground break-words text-xs font-normal'>
                                   {profile === 'ordered'
                                     ? t('Keep the selected model order')
                                     : t(
