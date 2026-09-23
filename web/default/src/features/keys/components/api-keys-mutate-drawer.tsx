@@ -619,6 +619,11 @@ export function ApiKeysMutateDrawer({
                                  )
                                : t('Limit which models can be used with this key')}
                           </FormDescription>
+                           {gatewayEnabled && (
+                             <p className='text-muted-foreground text-xs'>
+                               {t('Gateway uses only compatible models and channels for requested tools, JSON schema, reasoning, images and streaming. Unknown capabilities are excluded; if none qualify, the request fails without a charge. Choose models that cover the features your clients need.')}
+                             </p>
+                           )}
                              {gatewayEnabled &&
                                modelsLoaded &&
                                models.length === 0 && (

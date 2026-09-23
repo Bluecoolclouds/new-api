@@ -2123,6 +2123,7 @@
     "Gateway models": "Gateway models",
     "Gateway routing": "Gateway routing",
     "Gateway selection": "Gateway selection",
+    "Gateway uses only compatible models and channels for requested tools, JSON schema, reasoning, images and streaming. Unknown capabilities are excluded; if none qualify, the request fails without a charge. Choose models that cover the features your clients need.": "Gateway uses only compatible models and channels for requested tools, JSON schema, reasoning, images and streaming. Unknown capabilities are excluded; if none qualify, the request fails without a charge. Choose models that cover the features your clients need.",
     "GC Count": "GC Count",
     "GC executed": "GC executed",
     "GC execution failed": "GC execution failed",

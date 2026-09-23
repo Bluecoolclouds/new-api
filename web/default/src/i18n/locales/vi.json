@@ -2123,6 +2123,7 @@
     "Gateway models": "Model Gateway",
     "Gateway routing": "Định tuyến Gateway",
     "Gateway selection": "Cách chọn Gateway",
+    "Gateway uses only compatible models and channels for requested tools, JSON schema, reasoning, images and streaming. Unknown capabilities are excluded; if none qualify, the request fails without a charge. Choose models that cover the features your clients need.": "Gateway chỉ dùng mô hình và kênh tương thích với công cụ, lược đồ JSON, suy luận, hình ảnh và truyền luồng được yêu cầu. Khả năng chưa xác định sẽ bị loại; nếu không có lựa chọn phù hợp, yêu cầu sẽ thất bại mà không bị trừ phí. Hãy chọn mô hình đáp ứng nhu cầu của ứng dụng.",
     "GC Count": "Số lần GC",
     "GC executed": "GC đã thực thi",
     "GC execution failed": "Thực thi GC thất bại",

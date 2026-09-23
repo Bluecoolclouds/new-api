@@ -43,6 +43,12 @@ func Distribute() func(c *gin.Context) {
 				abortWithOpenAiMessage(c, http.StatusBadRequest, "model auto is available only for AI Gateway keys on /v1/chat/completions")
 				return
 			}
+			features, featureErr := gatewayRequestFeatures(c)
+			if featureErr != nil {
+				abortWithOpenAiMessage(c, http.StatusBadRequest, fmt.Sprintf("invalid AI Gateway chat request: %s", featureErr))
+				return
+			}
+			c.Set("gateway_features", features)
 			usingGroup := common.GetContextKeyString(c, constant.ContextKeyUsingGroup)
 			selectedModel, selectedChannel, reason, selectErr := selectGatewayModel(c, usingGroup)
 			if selectErr != nil {

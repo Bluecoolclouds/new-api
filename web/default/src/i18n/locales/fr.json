@@ -2123,6 +2123,7 @@
     "Gateway models": "Modèles de la passerelle",
     "Gateway routing": "Routage de la passerelle",
     "Gateway selection": "Sélection de la passerelle",
+    "Gateway uses only compatible models and channels for requested tools, JSON schema, reasoning, images and streaming. Unknown capabilities are excluded; if none qualify, the request fails without a charge. Choose models that cover the features your clients need.": "Gateway utilise uniquement les modèles et canaux compatibles avec les outils, les schémas JSON, le raisonnement, les images et le streaming demandés. Les capacités inconnues sont exclues ; sans option compatible, la requête échoue sans frais. Choisissez des modèles adaptés à vos clients.",
     "GC Count": "Nombre de GC",
     "GC executed": "GC exécuté",
     "GC execution failed": "Échec de l'exécution du GC",

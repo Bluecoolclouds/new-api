@@ -219,6 +219,7 @@ func selectGatewayModelExcluding(c *gin.Context, group string, excluded map[stri
 	}
 	var choices []gatewayChoice
 	var exclusions []string
+	needed, _ := c.Value("gateway_features").(gatewayFeatures)
 	for _, candidate := range orderGatewayCandidates(names, profile) {
 		if !candidate.priced || excluded[candidate.name] {
 			continue
@@ -240,6 +241,10 @@ func selectGatewayModelExcluding(c *gin.Context, group string, excluded map[stri
 				return "", nil, "", err
 			}
 			for _, channel := range channels {
+				if !gatewaySupports(channel, candidate.name, needed) {
+					exclusions = append(exclusions, fmt.Sprintf("%s/#%d:unsupported_%s", candidate.name, channel.Id, needed))
+					continue
+				}
 				score, why, blocked := gatewayChannelScore(channel.Id, profile)
 				if blocked {
 					exclusions = append(exclusions, fmt.Sprintf("%s/#%d:%s", candidate.name, channel.Id, why))
@@ -286,6 +291,9 @@ func selectGatewayModelExcluding(c *gin.Context, group string, excluded map[stri
 			}
 		}
 		return selected.candidate.name, selected.channel, reason, nil
+	}
+	if needed != 0 {
+		return "", nil, "", fmt.Errorf("no available compatible AI Gateway model/channel for required capabilities: %s", needed)
 	}
 	return "", nil, "", fmt.Errorf("no available billable model for this AI Gateway key in its allowed group")
 }

@@ -2123,6 +2123,7 @@
     "Gateway models": "ゲートウェイモデル",
     "Gateway routing": "ゲートウェイルーティング",
     "Gateway selection": "ゲートウェイの選択方式",
+    "Gateway uses only compatible models and channels for requested tools, JSON schema, reasoning, images and streaming. Unknown capabilities are excluded; if none qualify, the request fails without a charge. Choose models that cover the features your clients need.": "Gateway は、要求されたツール、JSON スキーマ、推論、画像、ストリーミングに対応するモデルとチャネルのみを使用します。対応を確認できないものは除外され、候補がなければ課金せずにエラーになります。クライアントに必要な機能を持つモデルを選んでください。",
     "GC Count": "GC 回数",
     "GC executed": "GC 実行完了",
     "GC execution failed": "GC 実行失敗",

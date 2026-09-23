@@ -3,11 +3,92 @@ package middleware
 import (
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
+	"github.com/QuantumNous/new-api/common"
 	"github.com/QuantumNous/new-api/model"
 	"github.com/gin-gonic/gin"
 )
+
+func TestGatewayRequestCapabilitiesAndFallback(t *testing.T) {
+	tests := []struct {
+		name, body        string
+		want              gatewayFeatures
+		primary, fallback string
+	}{
+		{"vision", `{"model":"auto","messages":[{"role":"user","content":[{"type":"text","text":"describe"},{"type":"image_url","image_url":{"url":"https://example.com/a.png"}}]}]}`, gatewayVision, "gpt-4o", "deepseek-chat"},
+		{"tools", `{"model":"auto","messages":[{"role":"user","content":"hi"}],"tools":[{"type":"function","function":{"name":"search"}}]}`, gatewayTools, "gpt-4o", "deepseek-reasoner"},
+		{"tool result", `{"model":"auto","messages":[{"role":"tool","tool_call_id":"call_1","content":"done"}]}`, gatewayTools, "gpt-4o", "deepseek-reasoner"},
+		{"stream", `{"model":"auto","stream":true,"messages":[{"role":"user","content":"hi"}]}`, gatewayStream, "gpt-4o", "unverified-model"},
+		{"schema", `{"model":"auto","response_format":{"type":"json_schema","json_schema":{"name":"answer","schema":{}}}}`, gatewaySchema, "gpt-4o", "claude-sonnet-4-20250514"},
+		{"reasoning", `{"model":"auto","reasoning_effort":"high"}`, gatewayReasoning, "gpt-5", "gpt-4o"},
+		{"audio", `{"model":"auto","messages":[{"role":"user","content":[{"type":"input_audio","input_audio":{"data":"abc","format":"wav"}}]}]}`, gatewayAudio, "", "gpt-4o"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			c, _ := gin.CreateTestContext(httptest.NewRecorder())
+			c.Request = httptest.NewRequest(http.MethodPost, "/v1/chat/completions", strings.NewReader(tt.body))
+			c.Request.Header.Set("Content-Type", "application/json")
+			got, err := gatewayRequestFeatures(c)
+			if err != nil || got != tt.want {
+				t.Fatalf("features = %s, error = %v; want %s", got, err, tt.want)
+			}
+			primary := &model.Channel{Type: 1}
+			if tt.primary != "" && !gatewaySupports(primary, tt.primary, got) {
+				t.Fatalf("compatible primary %s was excluded", tt.primary)
+			}
+			if gatewaySupports(primary, tt.fallback, got) {
+				t.Fatalf("incompatible fallback %s was selected for %s", tt.fallback, got)
+			}
+			// The body is still available to the relay after capability detection.
+			var again struct {
+				Model string `json:"model"`
+			}
+			if err := common.UnmarshalBodyReusable(c, &again); err != nil || again.Model != "auto" {
+				t.Fatalf("request body lost: %+v %v", again, err)
+			}
+		})
+	}
+}
+
+func TestGatewayChannelAndMappingCapabilities(t *testing.T) {
+	mapping := `{"safe-alias":"deepseek-chat"}`
+	if gatewaySupports(&model.Channel{Type: 1, ModelMapping: &mapping}, "safe-alias", gatewayVision) {
+		t.Fatal("alias must use upstream capabilities")
+	}
+	if gatewaySupports(&model.Channel{Type: 8}, "gpt-4o", gatewayStream|gatewayTools) {
+		t.Fatal("custom adapter must not be assumed to preserve streaming tools")
+	}
+	if gatewaySupports(&model.Channel{Type: 43}, "gpt-4o", gatewayVision) {
+		t.Fatal("provider adapter must not accept another provider's model")
+	}
+}
+
+func TestGatewayMappedAliasSurvivesInitialRelayChannel(t *testing.T) {
+	c, _ := gin.CreateTestContext(httptest.NewRecorder())
+	c.Request = httptest.NewRequest(http.MethodPost, "/v1/chat/completions",
+		strings.NewReader(`{"model":"auto","stream":true,"messages":[{"role":"user","content":"hello"}]}`))
+	c.Request.Header.Set("Content-Type", "application/json")
+	needed, err := gatewayRequestFeatures(c)
+	if err != nil || needed != gatewayStream {
+		t.Fatalf("request features = %s: %v", needed, err)
+	}
+	c.Set("gateway_features", needed)
+	mapping := `{"my-chat-alias":"gpt-4o"}`
+	selected := &model.Channel{Id: 42, Type: 1, ModelMapping: &mapping}
+	if !GatewayChannelCompatible(c, selected, "my-chat-alias") {
+		t.Fatal("selector must accept mapped alias on full channel")
+	}
+	// getChannel returns this synthetic channel when ChannelMeta is nil.
+	firstAttempt := &model.Channel{Id: 42, Type: 1}
+	if !GatewayAttemptCompatible(c, firstAttempt, "my-chat-alias", 0) {
+		t.Fatal("first relay attempt lost the already validated model mapping")
+	}
+	if GatewayAttemptCompatible(c, firstAttempt, "my-chat-alias", 1) {
+		t.Fatal("a retry with incomplete channel metadata must not be assumed compatible")
+	}
+}
 
 func testGatewayChoice(name string, id int, priority int64, weight uint, score float64) gatewayChoice {
 	return gatewayChoice{

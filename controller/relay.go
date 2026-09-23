@@ -228,6 +228,13 @@ func Relay(c *gin.Context, relayFormat types.RelayFormat) {
 			newAPIError = gatewayRetryChannelError(c, gateway, relayInfo.LastError, channelErr)
 			break
 		}
+		if gateway && !middleware.GatewayAttemptCompatible(c, channel, relayInfo.OriginModelName, retryParam.GetRetry()) {
+			incompatible := types.NewErrorWithStatusCode(
+				fmt.Errorf("AI Gateway retry channel does not support the requested capabilities"),
+				types.ErrorCodeGetChannelFailed, http.StatusServiceUnavailable, types.ErrOptionWithSkipRetry())
+			newAPIError = gatewayRetryChannelError(c, true, relayInfo.LastError, incompatible)
+			break
+		}
 
 		addUsedChannel(c, channel.Id)
 		attemptStart := time.Now()
@@ -347,6 +354,13 @@ func Relay(c *gin.Context, relayFormat types.RelayFormat) {
 				channel, channelErr = getChannel(c, relayInfo, retryParam)
 				if channelErr != nil {
 					newAPIError = gatewayRetryChannelError(c, true, relayInfo.LastError, channelErr)
+					break
+				}
+				if !middleware.GatewayAttemptCompatible(c, channel, next, retryParam.GetRetry()) {
+					incompatible := types.NewErrorWithStatusCode(
+						fmt.Errorf("AI Gateway retry channel does not support the requested capabilities"),
+						types.ErrorCodeGetChannelFailed, http.StatusServiceUnavailable, types.ErrOptionWithSkipRetry())
+					newAPIError = gatewayRetryChannelError(c, true, relayInfo.LastError, incompatible)
 					break
 				}
 			}

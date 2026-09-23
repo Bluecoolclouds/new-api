@@ -2123,6 +2123,7 @@
     "Gateway models": "Модели шлюза",
     "Gateway routing": "Маршрутизация Gateway",
     "Gateway selection": "Выбор шлюза",
+    "Gateway uses only compatible models and channels for requested tools, JSON schema, reasoning, images and streaming. Unknown capabilities are excluded; if none qualify, the request fails without a charge. Choose models that cover the features your clients need.": "Gateway использует только модели и каналы, совместимые с запрошенными инструментами, схемой JSON, рассуждением, изображениями и потоковой передачей. Неподтверждённые возможности исключаются; если подходящих вариантов нет, запрос завершится без списания. Выбирайте модели под нужды клиентов.",
     "GC Count": "Кол-во GC",
     "GC executed": "GC выполнен",
     "GC execution failed": "Ошибка выполнения GC",
