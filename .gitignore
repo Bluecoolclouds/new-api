@@ -52,3 +52,4 @@ new-api.*
 /*_backup_*.json
 /ch*_model_mapping_backup_*.json
 /modelprice_backup_*.json
+/config/
