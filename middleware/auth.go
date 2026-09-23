@@ -452,6 +452,9 @@ func SetupContextForToken(c *gin.Context, token *model.Token, parts ...string) e
 	c.Set("token_id", token.Id)
 	c.Set("token_key", token.Key)
 	c.Set("token_name", token.Name)
+	c.Set("gateway_enabled", token.GatewayEnabled)
+	c.Set("gateway_profile", token.GatewayProfile)
+	c.Set("gateway_models", token.GetModelLimits())
 	c.Set("token_unlimited_quota", token.UnlimitedQuota)
 	if !token.UnlimitedQuota {
 		c.Set("token_quota", token.RemainQuota)

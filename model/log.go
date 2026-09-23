@@ -344,6 +344,16 @@ func RecordConsumeLog(c *gin.Context, userId int, params RecordConsumeLogParams)
 	if !common.LogConsumeEnabled {
 		return
 	}
+	if selected := c.GetString("gateway_selected_model"); selected != "" {
+		if params.Other == nil {
+			params.Other = make(map[string]interface{})
+		}
+		params.Other["gateway"] = map[string]interface{}{
+			"requested_model": "auto",
+			"selected_model":  selected,
+			"reason":          c.GetString("gateway_selection_reason"),
+		}
+	}
 	logger.LogInfo(c, fmt.Sprintf("record consume log: userId=%d, params=%s", userId, common.GetJsonString(params)))
 	username := c.GetString("username")
 	requestId := c.GetString(common.RequestIdKey)

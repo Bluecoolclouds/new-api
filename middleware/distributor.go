@@ -38,6 +38,24 @@ func Distribute() func(c *gin.Context) {
 			abortWithOpenAiMessage(c, http.StatusBadRequest, i18n.T(c, i18n.MsgDistributorInvalidRequest, map[string]any{"Error": err.Error()}))
 			return
 		}
+		if modelRequest.Model == "auto" && c.GetBool("gateway_enabled") {
+			if c.Request.URL.Path != "/v1/chat/completions" || !shouldSelectChannel || ok {
+				abortWithOpenAiMessage(c, http.StatusBadRequest, "model auto is available only for AI Gateway keys on /v1/chat/completions")
+				return
+			}
+			usingGroup := common.GetContextKeyString(c, constant.ContextKeyUsingGroup)
+			selectedModel, selectedChannel, reason, selectErr := selectGatewayModel(c, usingGroup)
+			if selectErr != nil {
+				abortWithOpenAiMessage(c, http.StatusServiceUnavailable, selectErr.Error(), types.ErrorCodeModelNotFound)
+				return
+			}
+			modelRequest.Model = selectedModel
+			channel = selectedChannel
+			c.Set("gateway_selected_model", selectedModel)
+			c.Set("gateway_selection_reason", reason)
+			c.Header("X-AI-Gateway-Model", selectedModel)
+			c.Header("X-AI-Gateway-Reason", reason)
+		}
 		if ok {
 			id, err := strconv.Atoi(channelId.(string))
 			if err != nil {
@@ -159,7 +177,12 @@ func Distribute() func(c *gin.Context) {
 			}
 		}
 		common.SetContextKey(c, constant.ContextKeyRequestStartTime, time.Now())
-		SetupContextForSelectedChannel(c, channel, modelRequest.Model)
+		if c.GetString("gateway_selected_model") == "" {
+			if setupErr := SetupContextForSelectedChannel(c, channel, modelRequest.Model); setupErr != nil {
+				abortWithOpenAiMessage(c, http.StatusServiceUnavailable, setupErr.Error(), types.ErrorCodeGetChannelFailed)
+				return
+			}
+		}
 		c.Next()
 		if channel != nil && c.Writer != nil && c.Writer.Status() < http.StatusBadRequest {
 			service.RecordChannelAffinity(c, channel.Id)

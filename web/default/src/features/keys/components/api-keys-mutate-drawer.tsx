@@ -101,7 +101,7 @@ export function ApiKeysMutateDrawer({
   const defaultUseAutoGroup = status?.default_use_auto_group === true
 
   // Fetch models
-  const { data: modelsData } = useQuery({
+  const { data: modelsData, isFetched: modelsLoaded } = useQuery({
     queryKey: ['user-models'],
     queryFn: getUserModels,
     staleTime: 5 * 60 * 1000, // Cache for 5 minutes
@@ -245,6 +245,7 @@ export function ApiKeysMutateDrawer({
     : t('Enter quota in {{currency}}', { currency: currencyLabel })
   const selectedGroup = form.watch('group')
   const unlimitedQuota = form.watch('unlimited_quota')
+  const gatewayEnabled = form.watch('gateway_enabled')
 
   return (
     <Sheet
@@ -313,6 +314,71 @@ export function ApiKeysMutateDrawer({
                   </FormItem>
                 )}
               />
+
+              <FormField
+                control={form.control}
+                name='gateway_enabled'
+                render={({ field }) => (
+                  <FormItem className={sideDrawerSwitchItemClassName()}>
+                    <div className='flex flex-col gap-0.5'>
+                      <FormLabel className='text-sm'>{t('Gateway key')}</FormLabel>
+                      <FormDescription className='text-xs'>
+                        {t('Route OpenAI-compatible chat requests through a model gateway')}
+                      </FormDescription>
+                    </div>
+                    <FormControl>
+                      <Switch
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                        data-testid='switch-gateway-key'
+                      />
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
+
+              {gatewayEnabled && (
+                <FormField
+                  control={form.control}
+                  name='gateway_profile'
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>{t('Gateway selection')}</FormLabel>
+                      <FormControl>
+                        <div className='grid gap-2 sm:grid-cols-2'>
+                          {(['ordered', 'cost'] as const).map((profile) => (
+                            <Button
+                              key={profile}
+                              type='button'
+                              variant={field.value === profile ? 'secondary' : 'outline'}
+                              className='h-auto justify-start px-3 py-2 text-left'
+                              onClick={() => field.onChange(profile)}
+                              data-testid={`button-gateway-profile-${profile}`}
+                            >
+                              <span className='flex flex-col gap-0.5'>
+                                <span className='text-sm font-medium'>
+                                  {profile === 'ordered' ? t('Ordered') : t('Cost-aware')}
+                                </span>
+                                <span className='text-muted-foreground text-xs font-normal'>
+                                  {profile === 'ordered'
+                                    ? t('Keep the selected model order')
+                                    : t(
+                                        'Prefer lower configured price when billing modes are comparable'
+                                      )}
+                                </span>
+                              </span>
+                            </Button>
+                          ))}
+                        </div>
+                      </FormControl>
+                      <FormDescription>
+                        {t('Gateway mode works on the OpenAI-compatible chat endpoint only. It does not add latency optimization, answer cache, or runtime fallback.')}
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              )}
 
               {selectedGroup === 'auto' && (
                 <FormField
@@ -491,7 +557,12 @@ export function ApiKeysMutateDrawer({
               />
             </SideDrawerSection>
 
-            <Collapsible open={advancedOpen} onOpenChange={setAdvancedOpen}>
+            <Collapsible
+              open={advancedOpen || gatewayEnabled}
+              onOpenChange={(nextOpen) => {
+                if (!gatewayEnabled) setAdvancedOpen(nextOpen)
+              }}
+            >
               <SideDrawerSection>
                 <CollapsibleTrigger
                   render={
@@ -516,12 +587,14 @@ export function ApiKeysMutateDrawer({
                 </CollapsibleTrigger>
                 <CollapsibleContent>
                   <div className='flex flex-col gap-4 pt-2'>
-                    <FormField
+                      <FormField
                       control={form.control}
                       name='model_limits'
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>{t('Model Limits')}</FormLabel>
+                             <FormLabel>
+                               {gatewayEnabled ? t('Gateway models') : t('Model Limits')}
+                             </FormLabel>
                           <FormControl>
                             <MultiSelect
                               options={models.map((m) => ({
@@ -530,14 +603,29 @@ export function ApiKeysMutateDrawer({
                               }))}
                               selected={field.value}
                               onChange={field.onChange}
-                              placeholder={t(
-                                'Select models (empty for allow all)'
-                              )}
+                               placeholder={
+                                 gatewayEnabled
+                                   ? t('Select models for Gateway')
+                                   : t('Select models (empty for allow all)')
+                               }
                             />
                           </FormControl>
                           <FormDescription>
-                            {t('Limit which models can be used with this key')}
+                             {gatewayEnabled
+                               ? t(
+                                   'Required: select the candidate models Gateway may use'
+                                 )
+                               : t('Limit which models can be used with this key')}
                           </FormDescription>
+                             {gatewayEnabled &&
+                               modelsLoaded &&
+                               models.length === 0 && (
+                                 <p className='text-destructive text-xs'>
+                                   {t(
+                                     'No models are available yet. An administrator must enable a channel and model before this Gateway key can route requests.'
+                                   )}
+                                 </p>
+                               )}
                           <FormMessage />
                         </FormItem>
                       )}

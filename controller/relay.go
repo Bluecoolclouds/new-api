@@ -122,6 +122,12 @@ func Relay(c *gin.Context, relayFormat types.RelayFormat) {
 		newAPIError = types.NewError(err, types.ErrorCodeGenRelayInfoFailed)
 		return
 	}
+	if selectedModel := c.GetString("gateway_selected_model"); selectedModel != "" {
+		// The distributor selected and authorized a real model before quota
+		// estimation. Keep the request payload, billing and logs on that same model.
+		request.SetModelName(selectedModel)
+		relayInfo.OriginModelName = selectedModel
+	}
 
 	needSensitiveCheck := setting.ShouldCheckPromptSensitive()
 	needCountToken := constant.CountToken

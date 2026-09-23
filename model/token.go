@@ -28,7 +28,38 @@ type Token struct {
 	UsedQuota          int            `json:"used_quota" gorm:"default:0"` // used quota
 	Group              string         `json:"group" gorm:"default:''"`
 	CrossGroupRetry    bool           `json:"cross_group_retry"` // 跨分组重试，仅auto分组有效
+	GatewayEnabled     bool           `json:"gateway_enabled" gorm:"default:false"`
+	GatewayProfile     string         `json:"gateway_profile" gorm:"type:varchar(16);default:'ordered'"`
 	DeletedAt          gorm.DeletedAt `gorm:"index"`
+}
+
+// ValidateGatewaySettings keeps automatic selection inside the token's explicit model allowlist.
+func (token *Token) ValidateGatewaySettings() error {
+	if !token.GatewayEnabled {
+		token.GatewayProfile = "ordered"
+		return nil
+	}
+	if token.GatewayProfile == "" {
+		token.GatewayProfile = "ordered"
+	}
+	if token.GatewayProfile != "ordered" && token.GatewayProfile != "cost" {
+		return fmt.Errorf("invalid AI Gateway preference")
+	}
+	if !token.ModelLimitsEnabled || len(token.GetModelLimits()) == 0 {
+		return fmt.Errorf("AI Gateway key requires a list of allowed models")
+	}
+	seen := make(map[string]bool)
+	canonical := make([]string, 0, len(token.GetModelLimits()))
+	for _, name := range token.GetModelLimits() {
+		name = strings.TrimSpace(name)
+		if name == "" || name == "auto" || seen[name] {
+			return fmt.Errorf("AI Gateway models must be distinct, non-empty model names")
+		}
+		seen[name] = true
+		canonical = append(canonical, name)
+	}
+	token.ModelLimits = strings.Join(canonical, ",")
+	return nil
 }
 
 func (token *Token) Clean() {
@@ -302,7 +333,7 @@ func (token *Token) Update() (err error) {
 		}
 	}()
 	err = DB.Model(token).Select("name", "status", "expired_time", "remain_quota", "unlimited_quota",
-		"model_limits_enabled", "model_limits", "allow_ips", "group", "cross_group_retry").Updates(token).Error
+		"model_limits_enabled", "model_limits", "allow_ips", "group", "cross_group_retry", "gateway_enabled", "gateway_profile").Updates(token).Error
 	return err
 }
 

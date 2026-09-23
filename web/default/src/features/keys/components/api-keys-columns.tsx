@@ -198,6 +198,15 @@ export function useApiKeysColumns(): ColumnDef<ApiKey>[] {
       ),
       cell: ({ row }) => {
         const apiKey = row.original
+        if (apiKey.gateway_enabled) {
+          return (
+            <StatusBadge
+              label={t('Gateway')}
+              variant='info'
+              copyable={false}
+            />
+          )
+        }
         const group = row.getValue('group') as string
         const ratio = group && group !== 'auto' ? groupRatios[group] : undefined
 

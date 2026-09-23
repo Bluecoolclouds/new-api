@@ -8,3 +8,4 @@
 - [MiniMax max_tokens cap](minimax-max-tokens.md) — MiniMax API accepts max_tokens [1, 32768] only; adaptor caps at 32768 to prevent 400 errors from channel param_override injecting larger values
 
 - [Bulk upstream sync verification](bulk-upstream-sync-verification.md) — commit-range diff isn't enough; always full-build + hash-diff after bulk syncing many upstream commits at once
+- [Gateway auto model compatibility](gateway-auto-compatibility.md) — interpret `auto` as model selection only for Gateway keys; ordinary keys may route a literal model named `auto`

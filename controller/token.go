@@ -12,6 +12,7 @@ import (
 	"github.com/QuantumNous/new-api/setting/operation_setting"
 
 	"github.com/gin-gonic/gin"
+	"github.com/gin-gonic/gin/binding"
 )
 
 func buildMaskedTokenResponse(token *model.Token) *model.Token {
@@ -171,6 +172,10 @@ func AddToken(c *gin.Context) {
 		common.ApiError(c, err)
 		return
 	}
+	if err := token.ValidateGatewaySettings(); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": err.Error()})
+		return
+	}
 	if len(token.Name) > 50 {
 		common.ApiErrorI18n(c, i18n.MsgTokenNameTooLong)
 		return
@@ -221,6 +226,8 @@ func AddToken(c *gin.Context) {
 		AllowIps:           token.AllowIps,
 		Group:              token.Group,
 		CrossGroupRetry:    token.CrossGroupRetry,
+		GatewayEnabled:     token.GatewayEnabled,
+		GatewayProfile:     token.GatewayProfile,
 	}
 	err = cleanToken.Insert()
 	if err != nil {
@@ -251,7 +258,7 @@ func UpdateToken(c *gin.Context) {
 	userId := c.GetInt("id")
 	statusOnly := c.Query("status_only")
 	token := model.Token{}
-	err := c.ShouldBindJSON(&token)
+	err := c.ShouldBindBodyWith(&token, binding.JSON)
 	if err != nil {
 		common.ApiError(c, err)
 		return
@@ -276,6 +283,23 @@ func UpdateToken(c *gin.Context) {
 		common.ApiError(c, err)
 		return
 	}
+	if statusOnly == "" {
+		fields := map[string]any{}
+		if err := c.ShouldBindBodyWith(&fields, binding.JSON); err != nil {
+			common.ApiError(c, err)
+			return
+		}
+		if _, supplied := fields["gateway_enabled"]; !supplied {
+			token.GatewayEnabled = cleanToken.GatewayEnabled
+		}
+		if _, supplied := fields["gateway_profile"]; !supplied {
+			token.GatewayProfile = cleanToken.GatewayProfile
+		}
+		if err := token.ValidateGatewaySettings(); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": err.Error()})
+			return
+		}
+	}
 	if token.Status == common.TokenStatusEnabled {
 		if cleanToken.Status == common.TokenStatusExpired && cleanToken.ExpiredTime <= common.GetTimestamp() && cleanToken.ExpiredTime != -1 {
 			common.ApiErrorI18n(c, i18n.MsgTokenExpiredCannotEnable)
@@ -299,6 +323,8 @@ func UpdateToken(c *gin.Context) {
 		cleanToken.AllowIps = token.AllowIps
 		cleanToken.Group = token.Group
 		cleanToken.CrossGroupRetry = token.CrossGroupRetry
+		cleanToken.GatewayEnabled = token.GatewayEnabled
+		cleanToken.GatewayProfile = token.GatewayProfile
 	}
 	err = cleanToken.Update()
 	if err != nil {

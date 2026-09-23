@@ -37,21 +37,27 @@ export function getApiKeyFormSchema(t: TFunction) {
       allow_ips: z.string().optional(),
       group: z.string().optional(),
       cross_group_retry: z.boolean().optional(),
+      gateway_enabled: z.boolean(),
+      gateway_profile: z.enum(['cost', 'ordered']),
       tokenCount: z.number().min(1).optional(),
     })
     .superRefine((data, ctx) => {
-      if (data.unlimited_quota) {
-        return
-      }
-
       if (
-        data.remain_quota_dollars === undefined ||
-        data.remain_quota_dollars < 0
+        !data.unlimited_quota &&
+        (data.remain_quota_dollars === undefined ||
+          data.remain_quota_dollars < 0)
       ) {
         ctx.addIssue({
           code: 'custom',
           path: ['remain_quota_dollars'],
           message: t('Quota must be zero or greater'),
+        })
+      }
+      if (data.gateway_enabled && data.model_limits.length === 0) {
+        ctx.addIssue({
+          code: 'custom',
+          path: ['model_limits'],
+          message: t('Select at least one model for Gateway mode'),
         })
       }
     })
@@ -72,6 +78,8 @@ export const API_KEY_FORM_DEFAULT_VALUES: ApiKeyFormValues = {
   allow_ips: '',
   group: DEFAULT_GROUP,
   cross_group_retry: true,
+  gateway_enabled: false,
+  gateway_profile: 'ordered',
   tokenCount: 1,
 }
 
@@ -109,6 +117,8 @@ export function transformFormDataToPayload(
     allow_ips: data.allow_ips || '',
     group: data.group || '',
     cross_group_retry: data.group === 'auto' ? !!data.cross_group_retry : false,
+    gateway_enabled: data.gateway_enabled,
+    gateway_profile: data.gateway_profile,
   }
 }
 
@@ -134,6 +144,8 @@ export function transformApiKeyToFormDefaults(
     allow_ips: apiKey.allow_ips || '',
     group: apiKey.group || DEFAULT_GROUP,
     cross_group_retry: !!apiKey.cross_group_retry,
+    gateway_enabled: apiKey.gateway_enabled === true,
+    gateway_profile: apiKey.gateway_profile === 'cost' ? 'cost' : 'ordered',
     tokenCount: 1,
   }
 }
