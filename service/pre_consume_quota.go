@@ -45,6 +45,19 @@ func ReserveGatewayQuota(info *relaycommon.RelayInfo, target int) *types.NewAPIE
 	return nil
 }
 
+// ReserveGatewayBudget holds the estimated monetary spend and one parallel
+// request slot before any upstream call, including free-model requests.
+func ReserveGatewayBudget(info *relaycommon.RelayInfo, target int) *types.NewAPIError {
+	if info.GatewayBudget == nil {
+		info.GatewayBudget = &model.GatewayBudgetReservation{TokenID: info.TokenId}
+	}
+	if err := info.GatewayBudget.Reserve(int64(target)); err != nil {
+		return types.NewErrorWithStatusCode(err, types.ErrorCodeInsufficientUserQuota, http.StatusForbidden,
+			types.ErrOptionWithSkipRetry(), types.ErrOptionWithNoRecordErrorLog())
+	}
+	return nil
+}
+
 // PreConsumeQuota checks if the user has enough quota to pre-consume.
 // It returns the pre-consumed quota if successful, or an error if not.
 func PreConsumeQuota(c *gin.Context, preConsumedQuota int, relayInfo *relaycommon.RelayInfo) *types.NewAPIError {

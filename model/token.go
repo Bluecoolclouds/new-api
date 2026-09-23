@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/QuantumNous/new-api/common"
 	"github.com/QuantumNous/new-api/setting/operation_setting"
@@ -12,31 +13,62 @@ import (
 )
 
 type Token struct {
-	Id                 int            `json:"id"`
-	UserId             int            `json:"user_id" gorm:"index"`
-	Key                string         `json:"key" gorm:"type:varchar(128);uniqueIndex"`
-	Status             int            `json:"status" gorm:"default:1"`
-	Name               string         `json:"name" gorm:"index" `
-	CreatedTime        int64          `json:"created_time" gorm:"bigint"`
-	AccessedTime       int64          `json:"accessed_time" gorm:"bigint"`
-	ExpiredTime        int64          `json:"expired_time" gorm:"bigint;default:-1"` // -1 means never expired
-	RemainQuota        int            `json:"remain_quota" gorm:"default:0"`
-	UnlimitedQuota     bool           `json:"unlimited_quota"`
-	ModelLimitsEnabled bool           `json:"model_limits_enabled"`
-	ModelLimits        string         `json:"model_limits" gorm:"type:text"`
-	AllowIps           *string        `json:"allow_ips" gorm:"default:''"`
-	UsedQuota          int            `json:"used_quota" gorm:"default:0"` // used quota
-	Group              string         `json:"group" gorm:"default:''"`
-	CrossGroupRetry    bool           `json:"cross_group_retry"` // 跨分组重试，仅auto分组有效
-	GatewayEnabled     bool           `json:"gateway_enabled" gorm:"default:false"`
-	GatewayProfile     string         `json:"gateway_profile" gorm:"type:varchar(16);default:'ordered'"`
-	DeletedAt          gorm.DeletedAt `gorm:"index"`
+	Id                      int            `json:"id"`
+	UserId                  int            `json:"user_id" gorm:"index"`
+	Key                     string         `json:"key" gorm:"type:varchar(128);uniqueIndex"`
+	Status                  int            `json:"status" gorm:"default:1"`
+	Name                    string         `json:"name" gorm:"index" `
+	CreatedTime             int64          `json:"created_time" gorm:"bigint"`
+	AccessedTime            int64          `json:"accessed_time" gorm:"bigint"`
+	ExpiredTime             int64          `json:"expired_time" gorm:"bigint;default:-1"` // -1 means never expired
+	RemainQuota             int            `json:"remain_quota" gorm:"default:0"`
+	UnlimitedQuota          bool           `json:"unlimited_quota"`
+	ModelLimitsEnabled      bool           `json:"model_limits_enabled"`
+	ModelLimits             string         `json:"model_limits" gorm:"type:text"`
+	AllowIps                *string        `json:"allow_ips" gorm:"default:''"`
+	UsedQuota               int            `json:"used_quota" gorm:"default:0"` // used quota
+	Group                   string         `json:"group" gorm:"default:''"`
+	CrossGroupRetry         bool           `json:"cross_group_retry"` // 跨分组重试，仅auto分组有效
+	GatewayEnabled          bool           `json:"gateway_enabled" gorm:"default:false"`
+	GatewayProfile          string         `json:"gateway_profile" gorm:"type:varchar(16);default:'ordered'"`
+	GatewayDailyLimit       int64          `json:"gateway_daily_limit" gorm:"default:0"`
+	GatewayMonthlyLimit     int64          `json:"gateway_monthly_limit" gorm:"default:0"`
+	GatewayWarningPercent   int            `json:"gateway_warning_percent" gorm:"default:80"`
+	GatewayConcurrencyLimit int            `json:"gateway_concurrency_limit" gorm:"default:0"`
+	GatewayDay              int64          `json:"-" gorm:"default:0"`
+	GatewayMonth            int64          `json:"-" gorm:"default:0"`
+	GatewayDailyUsed        int64          `json:"gateway_daily_used" gorm:"default:0"`
+	GatewayMonthlyUsed      int64          `json:"gateway_monthly_used" gorm:"default:0"`
+	GatewayActiveRequests   int            `json:"gateway_active_requests" gorm:"default:0"`
+	DeletedAt               gorm.DeletedAt `gorm:"index"`
+}
+
+func (token *Token) AfterFind(_ *gorm.DB) error {
+	now := time.Now().UTC()
+	if token.GatewayDay != gatewayDay(now) {
+		token.GatewayDailyUsed = 0
+	}
+	if token.GatewayMonth != gatewayMonth(now) {
+		token.GatewayMonthlyUsed = 0
+	}
+	return nil
 }
 
 // ValidateGatewaySettings keeps automatic selection inside the token's explicit model allowlist.
 func (token *Token) ValidateGatewaySettings() error {
+	if token.GatewayDailyLimit < 0 || token.GatewayMonthlyLimit < 0 ||
+		token.GatewayConcurrencyLimit < 0 || token.GatewayConcurrencyLimit > 10000 ||
+		token.GatewayWarningPercent < 0 || token.GatewayWarningPercent > 100 {
+		return fmt.Errorf("invalid AI Gateway budget settings")
+	}
+	if token.GatewayWarningPercent == 0 {
+		token.GatewayWarningPercent = 80
+	}
 	if !token.GatewayEnabled {
 		token.GatewayProfile = "ordered"
+		if token.GatewayDailyLimit != 0 || token.GatewayMonthlyLimit != 0 || token.GatewayConcurrencyLimit != 0 {
+			return fmt.Errorf("AI Gateway budgets require a Gateway key")
+		}
 		return nil
 	}
 	if token.GatewayProfile == "" {
@@ -333,7 +365,8 @@ func (token *Token) Update() (err error) {
 		}
 	}()
 	err = DB.Model(token).Select("name", "status", "expired_time", "remain_quota", "unlimited_quota",
-		"model_limits_enabled", "model_limits", "allow_ips", "group", "cross_group_retry", "gateway_enabled", "gateway_profile").Updates(token).Error
+		"model_limits_enabled", "model_limits", "allow_ips", "group", "cross_group_retry", "gateway_enabled", "gateway_profile",
+		"gateway_daily_limit", "gateway_monthly_limit", "gateway_warning_percent", "gateway_concurrency_limit").Updates(token).Error
 	return err
 }
 

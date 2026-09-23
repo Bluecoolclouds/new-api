@@ -2,7 +2,8 @@ import { Link } from '@tanstack/react-router'
 import { Check, Copy, ExternalLink, KeyRound, MoreHorizontal, Plus } from 'lucide-react'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { formatQuota } from '@/lib/format'
+import { formatCurrencyUSD, formatQuota } from '@/lib/format'
+import { getCurrencyDisplay } from '@/lib/currency'
 import { copyToClipboard } from '@/lib/copy-to-clipboard'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -28,6 +29,24 @@ function formatBudget(key: ApiKey): { remaining: string; total: string } {
   return {
     remaining: formatQuota(key.remain_quota ?? 0),
     total: formatQuota(total),
+  }
+}
+
+function gatewayBudgetLabel(key: ApiKey, t: (key: string, options?: Record<string, unknown>) => string): { label: string; warning: boolean } | null {
+  if (!key.gateway_enabled) return null
+  const daily = key.gateway_daily_limit ?? 0
+  const used = key.gateway_daily_used ?? 0
+  const monthly = key.gateway_monthly_limit ?? 0
+  const monthlyUsed = key.gateway_monthly_used ?? 0
+  const { config } = getCurrencyDisplay()
+  const threshold = key.gateway_warning_percent ?? 80
+  return {
+    label: daily > 0
+      ? t('{{remaining}} daily left', { remaining: formatCurrencyUSD(Math.max(0, daily - used) / config.quotaPerUnit) })
+      : t('Unlimited daily'),
+    warning:
+      (daily > 0 && used / daily * 100 >= threshold) ||
+      (monthly > 0 && monthlyUsed / monthly * 100 >= threshold),
   }
 }
 
@@ -80,15 +99,15 @@ function KeyRowMenu({ apiKey }: { apiKey: ApiKey }) {
 
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger asChild>
+      <DropdownMenuTrigger render={
         <Button
           variant='ghost'
           size='icon'
           className='size-7 shrink-0 rounded-lg'
           onClick={(e) => { e.preventDefault(); e.stopPropagation() }}
-        >
-          <MoreHorizontal className='size-3.5' />
-        </Button>
+        />
+      }>
+        <MoreHorizontal className='size-3.5' />
       </DropdownMenuTrigger>
       <DropdownMenuContent align='end' className='w-40'>
         <DropdownMenuItem onClick={handleCopyKey}>
@@ -96,11 +115,9 @@ function KeyRowMenu({ apiKey }: { apiKey: ApiKey }) {
           {t('Copy key')}
         </DropdownMenuItem>
         <DropdownMenuSeparator />
-        <DropdownMenuItem asChild>
-          <Link to='/keys'>
-            <ExternalLink className='size-3.5' />
-            {t('All keys')}
-          </Link>
+        <DropdownMenuItem render={<Link to='/keys' />}>
+          <ExternalLink className='size-3.5' />
+          {t('All keys')}
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
@@ -160,6 +177,7 @@ export function ApiKeysMiniPanel({ keys, loading }: ApiKeysMiniPanelProps) {
       <div className='divide-y'>
         {displayKeys.map((key) => {
           const budget = formatBudget(key)
+          const gatewayBudget = gatewayBudgetLabel(key, t)
           return (
             <Link
               key={key.id}
@@ -201,6 +219,12 @@ export function ApiKeysMiniPanel({ keys, loading }: ApiKeysMiniPanelProps) {
                       / {budget.total}
                     </span>
                   )}
+                    {gatewayBudget && (
+                      <span className={`text-[10px] tabular-nums ${gatewayBudget.warning ? 'text-amber-600 dark:text-amber-400' : 'text-muted-foreground'}`}>
+                        {gatewayBudget.label}
+                        {gatewayBudget.warning && ` · ${t('Warning')}`}
+                      </span>
+                    )}
                 </span>
 
                 {/* Key (click to copy) */}

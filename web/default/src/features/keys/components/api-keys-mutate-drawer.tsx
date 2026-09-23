@@ -338,11 +338,12 @@ export function ApiKeysMutateDrawer({
               />
 
               {gatewayEnabled && (
-                <FormField
-                  control={form.control}
-                  name='gateway_profile'
-                  render={({ field }) => (
-                    <FormItem>
+                <>
+                  <FormField
+                    control={form.control}
+                    name='gateway_profile'
+                    render={({ field }) => (
+                      <FormItem>
                       <FormLabel>{t('Gateway selection')}</FormLabel>
                       <FormControl>
                         <div className='grid min-w-0 gap-2 sm:grid-cols-2'>
@@ -377,9 +378,47 @@ export function ApiKeysMutateDrawer({
                         {t('Gateway mode works on the OpenAI-compatible chat endpoint only. Healthy routes are preferred when enough observations are available. Failed routes may be paused temporarily; retries stop before a response starts.')}
                       </FormDescription>
                       <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                      </FormItem>
+                    )}
+                  />
+                  <div className='grid gap-4 sm:grid-cols-2'>
+                    {([
+                      ['gateway_daily_limit', 'Daily request budget (USD)'],
+                      ['gateway_monthly_limit', 'Monthly request budget (USD)'],
+                      ['gateway_concurrency_limit', 'Concurrent requests'],
+                      ['gateway_warning_percent', 'Warning threshold (%)'],
+                    ] as const).map(([name, label]) => (
+                      <FormField
+                        key={name}
+                        control={form.control}
+                        name={name}
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>{t(label)}</FormLabel>
+                            <FormControl>
+                              <Input
+                                type='number'
+                                min={name === 'gateway_warning_percent' ? 1 : 0}
+                                max={name === 'gateway_warning_percent' ? 100 : undefined}
+                                step={name === 'gateway_warning_percent' || name === 'gateway_concurrency_limit' ? 1 : 0.01}
+                                value={field.value}
+                                onChange={(e) => field.onChange(Number(e.target.value) || 0)}
+                              />
+                            </FormControl>
+                            <FormDescription>
+                              {name === 'gateway_warning_percent'
+                                ? t('Warn when daily or monthly usage reaches this percentage of its USD budget')
+                                : name === 'gateway_concurrency_limit'
+                                  ? t('Maximum active requests; use 0 for unlimited')
+                                  : t('Enter the budget in USD; use 0 for unlimited')}
+                            </FormDescription>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    ))}
+                  </div>
+                </>
               )}
 
               {selectedGroup === 'auto' && (

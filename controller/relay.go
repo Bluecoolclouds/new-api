@@ -185,6 +185,31 @@ func Relay(c *gin.Context, relayFormat types.RelayFormat) {
 
 	// common.SetContextKey(c, constant.ContextKeyTokenCountMeta, meta)
 
+	if c.GetBool("gateway_enabled") {
+		// Also cover free models and failures before a billing session exists.
+		defer func() {
+			if relayInfo.GatewayBudget != nil {
+				if newAPIError != nil {
+					if relayInfo.Billing != nil {
+						relayInfo.Billing.Refund(c)
+					}
+					if err := relayInfo.GatewayBudget.Finish(0); err != nil {
+						common.SysError("gateway budget refund error: " + err.Error())
+					}
+				} else if err := relayInfo.GatewayBudget.Finish(0); err != nil {
+					common.SysError("gateway budget release error: " + err.Error())
+				}
+			}
+		}()
+		target := priceData.QuotaToPreConsume
+		if priceData.FreeModel {
+			target = 0
+		}
+		newAPIError = service.ReserveGatewayBudget(relayInfo, target)
+		if newAPIError != nil {
+			return
+		}
+	}
 	if priceData.FreeModel {
 		logger.LogInfo(c, fmt.Sprintf("模型 %s 免费，跳过预扣费", relayInfo.OriginModelName))
 	} else {
@@ -326,6 +351,10 @@ func Relay(c *gin.Context, relayFormat types.RelayFormat) {
 			break
 		}
 		if !price.FreeModel {
+			newAPIError = service.ReserveGatewayBudget(relayInfo, price.QuotaToPreConsume)
+			if newAPIError != nil {
+				break
+			}
 			if relayInfo.Billing == nil {
 				newAPIError = service.PreConsumeBilling(c, price.QuotaToPreConsume, relayInfo)
 			} else {
@@ -711,6 +740,15 @@ func RelayTask(c *gin.Context) {
 	defer func() {
 		if taskErr != nil && relayInfo.Billing != nil {
 			relayInfo.Billing.Refund(c)
+		}
+		if relayInfo.GatewayBudget != nil {
+			if taskErr != nil {
+				if err := relayInfo.GatewayBudget.Finish(0); err != nil {
+					common.SysError("gateway task budget refund error: " + err.Error())
+				}
+			} else if err := relayInfo.GatewayBudget.Finish(0); err != nil {
+				common.SysError("gateway task budget release error: " + err.Error())
+			}
 		}
 	}()
 

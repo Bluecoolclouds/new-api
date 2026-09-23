@@ -213,21 +213,25 @@ func AddToken(c *gin.Context) {
 		return
 	}
 	cleanToken := model.Token{
-		UserId:             c.GetInt("id"),
-		Name:               token.Name,
-		Key:                key,
-		CreatedTime:        common.GetTimestamp(),
-		AccessedTime:       common.GetTimestamp(),
-		ExpiredTime:        token.ExpiredTime,
-		RemainQuota:        token.RemainQuota,
-		UnlimitedQuota:     token.UnlimitedQuota,
-		ModelLimitsEnabled: token.ModelLimitsEnabled,
-		ModelLimits:        token.ModelLimits,
-		AllowIps:           token.AllowIps,
-		Group:              token.Group,
-		CrossGroupRetry:    token.CrossGroupRetry,
-		GatewayEnabled:     token.GatewayEnabled,
-		GatewayProfile:     token.GatewayProfile,
+		UserId:                  c.GetInt("id"),
+		Name:                    token.Name,
+		Key:                     key,
+		CreatedTime:             common.GetTimestamp(),
+		AccessedTime:            common.GetTimestamp(),
+		ExpiredTime:             token.ExpiredTime,
+		RemainQuota:             token.RemainQuota,
+		UnlimitedQuota:          token.UnlimitedQuota,
+		ModelLimitsEnabled:      token.ModelLimitsEnabled,
+		ModelLimits:             token.ModelLimits,
+		AllowIps:                token.AllowIps,
+		Group:                   token.Group,
+		CrossGroupRetry:         token.CrossGroupRetry,
+		GatewayEnabled:          token.GatewayEnabled,
+		GatewayProfile:          token.GatewayProfile,
+		GatewayDailyLimit:       token.GatewayDailyLimit,
+		GatewayMonthlyLimit:     token.GatewayMonthlyLimit,
+		GatewayWarningPercent:   token.GatewayWarningPercent,
+		GatewayConcurrencyLimit: token.GatewayConcurrencyLimit,
 	}
 	err = cleanToken.Insert()
 	if err != nil {
@@ -295,6 +299,18 @@ func UpdateToken(c *gin.Context) {
 		if _, supplied := fields["gateway_profile"]; !supplied {
 			token.GatewayProfile = cleanToken.GatewayProfile
 		}
+		if _, supplied := fields["gateway_daily_limit"]; !supplied {
+			token.GatewayDailyLimit = cleanToken.GatewayDailyLimit
+		}
+		if _, supplied := fields["gateway_monthly_limit"]; !supplied {
+			token.GatewayMonthlyLimit = cleanToken.GatewayMonthlyLimit
+		}
+		if _, supplied := fields["gateway_warning_percent"]; !supplied {
+			token.GatewayWarningPercent = cleanToken.GatewayWarningPercent
+		}
+		if _, supplied := fields["gateway_concurrency_limit"]; !supplied {
+			token.GatewayConcurrencyLimit = cleanToken.GatewayConcurrencyLimit
+		}
 		if err := token.ValidateGatewaySettings(); err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": err.Error()})
 			return
@@ -325,6 +341,10 @@ func UpdateToken(c *gin.Context) {
 		cleanToken.CrossGroupRetry = token.CrossGroupRetry
 		cleanToken.GatewayEnabled = token.GatewayEnabled
 		cleanToken.GatewayProfile = token.GatewayProfile
+		cleanToken.GatewayDailyLimit = token.GatewayDailyLimit
+		cleanToken.GatewayMonthlyLimit = token.GatewayMonthlyLimit
+		cleanToken.GatewayWarningPercent = token.GatewayWarningPercent
+		cleanToken.GatewayConcurrencyLimit = token.GatewayConcurrencyLimit
 	}
 	err = cleanToken.Update()
 	if err != nil {

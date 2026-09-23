@@ -18,6 +18,7 @@ For commercial licensing, please contact support@quantumnous.com
 */
 import { z } from 'zod'
 import type { TFunction } from 'i18next'
+import { getCurrencyDisplay } from '@/lib/currency'
 import { parseQuotaFromDollars, quotaUnitsToDollars } from '@/lib/format'
 import { DEFAULT_GROUP } from '../constants'
 import { type ApiKeyFormData, type ApiKey } from '../types'
@@ -39,6 +40,10 @@ export function getApiKeyFormSchema(t: TFunction) {
       cross_group_retry: z.boolean().optional(),
       gateway_enabled: z.boolean(),
       gateway_profile: z.enum(['cost', 'ordered', 'speed', 'reliable']),
+      gateway_daily_limit: z.number().min(0),
+      gateway_monthly_limit: z.number().min(0),
+      gateway_warning_percent: z.number().int().min(1).max(100),
+      gateway_concurrency_limit: z.number().int().min(0),
       tokenCount: z.number().min(1).optional(),
     })
     .superRefine((data, ctx) => {
@@ -80,6 +85,10 @@ export const API_KEY_FORM_DEFAULT_VALUES: ApiKeyFormValues = {
   cross_group_retry: true,
   gateway_enabled: false,
   gateway_profile: 'ordered',
+  gateway_daily_limit: 0,
+  gateway_monthly_limit: 0,
+  gateway_warning_percent: 80,
+  gateway_concurrency_limit: 0,
   tokenCount: 1,
 }
 
@@ -103,6 +112,7 @@ export function getApiKeyFormDefaultValues(
 export function transformFormDataToPayload(
   data: ApiKeyFormValues
 ): ApiKeyFormData {
+  const { config } = getCurrencyDisplay()
   return {
     name: data.name,
     remain_quota: data.unlimited_quota
@@ -119,6 +129,10 @@ export function transformFormDataToPayload(
     cross_group_retry: data.group === 'auto' ? !!data.cross_group_retry : false,
     gateway_enabled: data.gateway_enabled,
     gateway_profile: data.gateway_profile,
+    gateway_daily_limit: Math.round(data.gateway_daily_limit * config.quotaPerUnit),
+    gateway_monthly_limit: Math.round(data.gateway_monthly_limit * config.quotaPerUnit),
+    gateway_warning_percent: data.gateway_warning_percent,
+    gateway_concurrency_limit: data.gateway_concurrency_limit,
   }
 }
 
@@ -128,6 +142,7 @@ export function transformFormDataToPayload(
 export function transformApiKeyToFormDefaults(
   apiKey: ApiKey
 ): ApiKeyFormValues {
+  const { config } = getCurrencyDisplay()
   return {
     name: apiKey.name,
     remain_quota_dollars: apiKey.unlimited_quota
@@ -148,6 +163,10 @@ export function transformApiKeyToFormDefaults(
     gateway_profile: ['cost', 'speed', 'reliable'].includes(apiKey.gateway_profile)
       ? apiKey.gateway_profile
       : 'ordered',
+    gateway_daily_limit: (apiKey.gateway_daily_limit ?? 0) / config.quotaPerUnit,
+    gateway_monthly_limit: (apiKey.gateway_monthly_limit ?? 0) / config.quotaPerUnit,
+    gateway_warning_percent: apiKey.gateway_warning_percent ?? 80,
+    gateway_concurrency_limit: apiKey.gateway_concurrency_limit ?? 0,
     tokenCount: 1,
   }
 }

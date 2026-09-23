@@ -54,6 +54,13 @@ export const apiKeySchema = z.object({
     .optional()
     .default(false),
   gateway_profile: z.enum(['cost', 'ordered', 'speed', 'reliable']).optional().default('ordered'),
+  gateway_daily_limit: z.number().optional().default(0),
+  gateway_monthly_limit: z.number().optional().default(0),
+  gateway_warning_percent: z.number().optional().default(80),
+  gateway_concurrency_limit: z.number().optional().default(0),
+  gateway_daily_used: z.number().optional().default(0),
+  gateway_monthly_used: z.number().optional().default(0),
+  gateway_active_requests: z.number().optional().default(0),
 })
 
 export type ApiKey = z.infer<typeof apiKeySchema>
@@ -103,6 +110,10 @@ export interface ApiKeyFormData {
   cross_group_retry: boolean
   gateway_enabled: boolean
   gateway_profile: 'cost' | 'ordered' | 'speed' | 'reliable'
+  gateway_daily_limit: number
+  gateway_monthly_limit: number
+  gateway_warning_percent: number
+  gateway_concurrency_limit: number
 }
 
 // ============================================================================

@@ -21,6 +21,8 @@ import { Check, Copy, Loader2 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 import { copyToClipboard } from '@/lib/copy-to-clipboard'
+import { formatCurrencyUSD } from '@/lib/format'
+import { getCurrencyDisplay } from '@/lib/currency'
 import { Button } from '@/components/ui/button'
 import {
   Popover,
@@ -221,6 +223,46 @@ export function IpRestrictionsCell({ apiKey }: { apiKey: ApiKey }) {
             </div>
           ))}
         </div>
+      </TooltipContent>
+    </Tooltip>
+  )
+}
+
+export function GatewayBudgetCell({ apiKey }: { apiKey: ApiKey }) {
+  const { t } = useTranslation()
+  if (!apiKey.gateway_enabled) {
+    return <span className='text-muted-foreground text-xs'>-</span>
+  }
+
+  const dailyLimit = apiKey.gateway_daily_limit ?? 0
+  const monthlyLimit = apiKey.gateway_monthly_limit ?? 0
+  const dailyUsed = apiKey.gateway_daily_used ?? 0
+  const monthlyUsed = apiKey.gateway_monthly_used ?? 0
+  const { config } = getCurrencyDisplay()
+  const warning = apiKey.gateway_warning_percent ?? 80
+  const isWarning =
+    (dailyLimit > 0 && dailyUsed / dailyLimit * 100 >= warning) ||
+    (monthlyLimit > 0 && monthlyUsed / monthlyLimit * 100 >= warning)
+  const remaining = (limit: number, used: number) =>
+    limit > 0 ? formatCurrencyUSD(Math.max(0, limit - used) / config.quotaPerUnit) : '∞'
+  const formatted = (value: number) =>
+    value > 0 ? formatCurrencyUSD(value / config.quotaPerUnit) : '∞'
+
+  return (
+    <Tooltip>
+      <TooltipTrigger render={<div className='space-y-0.5 text-xs' />}>
+        <div className={isWarning ? 'text-amber-600 dark:text-amber-400' : ''}>
+          {t('D {{remaining}} left', { remaining: remaining(dailyLimit, dailyUsed) })}
+        </div>
+        <div className={isWarning ? 'text-amber-600 dark:text-amber-400' : 'text-muted-foreground'}>
+          {t('M {{remaining}} left', { remaining: remaining(monthlyLimit, monthlyUsed) })}
+        </div>
+      </TooltipTrigger>
+      <TooltipContent className='space-y-1 text-xs'>
+        <div>{t('Daily: {{used}} / {{limit}}', { used: formatted(dailyUsed), limit: formatted(dailyLimit) })}</div>
+        <div>{t('Monthly: {{used}} / {{limit}}', { used: formatted(monthlyUsed), limit: formatted(monthlyLimit) })}</div>
+        <div>{t('Active requests: {{count}}', { count: (apiKey.gateway_active_requests ?? 0).toLocaleString() })}</div>
+        {isWarning && <div className='font-medium text-amber-500'>{t('Budget warning reached')}</div>}
       </TooltipContent>
     </Tooltip>
   )

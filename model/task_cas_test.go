@@ -22,7 +22,6 @@ func TestMain(m *testing.M) {
 	DB = db
 	LOG_DB = db
 
-	common.UsingSQLite = true
 	common.RedisEnabled = false
 	common.BatchUpdateEnabled = false
 	common.LogConsumeEnabled = true

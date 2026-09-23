@@ -38,6 +38,7 @@ import {
   ApiKeyCell,
   ModelLimitsCell,
   IpRestrictionsCell,
+  GatewayBudgetCell,
 } from './api-keys-cells'
 import { DataTableRowActions } from './data-table-row-actions'
 
@@ -250,6 +251,15 @@ export function useApiKeysColumns(): ColumnDef<ApiKey>[] {
       cell: ({ row }) => <ModelLimitsCell apiKey={row.original} />,
       enableSorting: false,
       meta: { label: t('Models'), mobileHidden: true },
+    },
+    {
+      id: 'gateway_budget',
+      header: ({ column }) => (
+        <DataTableColumnHeader column={column} title={t('Gateway budget')} />
+      ),
+      cell: ({ row }) => <GatewayBudgetCell apiKey={row.original} />,
+      enableSorting: false,
+      meta: { label: t('Gateway budget'), mobileHidden: true },
     },
     {
       id: 'allow_ips',

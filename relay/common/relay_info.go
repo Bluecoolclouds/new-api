@@ -129,6 +129,11 @@ type RelayInfo struct {
 	// Billing 是计费会话，封装了预扣费/结算/退款的统一生命周期。
 	// 免费模型时为 nil。
 	Billing BillingSettler
+	// GatewayBudget tracks this request across model and channel retries.
+	GatewayBudget interface {
+		Reserve(int64) error
+		Finish(int64) error
+	}
 	// BillingSource indicates whether this request is billed from wallet quota or subscription.
 	// "" or "wallet" => wallet; "subscription" => subscription
 	BillingSource string
