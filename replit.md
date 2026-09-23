@@ -45,6 +45,20 @@ go build -buildvcs=false -o new-api .
 
 `widget.js` находится в `web/default/public/` — копируется в dist как есть. При изменениях нужен полный пересбор.
 
+## Запуск в Replit
+
+Нужен Go 1.25 и Bun. При чистом импорте выполните из корня проекта:
+
+```bash
+cd web/default && bun install --frozen-lockfile && DISABLE_ESLINT_PLUGIN=true bun run build
+cd ../..
+mkdir -p web/classic/dist
+printf '%s\n' '<!DOCTYPE html><html><head><title>New API</title></head><body><div id="root"></div></body></html>' > web/classic/dist/index.html
+go build -buildvcs=false -o new-api .
+```
+
+Затем запустите существующий workflow **Start application** (`PORT=5000 ./new-api`). Доступен основной интерфейс; classic-тема не собрана и заглушка нужна только для обязательного `go:embed` при компиляции. Локально используется SQLite (`one-api.db`, файл игнорируется Git), Redis не обязателен. На первом запуске пройдите мастер настройки в превью и самостоятельно создайте учётную запись администратора. Секрет `SESSION_SECRET` задавайте через Replit Secrets; провайдерские ключи и платёжные интеграции добавляются отдельно. Для публичной эксплуатации включите `SESSION_COOKIE_SECURE=true` и настройте постоянное хранилище данных.
+
 ## Кастомные компоненты APINET (защитить при upstream-мержах)
 
 - `web/default/src/features/home/` — лендинг с виджетом, убрана секция "Тарификация моделей"

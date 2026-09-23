@@ -1,18 +1,10 @@
 ---
 name: Go embed frontend rebuild
-description: Why frontend changes require rebuilding the Go binary, and the correct build sequence
+description: Why frontend changes require rebuilding the Go binary
 ---
 
-The Go binary uses `go:embed` to bundle the React frontend at compile time. This means:
+**Rule:** Rebuild the Go executable whenever the frontend is rebuilt; restarting an old executable will still serve the old frontend.
 
-**Rule:** Any change to `web/default/src/` requires BOTH steps:
-1. `cd web/default && DISABLE_ESLINT_PLUGIN=true node_modules/.bin/rsbuild build`
-2. `export PATH="/nix/store/60z37432vmgkg54krwr1z057bqwp7583-go-1.25.5/bin:$PATH" && GOPROXY=https://proxy.golang.org,direct GONOSUMDB='*' go build -buildvcs=false -o new-api .`
+**Why:** The server embeds the compiled frontend assets at compile time rather than reading them from disk at runtime.
 
-If you only rebuild the frontend but not Go, the running server continues to serve the OLD embedded assets.
-
-**Why:** `go:embed` snapshots the dist/ directory contents into the binary at link time. The web server does not read from disk at runtime.
-
-**Critical:** The Replit local package firewall (`package-firewall.replit.local`) blocks `golang.org/x/crypto` (all versions) with a CVE error. Using `GOPROXY=https://proxy.golang.org,direct` bypasses this and lets Go fetch from the real proxy.
-
-**How to apply:** Always run both commands sequentially after any frontend edit, then `restart_workflow "Start application"`.
+**How to apply:** After frontend changes, build the frontend first, then rebuild the Go server. Follow the project's current build instructions in replit.md. If Replit's package firewall blocks a pinned dependency, update to a compatible safe release rather than bypassing the firewall.
