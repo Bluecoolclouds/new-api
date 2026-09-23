@@ -395,6 +395,12 @@ func PostTextConsumeQuota(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, us
 		extraContent = append(extraContent, fmt.Sprintf("Image Generation Call 花费 %s", decimal.NewFromFloat(summary.ImageGenerationCallPrice).Mul(decimal.NewFromFloat(summary.GroupRatio)).Mul(decimal.NewFromFloat(common.QuotaPerUnit)).String()))
 	}
 
+	// Unexpected upstream tool metadata is not allowed to enlarge the guest contract.
+	// Keep the already reserved wallet amount ambiguous; do not emit a final bill or inflate used-quota counters.
+	if GuestServiceUser(relayInfo.UserId) && (summary.Quota < 0 || summary.Quota > int(relayInfo.PriceData.ModelPrice*500000+0.5)) {
+		logger.LogError(ctx, "guest final billing exceeds fixed reservation; retained for audit")
+		return
+	}
 	if summary.TotalTokens == 0 {
 		extraContent = append(extraContent, "上游没有返回计费信息，无法扣费（可能是上游超时）")
 		logger.LogError(ctx, fmt.Sprintf("total tokens is 0, cannot consume quota, userId %d, channelId %d, tokenId %d, model %s， pre-consumed quota %d", relayInfo.UserId, relayInfo.ChannelId, relayInfo.TokenId, summary.ModelName, relayInfo.FinalPreConsumedQuota))
@@ -403,8 +409,11 @@ func PostTextConsumeQuota(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, us
 		model.UpdateChannelUsedQuota(relayInfo.ChannelId, summary.Quota)
 	}
 
+	guestSettled := false
 	if err := SettleBilling(ctx, relayInfo, summary.Quota); err != nil {
 		logger.LogError(ctx, "error settling billing: "+err.Error())
+	} else {
+		guestSettled = GuestServiceUser(relayInfo.UserId)
 	}
 
 	logModel := summary.ModelName
@@ -492,6 +501,9 @@ func PostTextConsumeQuota(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, us
 		InjectTieredBillingInfo(other, relayInfo, tieredResult)
 	}
 
+	if guestSettled {
+		other["guest_settled"] = true
+	}
 	attachQuotaSaturation(ctx, relayInfo, other)
 
 	model.RecordConsumeLog(ctx, relayInfo.UserId, model.RecordConsumeLogParams{

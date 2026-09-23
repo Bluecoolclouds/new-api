@@ -451,6 +451,12 @@ func TokenAuth() func(c *gin.Context) {
 			return
 		}
 
+		guestRead := c.Request.Method == "GET" && (c.Request.URL.Path == "/v1/guest/catalog" || strings.HasPrefix(c.Request.URL.Path, "/v1/guest/receipts/"))
+		if service.GuestServiceUser(token.UserId) && !guestRead && (c.Request.Method != "POST" || c.Request.URL.Path != "/v1/chat/completions") {
+			abortWithOpenAiMessage(c, http.StatusForbidden, "guest endpoint denied")
+			return
+		}
+
 		userCache.WriteContext(c)
 
 		userGroup := userCache.Group

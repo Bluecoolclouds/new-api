@@ -156,6 +156,10 @@ func Relay(c *gin.Context, relayFormat types.RelayFormat) {
 		return
 	}
 
+	if newAPIError = service.ValidateGuestBilling(c, relayInfo); newAPIError != nil {
+		return
+	}
+
 	// common.SetContextKey(c, constant.ContextKeyTokenCountMeta, meta)
 
 	if priceData.FreeModel {
@@ -233,7 +237,7 @@ func Relay(c *gin.Context, relayFormat types.RelayFormat) {
 
 		processChannelError(c, *types.NewChannelError(channel.Id, channel.Type, channel.Name, channel.ChannelInfo.IsMultiKey, common.GetContextKeyString(c, constant.ContextKeyChannelKey), channel.GetAutoBan()), newAPIError)
 
-		if !shouldRetry(c, newAPIError, common.RetryTimes-retryParam.GetRetry()) {
+		if service.GuestServiceUser(relayInfo.UserId) || !shouldRetry(c, newAPIError, common.RetryTimes-retryParam.GetRetry()) {
 			break
 		}
 	}
