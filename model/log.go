@@ -348,10 +348,18 @@ func RecordConsumeLog(c *gin.Context, userId int, params RecordConsumeLogParams)
 		if params.Other == nil {
 			params.Other = make(map[string]interface{})
 		}
+		// Usage is logged inside the relay helper, before it returns success to
+		// the controller. The last dispatched attempt is the successful one.
+		attempts, _ := c.Value("gateway_attempts").([]map[string]interface{})
+		if len(attempts) > 0 && attempts[len(attempts)-1]["result"] == "pending" {
+			attempts[len(attempts)-1]["result"] = "success"
+		}
 		params.Other["gateway"] = map[string]interface{}{
 			"requested_model": "auto",
 			"selected_model":  selected,
 			"reason":          c.GetString("gateway_selection_reason"),
+			"fallback_reason": c.GetString("gateway_fallback_reason"),
+			"attempts":        attempts,
 		}
 	}
 	logger.LogInfo(c, fmt.Sprintf("record consume log: userId=%d, params=%s", userId, common.GetJsonString(params)))

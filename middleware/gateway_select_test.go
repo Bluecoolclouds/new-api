@@ -1,9 +1,12 @@
 package middleware
 
 import (
+	"net/http"
+	"net/http/httptest"
 	"testing"
 
 	"github.com/QuantumNous/new-api/model"
+	"github.com/gin-gonic/gin"
 )
 
 func TestGatewayKeyRequiresExplicitModels(t *testing.T) {
@@ -28,6 +31,19 @@ func TestGatewayKeyRequiresExplicitModels(t *testing.T) {
 				t.Fatalf("ValidateGatewaySettings() error=%v, valid=%v", err, tt.valid)
 			}
 		})
+	}
+}
+
+func TestGatewayFallbackCannotRevisitOrExpandTokenModels(t *testing.T) {
+	c, _ := gin.CreateTestContext(httptest.NewRecorder())
+	c.Request = httptest.NewRequest(http.MethodPost, "/v1/chat/completions", nil)
+	c.Set("gateway_models", []string{"gpt-4o", "gpt-4o-mini"})
+	c.Set("token_model_limit", map[string]bool{"gpt-4o": true})
+	// The only permitted model has already failed; the other configured
+	// candidate cannot be used after its token permission is removed.
+	name, channel, _, err := selectGatewayModelExcluding(c, "default", map[string]bool{"gpt-4o": true})
+	if err == nil || name != "" || channel != nil {
+		t.Fatalf("unauthorized fallback selected: %q %v %v", name, channel, err)
 	}
 }
 

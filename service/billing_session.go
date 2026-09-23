@@ -153,7 +153,7 @@ func (s *BillingSession) Reserve(targetQuota int) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	if s.settled || s.refunded || s.trusted || targetQuota <= s.preConsumedQuota {
+	if s.settled || s.refunded || targetQuota <= s.preConsumedQuota {
 		return nil
 	}
 
@@ -161,13 +161,21 @@ func (s *BillingSession) Reserve(targetQuota int) error {
 	if delta <= 0 {
 		return nil
 	}
-
-	if err := s.reserveFunding(delta); err != nil {
-		return err
-	}
-	if err := s.reserveToken(delta); err != nil {
-		s.rollbackFundingReserve(delta)
-		return err
+	if wallet, ok := s.funding.(*WalletFunding); ok {
+		if err := model.ReserveGatewayQuota(s.relayInfo.UserId, s.relayInfo.TokenId,
+			s.relayInfo.TokenKey, delta, true, s.relayInfo.TokenUnlimited); err != nil {
+			return err
+		}
+		wallet.consumed += delta
+	} else {
+		if err := s.reserveFunding(delta); err != nil {
+			return err
+		}
+		if err := model.ReserveGatewayQuota(s.relayInfo.UserId, s.relayInfo.TokenId,
+			s.relayInfo.TokenKey, delta, false, s.relayInfo.TokenUnlimited); err != nil {
+			s.rollbackFundingReserve(delta)
+			return err
+		}
 	}
 
 	s.preConsumedQuota += delta
@@ -266,16 +274,6 @@ func (s *BillingSession) rollbackFundingReserve(delta int) {
 			common.SysLog("error rolling back subscription funding reserve: " + err.Error())
 		}
 	}
-}
-
-func (s *BillingSession) reserveToken(delta int) error {
-	if delta <= 0 || s.relayInfo.IsPlayground {
-		return nil
-	}
-	if err := PreConsumeTokenQuota(s.relayInfo, delta); err != nil {
-		return types.NewErrorWithStatusCode(err, types.ErrorCodePreConsumeTokenQuotaFailed, http.StatusForbidden, types.ErrOptionWithSkipRetry(), types.ErrOptionWithNoRecordErrorLog())
-	}
-	return nil
 }
 
 // shouldTrust 统一信任额度检查，适用于钱包和订阅。

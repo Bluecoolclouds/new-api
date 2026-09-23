@@ -89,6 +89,9 @@ func Relay(c *gin.Context, relayFormat types.RelayFormat) {
 	defer func() {
 		if newAPIError != nil {
 			logger.LogError(c, fmt.Sprintf("relay error: %s", common.LocalLogPreview(newAPIError.Error())))
+			if c.Writer.Written() {
+				return // Never append a JSON error to a partial SSE response.
+			}
 			newAPIError.SetMessage(common.MessageWithRequestId(newAPIError.Error(), requestId))
 			switch relayFormat {
 			case types.RelayFormatOpenAIRealtime:
@@ -193,17 +196,24 @@ func Relay(c *gin.Context, relayFormat types.RelayFormat) {
 	}
 	relayInfo.RetryIndex = 0
 	relayInfo.LastError = nil
+	gateway := c.GetString("gateway_selected_model") != ""
+	attemptedModels := map[string]bool{relayInfo.OriginModelName: true}
+	var gatewayAttempts []map[string]interface{}
 
 	for ; retryParam.GetRetry() <= common.RetryTimes; retryParam.IncreaseRetry() {
 		relayInfo.RetryIndex = retryParam.GetRetry()
 		channel, channelErr := getChannel(c, relayInfo, retryParam)
 		if channelErr != nil {
 			logger.LogError(c, channelErr.Error())
-			newAPIError = channelErr
+			newAPIError = gatewayRetryChannelError(c, gateway, relayInfo.LastError, channelErr)
 			break
 		}
 
 		addUsedChannel(c, channel.Id)
+		if gateway {
+			gatewayAttempts = append(gatewayAttempts, gatewayAttempt(relayInfo.OriginModelName, channel.Id, "pending", 0))
+			c.Set("gateway_attempts", gatewayAttempts)
+		}
 		bodyStorage, bodyErr := common.GetBodyStorage(c)
 		if bodyErr != nil {
 			// Ensure consistent 413 for oversized bodies even when error occurs later (e.g., retry path)
@@ -212,6 +222,10 @@ func Relay(c *gin.Context, relayFormat types.RelayFormat) {
 			} else {
 				newAPIError = types.NewErrorWithStatusCode(bodyErr, types.ErrorCodeReadRequestBodyFailed, http.StatusBadRequest, types.ErrOptionWithSkipRetry())
 			}
+			break
+		}
+		if _, seekErr := bodyStorage.Seek(0, io.SeekStart); seekErr != nil {
+			newAPIError = types.NewError(seekErr, types.ErrorCodeReadRequestBodyFailed, types.ErrOptionWithSkipRetry())
 			break
 		}
 		c.Request.Body = io.NopCloser(bodyStorage)
@@ -228,17 +242,111 @@ func Relay(c *gin.Context, relayFormat types.RelayFormat) {
 		}
 
 		if newAPIError == nil {
+			if gateway {
+				gatewayAttempts[len(gatewayAttempts)-1]["result"] = "success"
+			}
 			relayInfo.LastError = nil
 			return
 		}
 
 		newAPIError = service.NormalizeViolationFeeError(newAPIError)
 		relayInfo.LastError = newAPIError
+		if gateway {
+			gatewayAttempts[len(gatewayAttempts)-1]["result"] = "error"
+			gatewayAttempts[len(gatewayAttempts)-1]["status_code"] = newAPIError.StatusCode
+		}
 
 		processChannelError(c, *types.NewChannelError(channel.Id, channel.Type, channel.Name, channel.ChannelInfo.IsMultiKey, common.GetContextKeyString(c, constant.ContextKeyChannelKey), channel.GetAutoBan()), newAPIError)
 
 		if !shouldRetry(c, newAPIError, common.RetryTimes-retryParam.GetRetry()) {
 			break
+		}
+	}
+	// Existing channel retries have finished. Never replay a partially sent
+	// response, a client-side failure, or a quota/validation failure.
+	for gateway && gatewayCanFallback(c, newAPIError) && len(attemptedModels) < len(c.GetStringSlice("gateway_models")) {
+		failedModel := relayInfo.OriginModelName
+		next, channel, err := middleware.SelectGatewayFallback(c, common.GetContextKeyString(c, constant.ContextKeyUsingGroup), attemptedModels)
+		if err != nil || channel == nil {
+			break
+		}
+		attemptedModels[next] = true
+		relayInfo.OriginModelName = next
+		relayInfo.Request.SetModelName(next)
+		relayInfo.InitChannelMeta(c)
+		price, priceErr := helper.ModelPriceHelper(c, relayInfo, tokens, meta)
+		if priceErr != nil {
+			newAPIError = types.NewError(priceErr, types.ErrorCodeModelPriceError, types.ErrOptionWithStatusCode(http.StatusBadRequest))
+			break
+		}
+		// Deferred batch updates do not provide an atomic balance to reserve
+		// against. Refuse only transitions that require more funding, before
+		// sending anything to the replacement provider.
+		if common.BatchUpdateEnabled && !price.FreeModel &&
+			(relayInfo.Billing == nil || price.QuotaToPreConsume > relayInfo.Billing.GetPreConsumedQuota()) {
+			newAPIError = types.NewErrorWithStatusCode(
+				fmt.Errorf("AI Gateway fallback requiring a new quota reservation is unavailable with batch quota updates"),
+				types.ErrorCodeUpdateDataError, http.StatusServiceUnavailable, types.ErrOptionWithSkipRetry())
+			break
+		}
+		if !price.FreeModel {
+			if relayInfo.Billing == nil {
+				newAPIError = service.PreConsumeBilling(c, price.QuotaToPreConsume, relayInfo)
+			} else {
+				newAPIError = service.ReserveGatewayQuota(relayInfo, price.QuotaToPreConsume)
+			}
+			if newAPIError != nil {
+				break
+			}
+		}
+		c.Set("gateway_selected_model", next)
+		c.Set("gateway_fallback_reason", fmt.Sprintf("upstream_error_%d", relayInfo.LastError.StatusCode))
+		c.Header("X-AI-Gateway-Model", next)
+		c.Header("X-AI-Gateway-Reason", "upstream_fallback")
+		logger.LogInfo(c, fmt.Sprintf("AI Gateway fallback %s -> %s (%s)", failedModel, next, c.GetString("gateway_fallback_reason")))
+		retryParam.ModelName = next
+		retryParam.SetRetry(0)
+		common.SetContextKey(c, constant.ContextKeyAutoGroupIndex, 0)
+		common.SetContextKey(c, constant.ContextKeyAutoGroupRetryIndex, 0)
+		// The channel was selected with live group/model availability. Try it
+		// before ordinary channel retries resume.
+		for ; retryParam.GetRetry() <= common.RetryTimes; retryParam.IncreaseRetry() {
+			relayInfo.RetryIndex = retryParam.GetRetry()
+			if retryParam.GetRetry() > 0 {
+				var channelErr *types.NewAPIError
+				channel, channelErr = getChannel(c, relayInfo, retryParam)
+				if channelErr != nil {
+					newAPIError = gatewayRetryChannelError(c, true, relayInfo.LastError, channelErr)
+					break
+				}
+			}
+			addUsedChannel(c, channel.Id)
+			gatewayAttempts = append(gatewayAttempts, gatewayAttempt(next, channel.Id, "pending", 0))
+			c.Set("gateway_attempts", gatewayAttempts)
+			bodyStorage, bodyErr := common.GetBodyStorage(c)
+			if bodyErr != nil {
+				newAPIError = types.NewError(bodyErr, types.ErrorCodeReadRequestBodyFailed, types.ErrOptionWithSkipRetry())
+				break
+			}
+			if _, seekErr := bodyStorage.Seek(0, io.SeekStart); seekErr != nil {
+				newAPIError = types.NewError(seekErr, types.ErrorCodeReadRequestBodyFailed, types.ErrOptionWithSkipRetry())
+				break
+			}
+			c.Request.Body = io.NopCloser(bodyStorage)
+			newAPIError = relayHandler(c, relayInfo)
+			if newAPIError == nil {
+				gatewayAttempts[len(gatewayAttempts)-1]["result"] = "success"
+				relayInfo.LastError = nil
+				return
+			}
+			newAPIError = service.NormalizeViolationFeeError(newAPIError)
+			relayInfo.LastError = newAPIError
+			gatewayAttempts[len(gatewayAttempts)-1]["result"] = "error"
+			gatewayAttempts[len(gatewayAttempts)-1]["status_code"] = newAPIError.StatusCode
+			processChannelError(c, *types.NewChannelError(channel.Id, channel.Type, channel.Name, channel.ChannelInfo.IsMultiKey, common.GetContextKeyString(c, constant.ContextKeyChannelKey), channel.GetAutoBan()), newAPIError)
+			if !shouldRetry(c, newAPIError, common.RetryTimes-retryParam.GetRetry()) {
+				break
+			}
 		}
 	}
 
@@ -332,6 +440,9 @@ func shouldRetry(c *gin.Context, openaiErr *types.NewAPIError, retryTimes int) b
 	if openaiErr == nil {
 		return false
 	}
+	if c.Writer.Written() || c.Request.Context().Err() != nil {
+		return false
+	}
 	if service.ShouldSkipRetryAfterChannelAffinityFailure(c) {
 		return false
 	}
@@ -358,6 +469,31 @@ func shouldRetry(c *gin.Context, openaiErr *types.NewAPIError, retryTimes int) b
 		return false
 	}
 	return operation_setting.ShouldRetryByStatusCode(code)
+}
+
+func gatewayCanFallback(c *gin.Context, err *types.NewAPIError) bool {
+	if err == nil {
+		return false
+	}
+	code := err.GetErrorCode()
+	upstreamFailure := code == types.ErrorCodeDoRequestFailed || code == types.ErrorCodeBadResponseStatusCode ||
+		code == types.ErrorCodeBadResponse || code == types.ErrorCodeReadResponseBodyFailed ||
+		code == types.ErrorCodeEmptyResponse
+	return upstreamFailure &&
+		!c.Writer.Written() && c.Request.Context().Err() == nil &&
+		!types.IsSkipRetryError(err) && !operation_setting.IsAlwaysSkipRetryCode(err.GetErrorCode()) &&
+		(err.StatusCode == http.StatusTooManyRequests || err.StatusCode >= 500 && err.StatusCode <= 599)
+}
+
+func gatewayRetryChannelError(c *gin.Context, gateway bool, lastUpstream, channelErr *types.NewAPIError) *types.NewAPIError {
+	if gateway && gatewayCanFallback(c, lastUpstream) {
+		return lastUpstream
+	}
+	return channelErr
+}
+
+func gatewayAttempt(name string, channelID int, result string, status int) map[string]interface{} {
+	return map[string]interface{}{"model": name, "channel_id": channelID, "result": result, "status_code": status}
 }
 
 func processChannelError(c *gin.Context, channelError types.ChannelError, err *types.NewAPIError) {
@@ -388,6 +524,10 @@ func processChannelError(c *gin.Context, channelError types.ChannelError, err *t
 		other["channel_id"] = channelId
 		other["channel_name"] = c.GetString("channel_name")
 		other["channel_type"] = c.GetInt("channel_type")
+		if c.GetString("gateway_selected_model") != "" {
+			other["gateway_attempts"] = c.Value("gateway_attempts")
+			other["gateway_fallback_reason"] = c.GetString("gateway_fallback_reason")
+		}
 		adminInfo := make(map[string]interface{})
 		adminInfo["use_channel"] = c.GetStringSlice("use_channel")
 		isMultiKey := common.GetContextKeyBool(c, constant.ContextKeyChannelIsMultiKey)

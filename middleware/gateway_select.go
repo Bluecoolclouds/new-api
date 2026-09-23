@@ -47,6 +47,18 @@ func orderGatewayCandidates(names []string, profile string) []gatewayCandidate {
 }
 
 func selectGatewayModel(c *gin.Context, group string) (string, *model.Channel, string, error) {
+	return selectGatewayModelExcluding(c, group, nil)
+}
+
+// SelectGatewayFallback selects another explicitly permitted, priced model.
+func SelectGatewayFallback(c *gin.Context, group string, excluded map[string]bool) (string, *model.Channel, error) {
+	name, channel, _, err := selectGatewayModelExcluding(c, group, excluded)
+	return name, channel, err
+}
+
+// selectGatewayModelExcluding rechecks both token permissions and live channel
+// availability on every transition; a failed model is never selected twice.
+func selectGatewayModelExcluding(c *gin.Context, group string, excluded map[string]bool) (string, *model.Channel, string, error) {
 	names := c.GetStringSlice("gateway_models")
 	if len(names) == 0 {
 		return "", nil, "", fmt.Errorf("AI Gateway key has no allowed models")
@@ -61,7 +73,16 @@ func selectGatewayModel(c *gin.Context, group string) (string, *model.Channel, s
 		reason = "lower_configured_price"
 	}
 	for _, candidate := range orderGatewayCandidates(names, profile) {
-		if !candidate.priced {
+		if !candidate.priced || excluded[candidate.name] {
+			continue
+		}
+		limits, ok := c.Get("token_model_limit")
+		if !ok {
+			// Gateway keys always have explicit model limits.
+			return "", nil, "", fmt.Errorf("AI Gateway key has no model permissions")
+		}
+		allowed, ok := limits.(map[string]bool)
+		if !ok || !allowed[candidate.name] {
 			continue
 		}
 		// The token's model limit is the entire candidate set; never expand it

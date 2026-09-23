@@ -28,6 +28,23 @@ func ReturnPreConsumedQuota(c *gin.Context, relayInfo *relaycommon.RelayInfo) {
 	}
 }
 
+// ReserveGatewayQuota increases the one request's existing reservation rather
+// than starting a second billing session (and risking a second charge).
+func ReserveGatewayQuota(info *relaycommon.RelayInfo, target int) *types.NewAPIError {
+	if info.Billing == nil {
+		return types.NewError(fmt.Errorf("missing billing session"), types.ErrorCodeUpdateDataError, types.ErrOptionWithSkipRetry())
+	}
+	if common.BatchUpdateEnabled && target > info.Billing.GetPreConsumedQuota() {
+		return types.NewErrorWithStatusCode(fmt.Errorf("atomic AI Gateway reservation unavailable with batch quota updates"),
+			types.ErrorCodeUpdateDataError, http.StatusServiceUnavailable, types.ErrOptionWithSkipRetry())
+	}
+	if err := info.Billing.Reserve(target); err != nil {
+		return types.NewErrorWithStatusCode(err, types.ErrorCodeInsufficientUserQuota, http.StatusForbidden,
+			types.ErrOptionWithSkipRetry(), types.ErrOptionWithNoRecordErrorLog())
+	}
+	return nil
+}
+
 // PreConsumeQuota checks if the user has enough quota to pre-consume.
 // It returns the pre-consumed quota if successful, or an error if not.
 func PreConsumeQuota(c *gin.Context, preConsumedQuota int, relayInfo *relaycommon.RelayInfo) *types.NewAPIError {
