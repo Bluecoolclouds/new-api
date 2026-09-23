@@ -38,7 +38,7 @@ export function getApiKeyFormSchema(t: TFunction) {
       group: z.string().optional(),
       cross_group_retry: z.boolean().optional(),
       gateway_enabled: z.boolean(),
-      gateway_profile: z.enum(['cost', 'ordered']),
+      gateway_profile: z.enum(['cost', 'ordered', 'speed', 'reliable']),
       tokenCount: z.number().min(1).optional(),
     })
     .superRefine((data, ctx) => {
@@ -145,7 +145,9 @@ export function transformApiKeyToFormDefaults(
     group: apiKey.group || DEFAULT_GROUP,
     cross_group_retry: !!apiKey.cross_group_retry,
     gateway_enabled: apiKey.gateway_enabled === true,
-    gateway_profile: apiKey.gateway_profile === 'cost' ? 'cost' : 'ordered',
+    gateway_profile: ['cost', 'speed', 'reliable'].includes(apiKey.gateway_profile)
+      ? apiKey.gateway_profile
+      : 'ordered',
     tokenCount: 1,
   }
 }

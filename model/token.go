@@ -42,7 +42,7 @@ func (token *Token) ValidateGatewaySettings() error {
 	if token.GatewayProfile == "" {
 		token.GatewayProfile = "ordered"
 	}
-	if token.GatewayProfile != "ordered" && token.GatewayProfile != "cost" {
+	if token.GatewayProfile != "ordered" && token.GatewayProfile != "cost" && token.GatewayProfile != "speed" && token.GatewayProfile != "reliable" {
 		return fmt.Errorf("invalid AI Gateway preference")
 	}
 	if !token.ModelLimitsEnabled || len(token.GetModelLimits()) == 0 {

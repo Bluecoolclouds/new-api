@@ -9,3 +9,4 @@
 
 - [Bulk upstream sync verification](bulk-upstream-sync-verification.md) — commit-range diff isn't enough; always full-build + hash-diff after bulk syncing many upstream commits at once
 - [Gateway auto model compatibility](gateway-auto-compatibility.md) — interpret `auto` as model selection only for Gateway keys; ordinary keys may route a literal model named `auto`
+- [Gateway channel health scope](gateway-channel-health-scope.md) — cooldown and recovery probes are process-local; coordinate health across replicas if multi-instance routing needs consistent decisions

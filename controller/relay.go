@@ -1,12 +1,14 @@
 package controller
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"io"
 	"log"
 	"net/http"
 	"strings"
+	"sync/atomic"
 	"time"
 
 	"github.com/QuantumNous/new-api/common"
@@ -66,6 +68,22 @@ func geminiRelayHandler(c *gin.Context, info *relaycommon.RelayInfo) *types.NewA
 }
 
 func Relay(c *gin.Context, relayFormat types.RelayFormat) {
+	if c.GetString("gateway_selected_model") != "" {
+		// Only the pre-response phase has a hard timeout. Once streaming starts,
+		// the client's original deadline controls the remainder of the stream.
+		ctx, cancel := context.WithCancel(c.Request.Context())
+		firstByte := &atomic.Bool{}
+		timer := time.AfterFunc(30*time.Second, func() {
+			if !firstByte.Load() {
+				cancel()
+			}
+		})
+		c.Writer = &gatewayResponseWriter{ResponseWriter: c.Writer, firstByte: firstByte, timer: timer}
+		c.Request = c.Request.WithContext(ctx)
+		defer cancel()
+		defer timer.Stop()
+		defer middleware.ReleaseGatewayProbe(c.GetInt("channel_id"))
+	}
 
 	requestId := c.GetString(common.RequestIdKey)
 	//group := common.GetContextKeyString(c, constant.ContextKeyUsingGroup)
@@ -197,10 +215,12 @@ func Relay(c *gin.Context, relayFormat types.RelayFormat) {
 	relayInfo.RetryIndex = 0
 	relayInfo.LastError = nil
 	gateway := c.GetString("gateway_selected_model") != ""
+	gatewayDeadline := time.Now().Add(30 * time.Second)
+	gatewayAttemptCount := 0
 	attemptedModels := map[string]bool{relayInfo.OriginModelName: true}
 	var gatewayAttempts []map[string]interface{}
 
-	for ; retryParam.GetRetry() <= common.RetryTimes; retryParam.IncreaseRetry() {
+	for ; retryParam.GetRetry() <= common.RetryTimes && (!gateway || gatewayAttemptCount < 3 && time.Now().Before(gatewayDeadline)); retryParam.IncreaseRetry() {
 		relayInfo.RetryIndex = retryParam.GetRetry()
 		channel, channelErr := getChannel(c, relayInfo, retryParam)
 		if channelErr != nil {
@@ -210,7 +230,9 @@ func Relay(c *gin.Context, relayFormat types.RelayFormat) {
 		}
 
 		addUsedChannel(c, channel.Id)
+		attemptStart := time.Now()
 		if gateway {
+			gatewayAttemptCount++
 			gatewayAttempts = append(gatewayAttempts, gatewayAttempt(relayInfo.OriginModelName, channel.Id, "pending", 0))
 			c.Set("gateway_attempts", gatewayAttempts)
 		}
@@ -244,6 +266,7 @@ func Relay(c *gin.Context, relayFormat types.RelayFormat) {
 		if newAPIError == nil {
 			if gateway {
 				gatewayAttempts[len(gatewayAttempts)-1]["result"] = "success"
+				middleware.RecordGatewayChannel(channel.Id, true, time.Since(attemptStart).Milliseconds(), gatewayTTFT(relayInfo, attemptStart))
 			}
 			relayInfo.LastError = nil
 			return
@@ -254,22 +277,28 @@ func Relay(c *gin.Context, relayFormat types.RelayFormat) {
 		if gateway {
 			gatewayAttempts[len(gatewayAttempts)-1]["result"] = "error"
 			gatewayAttempts[len(gatewayAttempts)-1]["status_code"] = newAPIError.StatusCode
+			if gatewayCanFallback(c, newAPIError) {
+				middleware.RecordGatewayChannel(channel.Id, false, time.Since(attemptStart).Milliseconds(), 0)
+			} else {
+				middleware.ReleaseGatewayProbe(channel.Id)
+			}
 		}
 
 		processChannelError(c, *types.NewChannelError(channel.Id, channel.Type, channel.Name, channel.ChannelInfo.IsMultiKey, common.GetContextKeyString(c, constant.ContextKeyChannelKey), channel.GetAutoBan()), newAPIError)
 
-		if !shouldRetry(c, newAPIError, common.RetryTimes-retryParam.GetRetry()) {
+		if gateway || !shouldRetry(c, newAPIError, common.RetryTimes-retryParam.GetRetry()) {
 			break
 		}
 	}
 	// Existing channel retries have finished. Never replay a partially sent
 	// response, a client-side failure, or a quota/validation failure.
-	for gateway && gatewayCanFallback(c, newAPIError) && len(attemptedModels) < len(c.GetStringSlice("gateway_models")) {
+	for gateway && gatewayAttemptCount < 3 && time.Now().Before(gatewayDeadline) && gatewayCanFallback(c, newAPIError) && len(attemptedModels) < len(c.GetStringSlice("gateway_models")) {
 		failedModel := relayInfo.OriginModelName
-		next, channel, err := middleware.SelectGatewayFallback(c, common.GetContextKeyString(c, constant.ContextKeyUsingGroup), attemptedModels)
+		next, channel, selectionReason, err := middleware.SelectGatewayFallback(c, common.GetContextKeyString(c, constant.ContextKeyUsingGroup), attemptedModels)
 		if err != nil || channel == nil {
 			break
 		}
+		defer middleware.ReleaseGatewayProbe(channel.Id)
 		attemptedModels[next] = true
 		relayInfo.OriginModelName = next
 		relayInfo.Request.SetModelName(next)
@@ -300,17 +329,18 @@ func Relay(c *gin.Context, relayFormat types.RelayFormat) {
 			}
 		}
 		c.Set("gateway_selected_model", next)
+		c.Set("gateway_selection_reason", selectionReason)
 		c.Set("gateway_fallback_reason", fmt.Sprintf("upstream_error_%d", relayInfo.LastError.StatusCode))
 		c.Header("X-AI-Gateway-Model", next)
 		c.Header("X-AI-Gateway-Reason", "upstream_fallback")
-		logger.LogInfo(c, fmt.Sprintf("AI Gateway fallback %s -> %s (%s)", failedModel, next, c.GetString("gateway_fallback_reason")))
+		logger.LogInfo(c, fmt.Sprintf("AI Gateway fallback %s -> %s channel=%d reason=%s (%s) exclusions=%v", failedModel, next, channel.Id, selectionReason, c.GetString("gateway_fallback_reason"), c.Value("gateway_exclusions")))
 		retryParam.ModelName = next
 		retryParam.SetRetry(0)
 		common.SetContextKey(c, constant.ContextKeyAutoGroupIndex, 0)
 		common.SetContextKey(c, constant.ContextKeyAutoGroupRetryIndex, 0)
 		// The channel was selected with live group/model availability. Try it
 		// before ordinary channel retries resume.
-		for ; retryParam.GetRetry() <= common.RetryTimes; retryParam.IncreaseRetry() {
+		for ; retryParam.GetRetry() <= common.RetryTimes && gatewayAttemptCount < 3 && time.Now().Before(gatewayDeadline); retryParam.IncreaseRetry() {
 			relayInfo.RetryIndex = retryParam.GetRetry()
 			if retryParam.GetRetry() > 0 {
 				var channelErr *types.NewAPIError
@@ -321,6 +351,8 @@ func Relay(c *gin.Context, relayFormat types.RelayFormat) {
 				}
 			}
 			addUsedChannel(c, channel.Id)
+			attemptStart := time.Now()
+			gatewayAttemptCount++
 			gatewayAttempts = append(gatewayAttempts, gatewayAttempt(next, channel.Id, "pending", 0))
 			c.Set("gateway_attempts", gatewayAttempts)
 			bodyStorage, bodyErr := common.GetBodyStorage(c)
@@ -336,6 +368,7 @@ func Relay(c *gin.Context, relayFormat types.RelayFormat) {
 			newAPIError = relayHandler(c, relayInfo)
 			if newAPIError == nil {
 				gatewayAttempts[len(gatewayAttempts)-1]["result"] = "success"
+				middleware.RecordGatewayChannel(channel.Id, true, time.Since(attemptStart).Milliseconds(), gatewayTTFT(relayInfo, attemptStart))
 				relayInfo.LastError = nil
 				return
 			}
@@ -343,8 +376,13 @@ func Relay(c *gin.Context, relayFormat types.RelayFormat) {
 			relayInfo.LastError = newAPIError
 			gatewayAttempts[len(gatewayAttempts)-1]["result"] = "error"
 			gatewayAttempts[len(gatewayAttempts)-1]["status_code"] = newAPIError.StatusCode
+			if gatewayCanFallback(c, newAPIError) {
+				middleware.RecordGatewayChannel(channel.Id, false, time.Since(attemptStart).Milliseconds(), 0)
+			} else {
+				middleware.ReleaseGatewayProbe(channel.Id)
+			}
 			processChannelError(c, *types.NewChannelError(channel.Id, channel.Type, channel.Name, channel.ChannelInfo.IsMultiKey, common.GetContextKeyString(c, constant.ContextKeyChannelKey), channel.GetAutoBan()), newAPIError)
-			if !shouldRetry(c, newAPIError, common.RetryTimes-retryParam.GetRetry()) {
+			if gateway || !shouldRetry(c, newAPIError, common.RetryTimes-retryParam.GetRetry()) {
 				break
 			}
 		}
@@ -360,6 +398,13 @@ func Relay(c *gin.Context, relayFormat types.RelayFormat) {
 			perfmetrics.RecordRelaySample(relayInfo, false, 0)
 		})
 	}
+}
+
+func gatewayTTFT(info *relaycommon.RelayInfo, started time.Time) int64 {
+	if info.IsStream && info.HasSendResponse() && !info.FirstResponseTime.Before(started) {
+		return info.FirstResponseTime.Sub(started).Milliseconds()
+	}
+	return 0
 }
 
 var upgrader = websocket.Upgrader{
@@ -527,6 +572,8 @@ func processChannelError(c *gin.Context, channelError types.ChannelError, err *t
 		if c.GetString("gateway_selected_model") != "" {
 			other["gateway_attempts"] = c.Value("gateway_attempts")
 			other["gateway_fallback_reason"] = c.GetString("gateway_fallback_reason")
+			other["gateway_selection_reason"] = c.GetString("gateway_selection_reason")
+			other["gateway_exclusions"] = c.Value("gateway_exclusions")
 		}
 		adminInfo := make(map[string]interface{})
 		adminInfo["use_channel"] = c.GetStringSlice("use_channel")

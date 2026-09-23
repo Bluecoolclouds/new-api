@@ -346,7 +346,7 @@ export function ApiKeysMutateDrawer({
                       <FormLabel>{t('Gateway selection')}</FormLabel>
                       <FormControl>
                         <div className='grid min-w-0 gap-2 sm:grid-cols-2'>
-                          {(['ordered', 'cost'] as const).map((profile) => (
+                          {(['ordered', 'cost', 'speed', 'reliable'] as const).map((profile) => (
                             <Button
                               key={profile}
                               type='button'
@@ -357,14 +357,16 @@ export function ApiKeysMutateDrawer({
                             >
                               <span className='flex min-w-0 flex-col gap-0.5'>
                                 <span className='text-sm font-medium'>
-                                  {profile === 'ordered' ? t('Ordered') : t('Cost-aware')}
+                                  {profile === 'ordered' ? t('Ordered') : profile === 'cost' ? t('Cost-aware') : profile === 'speed' ? t('Fast') : t('Reliable')}
                                 </span>
                                 <span className='text-muted-foreground break-words text-xs font-normal'>
                                   {profile === 'ordered'
                                     ? t('Keep the selected model order')
-                                    : t(
-                                        'Prefer lower configured price when billing modes are comparable'
-                                      )}
+                                    : profile === 'cost'
+                                      ? t('Prefer lower configured price when billing modes are comparable')
+                                      : profile === 'speed'
+                                        ? t('Prefer shorter time to first response on healthy routes')
+                                        : t('Prefer successful healthy routes')}
                                 </span>
                               </span>
                             </Button>
@@ -372,7 +374,7 @@ export function ApiKeysMutateDrawer({
                         </div>
                       </FormControl>
                       <FormDescription>
-                        {t('Gateway mode works on the OpenAI-compatible chat endpoint only. It does not add latency optimization, answer cache, or runtime fallback.')}
+                        {t('Gateway mode works on the OpenAI-compatible chat endpoint only. Healthy routes are preferred when enough observations are available. Failed routes may be paused temporarily; retries stop before a response starts.')}
                       </FormDescription>
                       <FormMessage />
                     </FormItem>

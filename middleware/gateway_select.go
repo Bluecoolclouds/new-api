@@ -2,8 +2,11 @@ package middleware
 
 import (
 	"fmt"
+	"math/rand"
 	"sort"
 	"strings"
+	"sync"
+	"time"
 
 	"github.com/QuantumNous/new-api/common"
 	"github.com/QuantumNous/new-api/constant"
@@ -19,6 +22,149 @@ type gatewayCandidate struct {
 	price  float64
 	fixed  bool
 	priced bool
+}
+
+type gatewayChoice struct {
+	candidate gatewayCandidate
+	channel   *model.Channel
+	group     string
+	score     float64
+	reason    string
+}
+
+// weightedGatewayChoice preserves the channel weights inside the highest
+// available priority tier. A zero-weight tier is sampled uniformly.
+func weightedGatewayChoice(choices []gatewayChoice, randomInt func(int) int) gatewayChoice {
+	total := 0
+	for _, c := range choices {
+		if c.channel.GetWeight() > 0 {
+			total += c.channel.GetWeight()
+		}
+	}
+	if total == 0 {
+		return choices[randomInt(len(choices))]
+	}
+	n := randomInt(total)
+	for _, c := range choices {
+		n -= c.channel.GetWeight()
+		if n < 0 {
+			return c
+		}
+	}
+	return choices[len(choices)-1]
+}
+
+func selectGatewayChoice(choices []gatewayChoice, profile string, randomInt func(int) int) gatewayChoice {
+	// Keep only the highest currently healthy priority for each model/group.
+	// Within auto groups, prefer the first usable group as before.
+	eligible := make([]gatewayChoice, 0, len(choices))
+	for _, c := range choices {
+		firstGroup := ""
+		maxPriority := c.channel.GetPriority()
+		for _, other := range choices {
+			if other.candidate.name == c.candidate.name {
+				firstGroup = other.group
+				break
+			}
+		}
+		if c.group != firstGroup {
+			continue
+		}
+		for _, other := range choices {
+			if other.candidate.name == c.candidate.name && other.group == c.group && other.channel.GetPriority() > maxPriority {
+				maxPriority = other.channel.GetPriority()
+			}
+		}
+		if c.channel.GetPriority() == maxPriority {
+			eligible = append(eligible, c)
+		}
+	}
+	baseline := eligible[0]
+	modelChoices := make([]gatewayChoice, 0, len(eligible))
+	for _, c := range eligible {
+		if c.candidate.name == baseline.candidate.name {
+			modelChoices = append(modelChoices, c)
+		}
+	}
+	if profile != "speed" && profile != "reliable" {
+		return weightedGatewayChoice(modelChoices, randomInt)
+	}
+	// One in ten calls explores the configured candidate set, weighted within
+	// its priority tier. This allows cold healthy channels to reach eight
+	// observations without letting a few lucky fast calls dominate traffic.
+	if randomInt(10) == 0 {
+		return weightedGatewayChoice(eligible, randomInt)
+	}
+	best := baseline
+	for _, c := range eligible {
+		if c.score > best.score {
+			best = c
+		}
+	}
+	if best.score > baseline.score*1.15+0.01 {
+		nearBest := make([]gatewayChoice, 0, len(eligible))
+		for _, c := range eligible {
+			if c.score >= best.score/1.15-0.01 {
+				nearBest = append(nearBest, c)
+			}
+		}
+		return weightedGatewayChoice(nearBest, randomInt)
+	}
+	return weightedGatewayChoice(modelChoices, randomInt)
+}
+
+type gatewayModelStats struct {
+	score float64
+	until time.Time
+}
+
+var gatewayStatsCache = struct {
+	sync.Mutex
+	values map[string]gatewayModelStats
+}{values: make(map[string]gatewayModelStats)}
+
+// Aggregate model metrics are a weak prior; live per-channel observations
+// decide the route once there is enough evidence.
+func gatewayModelScore(name, group, profile string) float64 {
+	key := group + "\x00" + name + "\x00" + profile
+	gatewayStatsCache.Lock()
+	if entry, ok := gatewayStatsCache.values[key]; ok && time.Now().Before(entry.until) {
+		gatewayStatsCache.Unlock()
+		return entry.score
+	}
+	gatewayStatsCache.Unlock()
+	rows, err := model.GetPerfMetrics(name, group, time.Now().Add(-2*time.Hour).Unix(), time.Now().Unix())
+	var n, okCount, latency, ttft, ttftCount int64
+	if err == nil {
+		for _, row := range rows {
+			n += row.RequestCount
+			okCount += row.SuccessCount
+			latency += row.TotalLatencyMs
+			ttft += row.TtftSumMs
+			ttftCount += row.TtftCount
+		}
+	}
+	score := 0.0
+	if n >= 20 {
+		delay := float64(latency) / float64(n)
+		if profile == "speed" && ttftCount >= 8 {
+			delay = float64(ttft) / float64(ttftCount)
+		}
+		if delay < 100 {
+			delay = 100
+		}
+		if delay > 30000 {
+			delay = 30000
+		}
+		score = (float64(okCount+8) / float64(n+10)) * 1000 / (500 + delay)
+	}
+	gatewayStatsCache.Lock()
+	if len(gatewayStatsCache.values) > 2048 {
+		gatewayStatsCache.values = make(map[string]gatewayModelStats)
+	}
+	gatewayStatsCache.values[key] = gatewayModelStats{score, time.Now().Add(30 * time.Second)}
+	gatewayStatsCache.Unlock()
+	return score
 }
 
 // Cost ordering compares only like-for-like billing modes. Fixed-price calls
@@ -51,9 +197,8 @@ func selectGatewayModel(c *gin.Context, group string) (string, *model.Channel, s
 }
 
 // SelectGatewayFallback selects another explicitly permitted, priced model.
-func SelectGatewayFallback(c *gin.Context, group string, excluded map[string]bool) (string, *model.Channel, error) {
-	name, channel, _, err := selectGatewayModelExcluding(c, group, excluded)
-	return name, channel, err
+func SelectGatewayFallback(c *gin.Context, group string, excluded map[string]bool) (string, *model.Channel, string, error) {
+	return selectGatewayModelExcluding(c, group, excluded)
 }
 
 // selectGatewayModelExcluding rechecks both token permissions and live channel
@@ -72,6 +217,8 @@ func selectGatewayModelExcluding(c *gin.Context, group string, excluded map[stri
 	if profile == "cost" && gatewayPricesComparable(names) {
 		reason = "lower_configured_price"
 	}
+	var choices []gatewayChoice
+	var exclusions []string
 	for _, candidate := range orderGatewayCandidates(names, profile) {
 		if !candidate.priced || excluded[candidate.name] {
 			continue
@@ -88,19 +235,57 @@ func selectGatewayModelExcluding(c *gin.Context, group string, excluded map[stri
 		// The token's model limit is the entire candidate set; never expand it
 		// to all group models, even when the group has broader access.
 		for _, availableGroup := range groups {
-			channel, err := model.GetRandomSatisfiedChannel(availableGroup, candidate.name, 0, c.Request.URL.Path)
+			channels, err := model.GetGatewayChannels(availableGroup, candidate.name, c.Request.URL.Path)
 			if err != nil {
 				return "", nil, "", err
 			}
-			if channel != nil {
-				if group == "auto" {
-					common.SetContextKey(c, constant.ContextKeyAutoGroup, availableGroup)
+			for _, channel := range channels {
+				score, why, blocked := gatewayChannelScore(channel.Id, profile)
+				if blocked {
+					exclusions = append(exclusions, fmt.Sprintf("%s/#%d:%s", candidate.name, channel.Id, why))
+					continue
 				}
-				if setupErr := SetupContextForSelectedChannel(c, channel, candidate.name); setupErr == nil {
-					return candidate.name, channel, reason, nil
+				// No observations: preserve configured priority. Model-level
+				// metrics only supply a bounded prior, not a hard exclusion.
+				if profile == "speed" || profile == "reliable" {
+					score += gatewayModelScore(candidate.name, availableGroup, profile) * 0.2
 				}
+				choices = append(choices, gatewayChoice{candidate, channel, availableGroup, score, why})
 			}
 		}
+	}
+	if previous, ok := c.Value("gateway_exclusions").([]string); ok {
+		exclusions = append(previous, exclusions...)
+	}
+	c.Set("gateway_exclusions", exclusions)
+	if len(exclusions) > 0 {
+		common.SysLog(fmt.Sprintf("AI Gateway excluded routes: %v", exclusions))
+	}
+	for len(choices) > 0 {
+		selected := selectGatewayChoice(choices, profile, rand.Intn)
+		for i, c := range choices {
+			if c.channel.Id == selected.channel.Id && c.candidate.name == selected.candidate.name {
+				choices = append(choices[:i], choices[i+1:]...)
+				break
+			}
+		}
+		if !ReserveGatewayProbe(selected.channel.Id) {
+			continue
+		}
+		if setupErr := SetupContextForSelectedChannel(c, selected.channel, selected.candidate.name); setupErr != nil {
+			ReleaseGatewayProbe(selected.channel.Id)
+			continue
+		}
+		if group == "auto" {
+			common.SetContextKey(c, constant.ContextKeyAutoGroup, selected.group)
+		}
+		if profile == "speed" || profile == "reliable" {
+			reason = selected.reason
+			if reason == "insufficient_samples" {
+				reason = "configured_order_insufficient_samples"
+			}
+		}
+		return selected.candidate.name, selected.channel, reason, nil
 	}
 	return "", nil, "", fmt.Errorf("no available billable model for this AI Gateway key in its allowed group")
 }

@@ -53,7 +53,7 @@ export const apiKeySchema = z.object({
     }, z.boolean())
     .optional()
     .default(false),
-  gateway_profile: z.enum(['cost', 'ordered']).optional().default('ordered'),
+  gateway_profile: z.enum(['cost', 'ordered', 'speed', 'reliable']).optional().default('ordered'),
 })
 
 export type ApiKey = z.infer<typeof apiKeySchema>
@@ -102,7 +102,7 @@ export interface ApiKeyFormData {
   group: string
   cross_group_retry: boolean
   gateway_enabled: boolean
-  gateway_profile: 'cost' | 'ordered'
+  gateway_profile: 'cost' | 'ordered' | 'speed' | 'reliable'
 }
 
 // ============================================================================

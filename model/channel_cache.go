@@ -202,6 +202,50 @@ func GetRandomSatisfiedChannel(group string, model string, retry int, requestPat
 	return nil, errors.New("channel not found")
 }
 
+// GetGatewayChannels returns the same enabled, path-compatible channel set as
+// regular selection, without exposing the mutable cache slices to callers.
+func GetGatewayChannels(group, modelName, requestPath string) ([]*Channel, error) {
+	if !common.MemoryCacheEnabled {
+		var ids []int
+		names := []string{modelName}
+		if normalized := ratio_setting.FormatMatchingModelName(modelName); normalized != modelName {
+			names = append(names, normalized)
+		}
+		if err := DB.Model(&Ability{}).Where(commonGroupCol+" = ? AND model IN ? AND enabled = ?", group, names, true).
+			Distinct("channel_id").Pluck("channel_id", &ids).Error; err != nil {
+			return nil, err
+		}
+		if len(ids) == 0 {
+			return nil, nil
+		}
+		var channels []*Channel
+		if err := DB.Where("id IN ? AND status = ?", ids, common.ChannelStatusEnabled).Find(&channels).Error; err != nil {
+			return nil, err
+		}
+		result := make([]*Channel, 0)
+		for _, ch := range channels {
+			if ch.Type == constant.ChannelTypeAdvancedCustom && requestPath != "" && (ch.GetOtherSettings().AdvancedCustom == nil || !ch.GetOtherSettings().AdvancedCustom.SupportsPath(requestPath)) {
+				continue
+			}
+			result = append(result, ch)
+		}
+		return result, nil
+	}
+	channelSyncLock.RLock()
+	defer channelSyncLock.RUnlock()
+	ids := filterChannelsByRequestPath(group2model2channels[group][modelName], requestPath)
+	if len(ids) == 0 {
+		ids = filterChannelsByRequestPath(group2model2channels[group][ratio_setting.FormatMatchingModelName(modelName)], requestPath)
+	}
+	result := make([]*Channel, 0, len(ids))
+	for _, id := range ids {
+		if ch := channelsIDM[id]; ch != nil {
+			result = append(result, ch)
+		}
+	}
+	return result, nil
+}
+
 // filterChannelsByRequestPath restricts candidates by request path. Only Advanced
 // Custom (type 58) channels are path-checked: they are kept only when one of their
 // configured routes matches requestPath. All other channel types always pass.

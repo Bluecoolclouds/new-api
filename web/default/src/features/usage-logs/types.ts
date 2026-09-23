@@ -93,6 +93,16 @@ export interface ChannelAffinityInfo {
 }
 
 export interface LogOtherData {
+  gateway?: {
+    requested_model?: string
+    selected_model?: string
+    reason?: string
+    fallback_reason?: string
+    exclusions?: string[]
+    attempts?: Array<{ model: string; channel_id: number; result: string; status_code: number }>
+  }
+  gateway_selection_reason?: string
+  gateway_exclusions?: string[]
   admin_info?: {
     is_multi_key?: boolean
     multi_key_index?: number

@@ -549,6 +549,22 @@ export function DetailsDialog(props: DetailsDialogProps) {
                 <DetailRow label={t('Retry Chain')} value={channelChain} mono />
               )}
 
+              {other?.gateway && (
+                <DetailSection label={t('Gateway routing')}>
+                  <DetailRow label={t('Selected model')} value={other.gateway.selected_model || '-'} mono />
+                  <DetailRow label={t('Selection reason')} value={other.gateway.reason || '-'} />
+                  {other.gateway.fallback_reason && <DetailRow label={t('Fallback reason')} value={other.gateway.fallback_reason} />}
+                  {!!other.gateway.exclusions?.length && <DetailRow label={t('Excluded routes')} value={other.gateway.exclusions.join(', ')} />}
+                  {!!other.gateway.attempts?.length && <DetailRow label={t('Attempts')} value={other.gateway.attempts.map((a) => `${a.model} (#${a.channel_id}: ${a.result}${a.status_code ? ` ${a.status_code}` : ''})`).join(' → ')} />}
+                </DetailSection>
+              )}
+              {!other?.gateway && other?.gateway_selection_reason && (
+                <DetailSection label={t('Gateway routing')}>
+                  <DetailRow label={t('Selection reason')} value={other.gateway_selection_reason} />
+                  {!!other.gateway_exclusions?.length && <DetailRow label={t('Excluded routes')} value={other.gateway_exclusions.join(', ')} />}
+                </DetailSection>
+              )}
+
               {props.log.token_name && (
                 <DetailRow
                   label={t('Token')}

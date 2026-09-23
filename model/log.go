@@ -360,6 +360,7 @@ func RecordConsumeLog(c *gin.Context, userId int, params RecordConsumeLogParams)
 			"reason":          c.GetString("gateway_selection_reason"),
 			"fallback_reason": c.GetString("gateway_fallback_reason"),
 			"attempts":        attempts,
+			"exclusions":      c.Value("gateway_exclusions"),
 		}
 	}
 	logger.LogInfo(c, fmt.Sprintf("record consume log: userId=%d, params=%s", userId, common.GetJsonString(params)))

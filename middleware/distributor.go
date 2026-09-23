@@ -53,6 +53,7 @@ func Distribute() func(c *gin.Context) {
 			channel = selectedChannel
 			c.Set("gateway_selected_model", selectedModel)
 			c.Set("gateway_selection_reason", reason)
+			common.SysLog(fmt.Sprintf("AI Gateway selected model=%s channel=%d reason=%s exclusions=%v", selectedModel, selectedChannel.Id, reason, c.Value("gateway_exclusions")))
 			c.Header("X-AI-Gateway-Model", selectedModel)
 			c.Header("X-AI-Gateway-Reason", reason)
 		}
