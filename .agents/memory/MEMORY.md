@@ -12,3 +12,4 @@
 - [Gateway channel health scope](gateway-channel-health-scope.md) — cooldown and recovery probes are process-local; coordinate health across replicas if multi-instance routing needs consistent decisions
 - [Gateway capability policy](gateway-capability-policy.md) — unknown model/provider capability combinations are excluded for feature-dependent requests; avoid assuming aliases imply support
 - [Gateway budget periods](gateway-budget-periods.md) — reset daily and monthly monetary limits on UTC boundaries; keep UI amounts in USD and server accounting in quota units
+- [Gateway lease recovery](gateway-lease-recovery.md) — serialize expiry cleanup, renewal, and settlement per key so stale requests cannot release a replacement's slot
