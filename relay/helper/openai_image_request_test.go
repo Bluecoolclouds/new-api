@@ -94,6 +94,11 @@ func TestGetAndValidOpenAIImageRequestNBounds(t *testing.T) {
 		wantN   uint
 	}{
 		{
+			name:    "explicit zero is rejected before reservation",
+			body:    `{"model":"gpt-image-1","prompt":"a cat","n":0}`,
+			wantErr: boundErr,
+		},
+		{
 			name:    "overflowed uint64 n is rejected",
 			body:    `{"model":"gpt-image-1","prompt":"a cat","n":18446744073686646784}`,
 			wantErr: boundErr,
@@ -145,5 +150,19 @@ func TestGetAndValidOpenAIImageRequestNBounds(t *testing.T) {
 		_, err := GetAndValidOpenAIImageRequest(c, relayconstant.RelayModeImagesEdits)
 		require.Error(t, err)
 		require.Contains(t, err.Error(), boundErr)
+	})
+	t.Run("zero and oversized multipart n are rejected", func(t *testing.T) {
+		for _, n := range []string{"0", fmt.Sprint(dto.MaxImageN + 1)} {
+			var body bytes.Buffer
+			writer := multipart.NewWriter(&body)
+			require.NoError(t, writer.WriteField("model", "gpt-image-1"))
+			require.NoError(t, writer.WriteField("n", n))
+			require.NoError(t, writer.Close())
+			c, _ := gin.CreateTestContext(httptest.NewRecorder())
+			c.Request = httptest.NewRequest(http.MethodPost, "/v1/images/edits", &body)
+			c.Request.Header.Set("Content-Type", writer.FormDataContentType())
+			_, err := GetAndValidOpenAIImageRequest(c, relayconstant.RelayModeImagesEdits)
+			require.ErrorContains(t, err, boundErr)
+		}
 	})
 }

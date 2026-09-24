@@ -94,6 +94,28 @@ func TestResponsesCacheCreationAndHitAreChargedOnce(t *testing.T) {
 	require.Equal(t, summary.Quota, fromResponses.Quota)
 }
 
+func TestImageOutputUsageFeedsImgOVariable(t *testing.T) {
+	ctx, _ := gin.CreateTestContext(httptest.NewRecorder())
+	info := &relaycommon.RelayInfo{
+		OriginModelName: "gpt-image-1", StartTime: time.Now(),
+		PriceData: types.PriceData{
+			ModelRatio: 1, CompletionRatio: 1,
+			GroupRatioInfo: types.GroupRatioInfo{GroupRatio: 1},
+		},
+	}
+	usage := &dto.Usage{
+		PromptTokens: 15, CompletionTokens: 1352,
+		CompletionTokenDetails: dto.OutputTokenDetails{ImageTokens: 1120, TextTokens: 232},
+	}
+	summary := calculateTextQuotaSummary(ctx, info, usage)
+	require.Equal(t, 1120, summary.ImageOutputTokens)
+	params := BuildTieredTokenParams(usage, false, map[string]bool{"img_o": true})
+	require.Equal(t, float64(1120), params.ImgO)
+	require.Equal(t, float64(232), params.C)
+	// Existing per-token rates remain unchanged unless an expression prices img_o.
+	require.Equal(t, 1367, summary.Quota)
+}
+
 func TestCalculateTextQuotaSummaryUsesSplitClaudeCacheCreationRatios(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	w := httptest.NewRecorder()

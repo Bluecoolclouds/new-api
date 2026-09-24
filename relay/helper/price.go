@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/QuantumNous/new-api/common"
+	"github.com/QuantumNous/new-api/dto"
 	"github.com/QuantumNous/new-api/logger"
 	"github.com/QuantumNous/new-api/model"
 	"github.com/QuantumNous/new-api/pkg/billingexpr"
@@ -124,6 +125,11 @@ func ModelPriceHelper(c *gin.Context, info *relaycommon.RelayInfo, promptTokens 
 		}
 		preConsumedQuota = common.QuotaFromFloat(modelPrice * common.QuotaPerUnit * groupRatioInfo.GroupRatio)
 	}
+	// Images use a per-image fixed price. Reserve the validated requested
+	// quantity before contacting upstream, then settle against actual payloads.
+	if imageRequest, ok := info.Request.(*dto.ImageRequest); ok && usePrice && imageRequest.N != nil {
+		preConsumedQuota = common.QuotaFromFloat(modelPrice * common.QuotaPerUnit * groupRatioInfo.GroupRatio * float64(*imageRequest.N))
+	}
 
 	// check if free model pre-consume is disabled
 	if !operation_setting.GetQuotaSetting().EnableFreeModelPreConsume {
@@ -159,6 +165,9 @@ func ModelPriceHelper(c *gin.Context, info *relaycommon.RelayInfo, promptTokens 
 		CacheCreation5mRatio: cacheCreationRatio5m,
 		CacheCreation1hRatio: cacheCreationRatio1h,
 		QuotaToPreConsume:    preConsumedQuota,
+	}
+	if imageRequest, ok := info.Request.(*dto.ImageRequest); ok && usePrice && imageRequest.N != nil {
+		priceData.AddOtherRatio("n", float64(*imageRequest.N))
 	}
 
 	if common.DebugEnabled {

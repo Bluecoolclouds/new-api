@@ -6,14 +6,49 @@ import (
 	"testing"
 
 	"github.com/QuantumNous/new-api/common"
+	"github.com/QuantumNous/new-api/dto"
 	"github.com/QuantumNous/new-api/pkg/billingexpr"
 	relaycommon "github.com/QuantumNous/new-api/relay/common"
 	"github.com/QuantumNous/new-api/setting/billing_setting"
 	"github.com/QuantumNous/new-api/setting/config"
+	"github.com/QuantumNous/new-api/setting/ratio_setting"
 	"github.com/QuantumNous/new-api/types"
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/require"
 )
+
+func TestImagePriceReservesRequestedQuantity(t *testing.T) {
+	originalPrices := ratio_setting.ModelPrice2JSONString()
+	t.Cleanup(func() { require.NoError(t, ratio_setting.UpdateModelPriceByJSONString(originalPrices)) })
+	require.NoError(t, ratio_setting.UpdateModelPriceByJSONString(`{"image-reservation-test":0.02}`))
+	saved := map[string]string{}
+	require.NoError(t, config.GlobalConfig.SaveToDB(func(key, value string) error {
+		saved[key] = value
+		return nil
+	}))
+	t.Cleanup(func() { require.NoError(t, config.GlobalConfig.LoadFromDB(saved)) })
+	require.NoError(t, config.GlobalConfig.LoadFromDB(map[string]string{
+		"group_ratio_setting.group_ratio": `{"default":1}`,
+	}))
+	ctx, _ := gin.CreateTestContext(httptest.NewRecorder())
+	ctx.Set("group", "default")
+	var single, triple int
+	for _, n := range []uint{1, 3} {
+		req := &dto.ImageRequest{Model: "image-reservation-test", Prompt: "cat", N: &n}
+		info := &relaycommon.RelayInfo{OriginModelName: req.Model, Request: req, UserGroup: "default", UsingGroup: "default"}
+		price, err := ModelPriceHelper(ctx, info, 10, req.GetTokenCountMeta())
+		require.NoError(t, err)
+		require.True(t, price.UsePrice)
+		require.Equal(t, float64(n), price.OtherRatios()["n"])
+		if n == 1 {
+			single = price.QuotaToPreConsume
+		} else {
+			triple = price.QuotaToPreConsume
+		}
+	}
+	require.Positive(t, single)
+	require.Equal(t, single*3, triple)
+}
 
 func TestModelPriceHelperTieredUsesPreloadedRequestInput(t *testing.T) {
 	gin.SetMode(gin.TestMode)
