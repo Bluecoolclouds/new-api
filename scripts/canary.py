@@ -97,9 +97,10 @@ def select_probe_model(channel):
 
 
 def probe_channel(ch, model, timeout=10):
-    is_media = any(k in ch["name"].lower() for k in ("img", "video", "image"))
+    is_media = any(k in ch["name"].lower() for k in ("img", "video", "image", "transcribe", "audio", "speech"))
     if is_media:
-        url = f"{ch['base_url']}/v1/models"
+        base = ch["base_url"].split("/v1/")[0]
+        url = f"{base}/v1/models"
         headers = {
             "Authorization": f"Bearer {ch['key']}",
             "User-Agent": "Apinet-Canary/2026.09",
