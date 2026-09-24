@@ -112,6 +112,9 @@ func (a *Adaptor) ConvertOpenAIResponsesRequest(c *gin.Context, info *relaycommo
 		if err != nil {
 			return nil, err
 		}
+		if info.SupportStreamOptions && info.IsStream {
+			chatReq.StreamOptions = &dto.StreamOptions{IncludeUsage: true}
+		}
 		return a.convertOpenAICompatibleRequest(c, info, chatReq)
 	default:
 		return nil, fmt.Errorf("converter %q does not support OpenAI Responses requests", converter)

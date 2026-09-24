@@ -64,6 +64,9 @@ func OaiChatToResponsesStreamHandler(c *gin.Context, info *relaycommon.RelayInfo
 	responseID := helper.GetResponseID(c)
 	state := relayconvert.NewChatToResponsesStreamState(responseID, info.UpstreamModelName)
 	streamErr := (*types.NewAPIError)(nil)
+	started := false
+	finished := false
+	explicitFailure := false
 
 	sendEvent := func(event relayconvert.ChatToResponsesStreamEvent) bool {
 		data, err := common.Marshal(event.Payload)
@@ -84,7 +87,20 @@ func OaiChatToResponsesStreamHandler(c *gin.Context, info *relaycommon.RelayInfo
 		var errorResp dto.OpenAITextResponse
 		if err := common.UnmarshalJsonStr(data, &errorResp); err == nil {
 			if oaiError := errorResp.GetOpenAIError(); oaiError != nil && oaiError.Type != "" {
+				if relayconvert.UsageFromChatUsage(&errorResp.Usage).TotalTokens > 0 {
+					state.Usage = relayconvert.UsageFromChatUsage(&errorResp.Usage)
+					started = true
+					sendEvent(relayconvert.ChatToResponsesStreamEvent{
+						Type: "response.failed",
+						Payload: dto.ResponsesStreamResponse{Type: "response.failed", Response: &dto.OpenAIResponsesResponse{
+							Status: []byte(`"failed"`), Error: oaiError, Usage: state.Usage,
+						}},
+					})
+					sr.Stop(fmt.Errorf("chat stream failed with reported usage"))
+					return
+				}
 				streamErr = types.WithOpenAIError(*oaiError, resp.StatusCode)
+				explicitFailure = true
 				sr.Stop(streamErr)
 				return
 			}
@@ -93,8 +109,20 @@ func OaiChatToResponsesStreamHandler(c *gin.Context, info *relaycommon.RelayInfo
 		var chunk dto.ChatCompletionsStreamResponse
 		if err := common.UnmarshalJsonStr(data, &chunk); err != nil {
 			logger.LogError(c, "failed to unmarshal chat stream response: "+err.Error())
-			sr.Error(err)
+			streamErr = types.NewOpenAIError(err, types.ErrorCodeBadResponseBody, http.StatusInternalServerError)
+			sr.Stop(streamErr)
 			return
+		}
+		if chunk.Object == "" && chunk.Id == "" && len(chunk.Choices) == 0 && chunk.Usage == nil {
+			streamErr = types.NewOpenAIError(fmt.Errorf("invalid chat stream chunk"), types.ErrorCodeBadResponseBody, http.StatusInternalServerError)
+			sr.Stop(streamErr)
+			return
+		}
+		started = true
+		for _, choice := range chunk.Choices {
+			if choice.FinishReason != nil && *choice.FinishReason != "" {
+				finished = true
+			}
 		}
 
 		events, err := relayconvert.ChatCompletionsStreamChunkToResponsesEvents(&chunk, state)
@@ -111,16 +139,23 @@ func OaiChatToResponsesStreamHandler(c *gin.Context, info *relaycommon.RelayInfo
 		}
 	})
 
-	if streamErr != nil {
+	if streamErr != nil && (explicitFailure || !started) {
 		return nil, streamErr
 	}
 
 	usage := state.Usage
+	if !started {
+		return nil, types.NewOpenAIError(fmt.Errorf("chat stream ended without events"), types.ErrorCodeBadResponse, http.StatusInternalServerError)
+	}
 	if usage == nil || usage.TotalTokens == 0 {
 		usage = service.ResponseText2Usage(c, state.UsageText(), info.UpstreamModelName, info.GetEstimatePromptTokens())
 		state.Usage = relayconvert.UsageFromChatUsage(usage)
 	}
 
+	if streamErr != nil || (!finished && (info.StreamStatus == nil || info.StreamStatus.EndReason != relaycommon.StreamEndReasonDone)) {
+		// Keep the response visibly incomplete and settle the upstream spend.
+		return usage, nil
+	}
 	for _, event := range relayconvert.FinalizeChatCompletionsStreamToResponses(state) {
 		if !sendEvent(event) {
 			return nil, streamErr

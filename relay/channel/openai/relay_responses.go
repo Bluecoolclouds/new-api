@@ -12,6 +12,7 @@ import (
 	relaycommon "github.com/QuantumNous/new-api/relay/common"
 	"github.com/QuantumNous/new-api/relay/helper"
 	"github.com/QuantumNous/new-api/service"
+	"github.com/QuantumNous/new-api/service/relayconvert"
 	"github.com/QuantumNous/new-api/types"
 
 	"github.com/gin-gonic/gin"
@@ -44,17 +45,9 @@ func OaiResponsesHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http
 	service.IOCopyBytesGracefully(c, resp, responseBody)
 
 	// compute usage
-	usage := dto.Usage{}
-	if responsesResponse.Usage != nil {
-		usage.PromptTokens = responsesResponse.Usage.InputTokens
-		usage.CompletionTokens = responsesResponse.Usage.OutputTokens
-		usage.TotalTokens = responsesResponse.Usage.TotalTokens
-		if responsesResponse.Usage.InputTokensDetails != nil {
-			usage.PromptTokensDetails.CachedTokens = responsesResponse.Usage.InputTokensDetails.CachedTokens
-		}
-	}
+	usage := relayconvert.UsageFromResponsesUsage(responsesResponse.Usage)
 	if info == nil || info.ResponsesUsageInfo == nil || info.ResponsesUsageInfo.BuiltInTools == nil {
-		return &usage, nil
+		return usage, nil
 	}
 	// 解析 Tools 用量
 	for _, tool := range responsesResponse.Tools {
@@ -65,7 +58,7 @@ func OaiResponsesHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http
 		}
 		buildToolinfo.CallCount++
 	}
-	return &usage, nil
+	return usage, nil
 }
 
 func OaiResponsesStreamHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http.Response) (*dto.Usage, *types.NewAPIError) {
@@ -78,6 +71,9 @@ func OaiResponsesStreamHandler(c *gin.Context, info *relaycommon.RelayInfo, resp
 
 	var usage = &dto.Usage{}
 	var responseTextBuilder strings.Builder
+	started := false
+	failed := false
+	var streamErr *types.NewAPIError
 
 	helper.StreamScannerHandler(c, resp, info, func(data string, sr *helper.StreamResult) {
 
@@ -85,26 +81,37 @@ func OaiResponsesStreamHandler(c *gin.Context, info *relaycommon.RelayInfo, resp
 		var streamResponse dto.ResponsesStreamResponse
 		if err := common.UnmarshalJsonStr(data, &streamResponse); err != nil {
 			logger.LogError(c, "failed to unmarshal stream response: "+err.Error())
-			sr.Error(err)
+			streamErr = types.NewOpenAIError(err, types.ErrorCodeBadResponseBody, http.StatusInternalServerError)
+			sr.Stop(streamErr)
 			return
 		}
+		if streamResponse.Type == "" {
+			streamErr = types.NewOpenAIError(fmt.Errorf("responses stream event has no type"), types.ErrorCodeBadResponseBody, http.StatusInternalServerError)
+			sr.Stop(streamErr)
+			return
+		}
+		started = true
 		sendResponsesStreamData(c, streamResponse, data)
 		switch streamResponse.Type {
-		case "response.completed":
+		case "response.failed", "response.error":
+			if streamResponse.Response != nil && streamResponse.Response.Usage != nil {
+				reported := relayconvert.UsageFromResponsesUsage(streamResponse.Response.Usage)
+				if reported.TotalTokens > 0 {
+					usage = reported
+					sr.Stop(nil)
+					return
+				}
+			}
+			failed = true
+			streamErr = types.NewOpenAIError(fmt.Errorf("responses stream error: %s", streamResponse.Type), types.ErrorCodeBadResponse, http.StatusInternalServerError)
+			sr.Stop(streamErr)
+		case "response.completed", "response.done", "response.incomplete":
 			if streamResponse.Response != nil {
 				if streamResponse.Response.Usage != nil {
-					if streamResponse.Response.Usage.InputTokens != 0 {
-						usage.PromptTokens = streamResponse.Response.Usage.InputTokens
-					}
-					if streamResponse.Response.Usage.OutputTokens != 0 {
-						usage.CompletionTokens = streamResponse.Response.Usage.OutputTokens
-					}
-					if streamResponse.Response.Usage.TotalTokens != 0 {
-						usage.TotalTokens = streamResponse.Response.Usage.TotalTokens
-					}
-					if streamResponse.Response.Usage.InputTokensDetails != nil {
-						usage.PromptTokensDetails.CachedTokens = streamResponse.Response.Usage.InputTokensDetails.CachedTokens
-					}
+					usage = relayconvert.UsageFromResponsesUsage(streamResponse.Response.Usage)
+				}
+				if responseTextBuilder.Len() == 0 {
+					responseTextBuilder.WriteString(responsesOutputForEstimate(streamResponse.Response))
 				}
 				if streamResponse.Response.HasImageGenerationCall() {
 					c.Set("image_generation_call", true)
@@ -112,9 +119,13 @@ func OaiResponsesStreamHandler(c *gin.Context, info *relaycommon.RelayInfo, resp
 					c.Set("image_generation_call_size", streamResponse.Response.GetSize())
 				}
 			}
-		case "response.output_text.delta":
-			// 处理输出文本
+		case "response.output_text.delta", "response.reasoning_text.delta", "response.reasoning_summary_text.delta",
+			"response.refusal.delta", "response.function_call_arguments.delta", "response.custom_tool_call_input.delta":
 			responseTextBuilder.WriteString(streamResponse.Delta)
+		case "response.output_item.added":
+			if streamResponse.Item != nil && (streamResponse.Item.Type == "function_call" || streamResponse.Item.Type == "custom_tool_call") {
+				responseTextBuilder.WriteString(streamResponse.Item.Name)
+			}
 		case dto.ResponsesOutputTypeItemDone:
 			// 函数调用处理
 			if streamResponse.Item != nil {
@@ -130,21 +141,15 @@ func OaiResponsesStreamHandler(c *gin.Context, info *relaycommon.RelayInfo, resp
 		}
 	})
 
-	if usage.CompletionTokens == 0 {
-		// 计算输出文本的 token 数量
-		tempStr := responseTextBuilder.String()
-		if len(tempStr) > 0 {
-			// 非正常结束，使用输出文本的 token 数量
-			completionTokens := service.CountTextToken(tempStr, info.UpstreamModelName)
-			usage.CompletionTokens = completionTokens
-		}
+	if failed || (streamErr != nil && !started) {
+		return nil, streamErr
 	}
-
-	if usage.PromptTokens == 0 && usage.CompletionTokens != 0 {
-		usage.PromptTokens = info.GetEstimatePromptTokens()
+	if !started {
+		return nil, types.NewOpenAIError(fmt.Errorf("responses stream ended without events"), types.ErrorCodeBadResponse, http.StatusInternalServerError)
 	}
-
-	usage.TotalTokens = usage.PromptTokens + usage.CompletionTokens
+	if usage.TotalTokens == 0 {
+		usage = estimateResponsesChatUsage(c, info, usage, responseTextBuilder.String(), started)
+	}
 
 	return usage, nil
 }

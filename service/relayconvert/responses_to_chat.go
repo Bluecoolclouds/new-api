@@ -135,27 +135,53 @@ func UsageFromResponsesUsage(src *dto.Usage) *dto.Usage {
 	if src == nil {
 		return usage
 	}
+	usage.UsageSemantic = src.UsageSemantic
+	usage.UsageSource = src.UsageSource
+	usage.Cost = src.Cost
 	if src.InputTokens != 0 {
 		usage.PromptTokens = src.InputTokens
 		usage.InputTokens = src.InputTokens
+	} else {
+		usage.PromptTokens = src.PromptTokens
+		usage.InputTokens = src.PromptTokens
 	}
 	if src.OutputTokens != 0 {
 		usage.CompletionTokens = src.OutputTokens
 		usage.OutputTokens = src.OutputTokens
+	} else {
+		usage.CompletionTokens = src.CompletionTokens
+		usage.OutputTokens = src.CompletionTokens
 	}
 	if src.TotalTokens != 0 {
 		usage.TotalTokens = src.TotalTokens
 	} else {
 		usage.TotalTokens = usage.PromptTokens + usage.CompletionTokens
 	}
+	usage.PromptTokensDetails = src.PromptTokensDetails
 	if src.InputTokensDetails != nil {
-		usage.PromptTokensDetails.CachedTokens = src.InputTokensDetails.CachedTokens
-		usage.PromptTokensDetails.ImageTokens = src.InputTokensDetails.ImageTokens
-		usage.PromptTokensDetails.AudioTokens = src.InputTokensDetails.AudioTokens
+		if usage.PromptTokensDetails.CachedTokens == 0 {
+			usage.PromptTokensDetails.CachedTokens = src.InputTokensDetails.CachedTokens
+		}
+		if usage.PromptTokensDetails.CachedCreationTokens == 0 {
+			usage.PromptTokensDetails.CachedCreationTokens = src.InputTokensDetails.CachedCreationTokens
+		}
+		if usage.PromptTokensDetails.ImageTokens == 0 {
+			usage.PromptTokensDetails.ImageTokens = src.InputTokensDetails.ImageTokens
+		}
+		if usage.PromptTokensDetails.AudioTokens == 0 {
+			usage.PromptTokensDetails.AudioTokens = src.InputTokensDetails.AudioTokens
+		}
+		if usage.PromptTokensDetails.TextTokens == 0 {
+			usage.PromptTokensDetails.TextTokens = src.InputTokensDetails.TextTokens
+		}
 	}
-	if src.CompletionTokenDetails.ReasoningTokens != 0 {
-		usage.CompletionTokenDetails.ReasoningTokens = src.CompletionTokenDetails.ReasoningTokens
+	if usage.PromptTokensDetails.CachedTokens == 0 {
+		usage.PromptTokensDetails.CachedTokens = src.PromptCacheHitTokens
 	}
+	usage.PromptCacheHitTokens = src.PromptCacheHitTokens
+	usage.InputTokensDetails = src.InputTokensDetails
+	usage.CompletionTokenDetails = src.CompletionTokenDetails
+	usage.OutputTokens = src.OutputTokens
 	return usage
 }
 
@@ -286,7 +312,7 @@ func ResponsesStreamEventToChatChunks(event *dto.ResponsesStreamResponse, state 
 			state.needsReasoningSummaryBreak = true
 		}
 		return nil, nil
-	case responsesEventOutputTextDelta:
+	case responsesEventOutputTextDelta, "response.refusal.delta":
 		return state.textDelta(event.Delta), nil
 	case responsesEventOutputItemAdded, responsesEventOutputItemDone:
 		if event.Item == nil || !isResponsesToolOutputType(event.Item.Type) {

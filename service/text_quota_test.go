@@ -70,6 +70,30 @@ func TestCalculateTextQuotaSummaryUnifiedForClaudeSemantic(t *testing.T) {
 	require.Equal(t, 1488, chatSummary.Quota)
 }
 
+func TestResponsesCacheCreationAndHitAreChargedOnce(t *testing.T) {
+	ctx, _ := gin.CreateTestContext(httptest.NewRecorder())
+	info := &relaycommon.RelayInfo{
+		OriginModelName: "gpt-test", RelayFormat: types.RelayFormatOpenAI,
+		StartTime: time.Now(),
+		PriceData: types.PriceData{
+			ModelRatio: 1, CompletionRatio: 2, CacheRatio: 0.1,
+			CacheCreationRatio: 1.5, GroupRatioInfo: types.GroupRatioInfo{GroupRatio: 1},
+		},
+	}
+	usage := &dto.Usage{
+		PromptTokens: 100, CompletionTokens: 10,
+		PromptTokensDetails: dto.InputTokenDetails{CachedTokens: 20, CachedCreationTokens: 10},
+	}
+	summary := calculateTextQuotaSummary(ctx, info, usage)
+	require.Equal(t, 107, summary.Quota) // (100-20-10) + 20*.1 + 10*1.5 + 10*2
+	require.Equal(t, 20, summary.CacheTokens)
+	require.Equal(t, 10, summary.CacheCreationTokens)
+	usage.PromptTokensDetails = dto.InputTokenDetails{}
+	usage.InputTokensDetails = &dto.InputTokenDetails{CachedTokens: 20, CachedCreationTokens: 10}
+	fromResponses := calculateTextQuotaSummary(ctx, info, usage)
+	require.Equal(t, summary.Quota, fromResponses.Quota)
+}
+
 func TestCalculateTextQuotaSummaryUsesSplitClaudeCacheCreationRatios(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	w := httptest.NewRecorder()

@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/QuantumNous/new-api/common"
+	"github.com/QuantumNous/new-api/dto"
 	"github.com/QuantumNous/new-api/model"
 	relaycommon "github.com/QuantumNous/new-api/relay/common"
 	"github.com/gin-gonic/gin"
@@ -72,13 +73,15 @@ func TestGatewayBatchReservationsFailExplicitly(t *testing.T) {
 type gatewayFundingStub struct {
 	settles atomic.Int32
 	refunds atomic.Int32
+	delta   atomic.Int64
 	done    chan struct{}
 }
 
 func (s *gatewayFundingStub) Source() string       { return BillingSourceWallet }
 func (s *gatewayFundingStub) PreConsume(int) error { return nil }
-func (s *gatewayFundingStub) Settle(int) error {
+func (s *gatewayFundingStub) Settle(delta int) error {
 	s.settles.Add(1)
+	s.delta.Add(int64(delta))
 	return nil
 }
 func (s *gatewayFundingStub) Refund() error {
@@ -101,6 +104,33 @@ func TestGatewayBillingSettlesOnceAndDoesNotRefundSuccess(t *testing.T) {
 	session.Refund(nil)
 	if funding.settles.Load() != 1 || funding.refunds.Load() != 0 {
 		t.Fatalf("settles=%d refunds=%d", funding.settles.Load(), funding.refunds.Load())
+	}
+}
+
+func TestInterruptedResponsesSpendReturnsOnlyUnusedReservation(t *testing.T) {
+	ctx, _ := gin.CreateTestContext(httptest.NewRecorder())
+	info := &relaycommon.RelayInfo{IsPlayground: true}
+	funding := &gatewayFundingStub{done: make(chan struct{})}
+	session := &BillingSession{relayInfo: info, funding: funding, preConsumedQuota: 200, tokenConsumed: 200}
+	// A created-only stream owes the estimated prompt, even without output.
+	info.OriginModelName = "gpt-test"
+	info.StartTime = time.Now()
+	info.PriceData.ModelRatio = 1
+	info.PriceData.GroupRatioInfo.GroupRatio = 1
+	info.PriceData.CompletionRatio = 1
+	summary := calculateTextQuotaSummary(ctx, info, &dto.Usage{PromptTokens: 12, TotalTokens: 12})
+	if summary.Quota != 12 {
+		t.Fatalf("unexpected actual charge %d", summary.Quota)
+	}
+	if err := session.Settle(summary.Quota); err != nil {
+		t.Fatal(err)
+	}
+	if err := session.Settle(summary.Quota); err != nil {
+		t.Fatal(err)
+	}
+	session.Refund(ctx) // Repeated fallback cleanup must not refund a settled attempt.
+	if funding.settles.Load() != 1 || funding.delta.Load() != -188 || funding.refunds.Load() != 0 {
+		t.Fatalf("settles=%d delta=%d refunds=%d", funding.settles.Load(), funding.delta.Load(), funding.refunds.Load())
 	}
 }
 

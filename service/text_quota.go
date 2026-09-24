@@ -206,6 +206,20 @@ func calculateTextQuotaSummary(ctx *gin.Context, relayInfo *relaycommon.RelayInf
 	summary.TotalTokens = usage.PromptTokens + usage.CompletionTokens
 	summary.CacheTokens = usage.PromptTokensDetails.CachedTokens
 	summary.CacheCreationTokens = usage.PromptTokensDetails.CachedCreationTokens
+	// Responses providers may return cache information only in input_tokens_details
+	// (or the legacy prompt_cache_hit_tokens field). Do not mutate the usage object:
+	// the same usage is also returned to the client and used by tiered billing.
+	if usage.InputTokensDetails != nil {
+		if summary.CacheTokens == 0 {
+			summary.CacheTokens = usage.InputTokensDetails.CachedTokens
+		}
+		if summary.CacheCreationTokens == 0 {
+			summary.CacheCreationTokens = usage.InputTokensDetails.CachedCreationTokens
+		}
+	}
+	if summary.CacheTokens == 0 {
+		summary.CacheTokens = usage.PromptCacheHitTokens
+	}
 	summary.CacheCreationTokens5m = usage.ClaudeCacheCreation5mTokens
 	summary.CacheCreationTokens1h = usage.ClaudeCacheCreation1hTokens
 	summary.ImageTokens = usage.PromptTokensDetails.ImageTokens
@@ -352,7 +366,10 @@ func PostTextConsumeQuota(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, us
 		if snap := relayInfo.TieredBillingSnapshot; snap != nil {
 			tieredUsedVars = billingexpr.UsedVars(snap.ExprString)
 		}
-		tieredOk, tieredQuota, tieredRes := TryTieredSettle(relayInfo, BuildTieredTokenParams(usage, summary.IsClaudeUsageSemantic, tieredUsedVars))
+		normalizedUsage := *usage
+		normalizedUsage.PromptTokensDetails.CachedTokens = summary.CacheTokens
+		normalizedUsage.PromptTokensDetails.CachedCreationTokens = summary.CacheCreationTokens
+		tieredOk, tieredQuota, tieredRes := TryTieredSettle(relayInfo, BuildTieredTokenParams(&normalizedUsage, summary.IsClaudeUsageSemantic, tieredUsedVars))
 		if tieredOk {
 			tieredBillingApplied = true
 			tieredResult = tieredRes

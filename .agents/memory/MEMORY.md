@@ -13,3 +13,4 @@
 - [Gateway capability policy](gateway-capability-policy.md) — unknown model/provider capability combinations are excluded for feature-dependent requests; avoid assuming aliases imply support
 - [Gateway budget periods](gateway-budget-periods.md) — reset daily and monthly monetary limits on UTC boundaries; keep UI amounts in USD and server accounting in quota units
 - [Gateway lease recovery](gateway-lease-recovery.md) — serialize expiry cleanup, renewal, and settlement per key so stale requests cannot release a replacement's slot
+- [Responses stream settlement](responses-stream-settlement.md) — settle interrupted streams after upstream events without falsely marking success; explicit failures without usage refund.

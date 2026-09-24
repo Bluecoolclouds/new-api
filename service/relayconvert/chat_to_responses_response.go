@@ -252,7 +252,20 @@ func (s *ChatToResponsesStreamState) UsageText() string {
 	if s == nil {
 		return ""
 	}
-	return s.text.String()
+	var output strings.Builder
+	output.WriteString(s.text.String())
+	output.WriteString(s.reasoning.String())
+	indices := make([]int, 0, len(s.toolsByIndex))
+	for index := range s.toolsByIndex {
+		indices = append(indices, index)
+	}
+	sort.Ints(indices)
+	for _, index := range indices {
+		tool := s.toolsByIndex[index]
+		output.WriteString(tool.Name)
+		output.WriteString(tool.Arguments.String())
+	}
+	return output.String()
 }
 
 func (s *ChatToResponsesStreamState) appendTextDelta(delta string) []ChatToResponsesStreamEvent {

@@ -86,6 +86,27 @@ func TestResponsesResponseToChatCompletionsPreservesTextAndToolCalls(t *testing.
 	assert.Equal(t, 7, usage.TotalTokens)
 }
 
+func TestResponsesUsageConversionPreservesCacheDetails(t *testing.T) {
+	usage := UsageFromResponsesUsage(&dto.Usage{
+		InputTokens: 100, OutputTokens: 10,
+		InputTokensDetails: &dto.InputTokenDetails{
+			CachedTokens: 20, CachedCreationTokens: 10, TextTokens: 70, ImageTokens: 5, AudioTokens: 2,
+		},
+		CompletionTokenDetails: dto.OutputTokenDetails{ReasoningTokens: 3},
+		UsageSource:            "upstream",
+	})
+	require.Equal(t, 110, usage.TotalTokens)
+	require.Equal(t, 20, usage.PromptTokensDetails.CachedTokens)
+	require.Equal(t, 10, usage.PromptTokensDetails.CachedCreationTokens)
+	require.Equal(t, 5, usage.PromptTokensDetails.ImageTokens)
+	require.Equal(t, 2, usage.PromptTokensDetails.AudioTokens)
+	require.Equal(t, 3, usage.CompletionTokenDetails.ReasoningTokens)
+	require.Equal(t, "upstream", usage.UsageSource)
+
+	legacy := UsageFromResponsesUsage(&dto.Usage{InputTokens: 40, PromptCacheHitTokens: 8})
+	require.Equal(t, 8, legacy.PromptTokensDetails.CachedTokens)
+}
+
 func TestResponsesResponseToChatCompletionsPreservesReasoningSummary(t *testing.T) {
 	resp := &dto.OpenAIResponsesResponse{
 		ID:     "resp_1",

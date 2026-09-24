@@ -1,9 +1,11 @@
 package advancedcustom
 
 import (
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"strings"
 	"testing"
 
 	"github.com/QuantumNous/new-api/common"
@@ -13,6 +15,7 @@ import (
 	relayconstant "github.com/QuantumNous/new-api/relay/constant"
 	"github.com/QuantumNous/new-api/types"
 	"github.com/gin-gonic/gin"
+	"github.com/samber/lo"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -45,6 +48,108 @@ func TestAdaptorUsesExactRouteAndQueryAuth(t *testing.T) {
 	assert.Equal(t, "/v1/chat/completions", parsedURL.Path)
 	assert.Equal(t, "1", parsedURL.Query().Get("existing"))
 	assert.Equal(t, "sk-test", parsedURL.Query().Get("api_key"))
+}
+
+func TestResponsesToChatConversionRequestsUpstreamUsage(t *testing.T) {
+	info := advancedCustomRelayInfo(&dto.AdvancedCustomConfig{
+		Routes: []dto.AdvancedCustomRoute{{
+			IncomingPath: "/v1/responses", UpstreamPath: "/v1/chat/completions",
+			Converter: dto.AdvancedCustomConverterOpenAIResponsesToOpenAIChatCompletions,
+		}},
+	})
+	info.IsStream = true
+	info.SupportStreamOptions = true
+	c := advancedCustomGinContext("/v1/responses")
+	adaptor := &Adaptor{}
+	converted, err := adaptor.ConvertOpenAIResponsesRequest(c, info, dto.OpenAIResponsesRequest{Model: "gpt-test", Stream: lo.ToPtr(true)})
+	require.NoError(t, err)
+	chat := converted.(*dto.GeneralOpenAIRequest)
+	require.NotNil(t, chat.StreamOptions)
+	require.True(t, chat.StreamOptions.IncludeUsage)
+
+	info.SupportStreamOptions = false
+	adaptor = &Adaptor{}
+	converted, err = adaptor.ConvertOpenAIResponsesRequest(c, info, dto.OpenAIResponsesRequest{Model: "gpt-test", Stream: lo.ToPtr(true)})
+	require.NoError(t, err)
+	require.Nil(t, converted.(*dto.GeneralOpenAIRequest).StreamOptions)
+}
+
+func TestAdvancedCustomChatToResponsesInterruptedStream(t *testing.T) {
+	oldTimeout := constant.StreamingTimeout
+	constant.StreamingTimeout = 30
+	t.Cleanup(func() { constant.StreamingTimeout = oldTimeout })
+
+	cases := []struct {
+		name          string
+		events        []string
+		wantPrompt    int
+		wantOutput    bool
+		wantError     bool
+		wantCompleted bool
+		wantFailed    bool
+	}{
+		{"empty attempt", nil, 0, false, true, false, false},
+		{"partial text", []string{
+			`{"id":"chat_1","object":"chat.completion.chunk","choices":[{"index":0,"delta":{"content":"partial answer"}}]}`,
+		}, 12, true, false, false, false},
+		{"tool and reasoning", []string{
+			`{"id":"chat_1","object":"chat.completion.chunk","choices":[{"index":0,"delta":{"reasoning_content":"thinking"}}]}`,
+			`{"id":"chat_1","object":"chat.completion.chunk","choices":[{"index":0,"delta":{"tool_calls":[{"index":0,"id":"call_1","type":"function","function":{"name":"lookup","arguments":"{\"q\":\"Paris\"}"}}]}}]}`,
+		}, 12, true, false, false, false},
+		{"explicit failure", []string{
+			`{"error":{"type":"upstream_error","message":"provider failed"}}`,
+		}, 0, false, true, false, false},
+		{"failure after a chunk without usage", []string{
+			`{"id":"chat_1","object":"chat.completion.chunk","choices":[{"index":0,"delta":{"content":"partial"}}]}`,
+			`{"error":{"type":"upstream_error","message":"provider failed"}}`,
+		}, 0, false, true, false, false},
+		{"failure with reported usage", []string{
+			`{"id":"chat_1","object":"chat.completion.chunk","choices":[{"index":0,"delta":{"content":"partial"}}]}`,
+			`{"error":{"type":"upstream_error","message":"provider failed"},"usage":{"prompt_tokens":4,"completion_tokens":2}}`,
+		}, 4, true, false, false, true},
+		{"completed with usage", []string{
+			`{"id":"chat_1","object":"chat.completion.chunk","choices":[{"index":0,"delta":{"content":"done"},"finish_reason":"stop"}]}`,
+			`{"id":"chat_1","object":"chat.completion.chunk","choices":[],"usage":{"prompt_tokens":4,"completion_tokens":2,"total_tokens":6}}`,
+			`[DONE]`,
+		}, 4, true, false, true, false},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			config := &dto.AdvancedCustomConfig{Routes: []dto.AdvancedCustomRoute{{
+				IncomingPath: "/v1/responses", UpstreamPath: "/v1/chat/completions",
+				Converter: dto.AdvancedCustomConverterOpenAIResponsesToOpenAIChatCompletions,
+			}}}
+			info := advancedCustomRelayInfo(config)
+			info.IsStream = true
+			info.DisablePing = true
+			info.SetEstimatePromptTokens(12)
+			info.ChannelMeta.UpstreamModelName = "gpt-test"
+			recorder := httptest.NewRecorder()
+			c, _ := gin.CreateTestContext(recorder)
+			c.Request = httptest.NewRequest(http.MethodPost, "/v1/responses", nil)
+			body := ""
+			if len(tc.events) > 0 {
+				body = "data: " + strings.Join(tc.events, "\n\ndata: ") + "\n\n"
+			}
+			resp := &http.Response{StatusCode: http.StatusOK, Body: io.NopCloser(strings.NewReader(body)),
+				Header: http.Header{"Content-Type": []string{"text/event-stream"}}}
+			usage, apiErr := (&Adaptor{}).DoResponse(c, resp, info)
+			if tc.wantError {
+				require.NotNil(t, apiErr)
+				require.Nil(t, usage)
+				require.NotContains(t, recorder.Body.String(), `"type":"response.completed"`)
+				return
+			}
+			require.Nil(t, apiErr)
+			got := usage.(*dto.Usage)
+			require.Equal(t, tc.wantPrompt, got.PromptTokens)
+			if tc.wantOutput {
+				require.Positive(t, got.CompletionTokens)
+			}
+			require.Equal(t, tc.wantCompleted, strings.Contains(recorder.Body.String(), `"type":"response.completed"`))
+			require.Equal(t, tc.wantFailed, strings.Contains(recorder.Body.String(), `"type":"response.failed"`))
+		})
+	}
 }
 
 func TestAdaptorJoinsUpstreamPathWithChannelBaseURL(t *testing.T) {
