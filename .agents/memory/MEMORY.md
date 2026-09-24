@@ -15,3 +15,4 @@
 - [Gateway lease recovery](gateway-lease-recovery.md) — serialize expiry cleanup, renewal, and settlement per key so stale requests cannot release a replacement's slot
 - [Responses stream settlement](responses-stream-settlement.md) — settle interrupted streams after upstream events without falsely marking success; explicit failures without usage refund.
 - [Image billing integrity](image-billing-integrity.md) — empty successful image responses must fail and refund; partial streams must not reduce charges from observed events alone.
+- [Go package installation](go-package-installation.md) — the Replit package installer may reject Go even when its skill lists it; use Go tooling as fallback.
