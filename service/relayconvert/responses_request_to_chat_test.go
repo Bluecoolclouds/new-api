@@ -128,6 +128,61 @@ func TestResponsesRequestToChatCompletionsRequestAssistantTextAndFunctionCallCoe
 	assert.JSONEq(t, `{"ok":true}`, got.Messages[1].StringContent())
 }
 
+func TestResponsesRequestToChatHoistsToolMediaAfterContiguousToolBatch(t *testing.T) {
+	got, err := ResponsesRequestToChatCompletionsRequest(&dto.OpenAIResponsesRequest{
+		Model: "gpt-test",
+		Input: mustRawMessage(t, []map[string]any{
+			{"type": "function_call", "call_id": "call_1", "name": "lookup", "arguments": "{}"},
+			{"type": "function_call", "call_id": "call_2", "name": "lookup", "arguments": "{}"},
+			{"type": "function_call_output", "call_id": "call_1", "output": []any{
+				map[string]any{"type": "input_text", "text": "found"},
+				map[string]any{"type": "input_image", "image_url": "https://example.test/a.png"},
+				map[string]any{"type": "input_file", "file_id": "file_1"},
+			}},
+			{"type": "function_call_output", "call_id": "call_2", "output": []any{
+				map[string]any{"type": "input_audio", "input_audio": map[string]any{"data": "abc", "format": "wav"}},
+				map[string]any{"type": "input_video", "video_url": map[string]any{"url": "https://example.test/v.mp4"}},
+			}},
+			{"role": "user", "content": "next"},
+		}),
+	})
+	require.NoError(t, err)
+	require.Len(t, got.Messages, 5)
+	assert.Equal(t, "assistant", got.Messages[0].Role)
+	assert.Equal(t, "tool", got.Messages[1].Role)
+	assert.Equal(t, "call_1", got.Messages[1].ToolCallId)
+	assert.Equal(t, "found", got.Messages[1].StringContent())
+	assert.Equal(t, "tool", got.Messages[2].Role)
+	assert.Equal(t, "call_2", got.Messages[2].ToolCallId)
+	assert.Equal(t, "[audio] [video]", got.Messages[2].StringContent())
+	assert.Equal(t, "user", got.Messages[3].Role)
+	parts := got.Messages[3].ParseContent()
+	require.Len(t, parts, 4)
+	assert.Equal(t, "https://example.test/a.png", parts[0].GetImageMedia().Url)
+	assert.Equal(t, "file_1", parts[1].GetFile().FileId)
+	assert.Equal(t, "wav", parts[2].GetInputAudio().Format)
+	assert.Equal(t, "https://example.test/v.mp4", parts[3].GetVideoUrl().Url)
+	assert.Equal(t, "user", got.Messages[4].Role)
+	assert.Equal(t, "next", got.Messages[4].StringContent())
+}
+
+func TestResponsesRequestToChatToolOutputFallbackPreservesUnknownBlocks(t *testing.T) {
+	got, err := ResponsesRequestToChatCompletionsRequest(&dto.OpenAIResponsesRequest{
+		Model: "gpt-test",
+		Input: mustRawMessage(t, []map[string]any{
+			{"type": "function_call_output", "call_id": "call_1", "output": []any{
+				map[string]any{"type": "input_image", "image_url": "https://example.test/a.png"},
+				map[string]any{"type": "future_media", "data": "opaque"},
+			}},
+			{"type": "function_call_output", "call_id": "call_2", "output": "plain string"},
+		}),
+	})
+	require.NoError(t, err)
+	require.Len(t, got.Messages, 2)
+	assert.JSONEq(t, `[{"type":"input_image","image_url":"https://example.test/a.png"},{"type":"future_media","data":"opaque"}]`, got.Messages[0].StringContent())
+	assert.Equal(t, "plain string", got.Messages[1].StringContent())
+}
+
 func TestResponsesRequestToChatCompletionsRequestOnlyFunctionCallCreatesAssistant(t *testing.T) {
 	got, err := ResponsesRequestToChatCompletionsRequest(&dto.OpenAIResponsesRequest{
 		Model: "gpt-test",

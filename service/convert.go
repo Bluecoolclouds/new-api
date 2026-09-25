@@ -134,6 +134,7 @@ func ClaudeToOpenAIRequest(claudeRequest dto.ClaudeRequest, info *relaycommon.Re
 		openAIMessage := dto.Message{
 			Role: claudeMessage.Role,
 		}
+		var hoistedUser *dto.Message
 
 		//log.Printf("claudeMessage.Content: %v", claudeMessage.Content)
 		if claudeMessage.IsStringContent() {
@@ -146,6 +147,7 @@ func ClaudeToOpenAIRequest(claudeRequest dto.ClaudeRequest, info *relaycommon.Re
 			contents := content
 			var toolCalls []dto.ToolCallRequest
 			mediaMessages := make([]dto.MediaContent, 0, len(contents))
+			hasToolResultMedia := false
 
 			for _, mediaMsg := range contents {
 				switch mediaMsg.Type {
@@ -190,9 +192,12 @@ func ClaudeToOpenAIRequest(claudeRequest dto.ClaudeRequest, info *relaycommon.Re
 					if mediaMsg.IsStringContent() {
 						oaiToolMessage.SetStringContent(mediaMsg.GetStringContent())
 					} else {
-						mediaContents := mediaMsg.ParseMediaContent()
-						encodeJson, _ := common.Marshal(mediaContents)
-						oaiToolMessage.SetStringContent(string(encodeJson))
+						content, images := claudeToolResultToChat(mediaMsg.ParseMediaContent())
+						oaiToolMessage.SetStringContent(content)
+						if len(images) > 0 {
+							hasToolResultMedia = true
+							mediaMessages = append(mediaMessages, images...)
+						}
 					}
 					openAIMessages = append(openAIMessages, oaiToolMessage)
 				}
@@ -204,16 +209,57 @@ func ClaudeToOpenAIRequest(claudeRequest dto.ClaudeRequest, info *relaycommon.Re
 
 			if len(mediaMessages) > 0 && len(toolCalls) == 0 {
 				openAIMessage.SetMediaContent(mediaMessages)
+			} else if hasToolResultMedia {
+				// A message containing tool calls remains an assistant message;
+				// its media must follow the tool batch as user content.
+				user := dto.Message{Role: "user"}
+				user.SetMediaContent(mediaMessages)
+				hoistedUser = &user
 			}
 		}
 		if len(openAIMessage.ParseContent()) > 0 || len(openAIMessage.ToolCalls) > 0 {
 			openAIMessages = append(openAIMessages, openAIMessage)
+		}
+		if hoistedUser != nil {
+			openAIMessages = append(openAIMessages, *hoistedUser)
 		}
 	}
 
 	openAIRequest.Messages = openAIMessages
 
 	return &openAIRequest, nil
+}
+
+// A Chat tool message cannot carry images. Keep tool text on the tool message
+// and move images into a user message after the contiguous tool-result batch.
+func claudeToolResultToChat(blocks []dto.ClaudeMediaMessage) (string, []dto.MediaContent) {
+	var texts []string
+	var images []dto.MediaContent
+	for _, block := range blocks {
+		switch {
+		case block.Type == "text" || block.Type == "input_text":
+			if text := block.GetText(); text != "" {
+				texts = append(texts, text)
+			}
+		case block.Type == "image" && block.Source != nil:
+			url := block.Source.Url
+			if url == "" {
+				url = fmt.Sprintf("data:%s;base64,%s", block.Source.MediaType, common.Interface2String(block.Source.Data))
+			}
+			images = append(images, dto.MediaContent{Type: "image_url", ImageUrl: &dto.MessageImageUrl{Url: url}})
+		default:
+			encoded, _ := common.Marshal(blocks)
+			return string(encoded), nil
+		}
+	}
+	if len(images) == 0 && len(texts) == 0 {
+		encoded, _ := common.Marshal(blocks)
+		return string(encoded), nil
+	}
+	if len(texts) == 0 {
+		return "[image]", images
+	}
+	return strings.Join(texts, "\n"), images
 }
 
 func generateStopBlock(index int) *dto.ClaudeResponse {
